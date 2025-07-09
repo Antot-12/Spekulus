@@ -1,0 +1,262 @@
+
+"use client";
+
+import { useState, useEffect, useRef } from 'react';
+import { productSectionData, type ProductSectionData, type ProductComponent, type Language } from '@/lib/data';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Save, Sparkles, Upload, Wand2, Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Label } from '@/components/ui/label';
+import { ProductIcon } from '@/components/ProductIcon';
+import { generateImage } from '@/ai/flows/generate-image-flow';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { logAction } from '@/lib/logger';
+
+const LOCAL_STORAGE_KEY_PREFIX = 'spekulus-product-section-';
+
+const LanguageFlag = ({ lang }: { lang: Language }) => {
+    const flags: Record<string, string> = {
+      en: '🇬🇧',
+      uk: '🇺🇦',
+      sk: '🇸🇰',
+    };
+    return <span className="mr-2 text-base" role="img" aria-label={`${lang} flag`}>{flags[lang]}</span>;
+};
+
+const languageNames: Record<Language, string> = {
+    en: 'English',
+    uk: 'Ukrainian',
+    sk: 'Slovak'
+};
+
+export default function ProductSectionAdminPage() {
+    const { toast } = useToast();
+    const [data, setData] = useState<ProductSectionData>(productSectionData.en);
+    const [isLoaded, setIsLoaded] = useState(false);
+    const [selectedLang, setSelectedLang] = useState<Language>('en');
+    const [generatingImages, setGeneratingImages] = useState<{ [key: number]: boolean }>({});
+    const fileInputRefs = useRef<{ [key: number]: HTMLInputElement | null }>({});
+
+
+    useEffect(() => {
+        setIsLoaded(false);
+        const localStorageKey = `${LOCAL_STORAGE_KEY_PREFIX}${selectedLang}`;
+        try {
+            const storedData = localStorage.getItem(localStorageKey);
+            if (storedData) {
+                setData(JSON.parse(storedData));
+            } else {
+                setData(productSectionData[selectedLang]);
+            }
+        } catch (error) {
+            console.error("Failed to load product section data from localStorage", error);
+            setData(productSectionData[selectedLang]);
+        }
+        setIsLoaded(true);
+    }, [selectedLang]);
+
+    const persistChanges = (newData: ProductSectionData) => {
+        const localStorageKey = `${LOCAL_STORAGE_KEY_PREFIX}${selectedLang}`;
+        try {
+            localStorage.setItem(localStorageKey, JSON.stringify(newData));
+            setData(newData);
+        } catch (error) {
+            console.error("Failed to save data to localStorage", error);
+            toast({ title: "Save Failed", description: "Could not save changes.", variant: 'destructive' });
+        }
+    };
+
+    const handleSave = () => {
+        persistChanges(data);
+        toast({ title: "Saved!", description: `Changes to the Product section for ${languageNames[selectedLang]} have been saved.`});
+        logAction('Product Update', 'Success', `Saved all changes for ${languageNames[selectedLang]} product section.`);
+    };
+
+    const handleMainChange = (field: 'title' | 'subtitle', value: string) => {
+        setData(prev => ({ ...prev, [field]: value }));
+    };
+    
+    const handleComponentChange = (id: number, field: keyof ProductComponent, value: string) => {
+        const updatedComponents = data.components.map(item =>
+            item.id === id ? { ...item, [field]: value } : item
+        );
+        setData(prev => ({...prev, components: updatedComponents}));
+    };
+    
+    const handleImageUpload = async (id: number, event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const component = data.components.find(c => c.id === id);
+        if (!component) {
+            toast({ title: "Component not found", variant: "destructive" });
+            return;
+        }
+        const slug = component.title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('subdirectory', `product/${slug}`);
+        
+        toast({ title: "Uploading...", description: "Please wait while the image is uploaded." });
+
+        try {
+            const response = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData,
+            });
+            const result = await response.json();
+
+            if (result.success) {
+                handleComponentChange(id, 'imageUrl', result.url);
+                toast({ title: "Image Uploaded", description: "Image has been updated. Remember to save your changes." });
+                logAction('File Upload', 'Success', `Uploaded image for product component '${component.title}': ${result.url}`);
+            } else {
+                toast({ title: "Upload Failed", description: result.error || "Could not upload image.", variant: 'destructive' });
+                logAction('File Upload', 'Failure', `Failed to upload for product component '${component.title}'. Reason: ${result.error}`);
+            }
+        } catch (error: any) {
+            console.error("Image upload error:", error);
+            toast({ title: "Upload Failed", description: "An error occurred during upload.", variant: 'destructive' });
+            logAction('File Upload', 'Failure', `Failed to upload for product component '${component.title}'. Reason: ${error.message}`);
+        } finally {
+             if (event.target) {
+                event.target.value = '';
+            }
+        }
+    };
+    
+    const handleImageGenerate = async (id: number, hint: string) => {
+        if (!hint) {
+            toast({ title: "Hint required", description: "Please provide an AI hint to generate an image.", variant: 'destructive' });
+            return;
+        }
+
+        const component = data.components.find(c => c.id === id);
+        if (!component) return;
+
+        setGeneratingImages(prev => ({ ...prev, [id]: true }));
+        toast({ title: "Generating Image...", description: "The AI is creating an image based on your hint. This may take a moment." });
+
+        try {
+            const imageUrl = await generateImage(hint);
+            handleComponentChange(id, 'imageUrl', imageUrl);
+            toast({ title: "Image Generated!", description: "The new image has been set. Remember to save changes." });
+            logAction('File Upload', 'Success', `Generated image for product component '${component.title}' with hint: "${hint}"`);
+        } catch (error: any) {
+            console.error("Image generation error:", error);
+            toast({ title: "Generation Failed", description: "The AI could not generate an image. Please try a different hint.", variant: 'destructive' });
+            logAction('File Upload', 'Failure', `Failed to generate image for product component '${component.title}' with hint: "${hint}". Reason: ${error.message}`);
+        } finally {
+            setGeneratingImages(prev => ({ ...prev, [id]: false }));
+        }
+    };
+
+    return (
+        <Card className="opacity-0 animate-fade-in-up">
+          <CardHeader>
+            <div className="flex flex-wrap gap-4 justify-between items-center">
+                <div>
+                    <CardTitle>Manage Product Section</CardTitle>
+                    <CardDescription>Edit the content for the "Anatomy of a Smart Mirror" section on the homepage.</CardDescription>
+                </div>
+                <div className="flex gap-2">
+                    <Select value={selectedLang} onValueChange={(value) => setSelectedLang(value as Language)}>
+                        <SelectTrigger className="w-[150px]">
+                            <SelectValue>
+                                <div className="flex items-center">
+                                    <LanguageFlag lang={selectedLang} />
+                                    {languageNames[selectedLang]}
+                                </div>
+                            </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                           <SelectItem value="en"><LanguageFlag lang="en" /> {languageNames['en']}</SelectItem>
+                           <SelectItem value="uk"><LanguageFlag lang="uk" /> {languageNames['uk']}</SelectItem>
+                           <SelectItem value="sk"><LanguageFlag lang="sk" /> {languageNames['sk']}</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <Button onClick={handleSave}><Save className="mr-2 h-4 w-4"/> Save Changes</Button>
+                </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {!isLoaded ? (
+                <div className="space-y-4 p-4">
+                    <Skeleton className="h-10 w-1/3" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-48 w-full" />
+                </div>
+            ) : (
+                <>
+                    <div className="space-y-2">
+                        <Label htmlFor="title">Section Title</Label>
+                        <Input id="title" value={data.title} onChange={(e) => handleMainChange('title', e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="subtitle">Section Subtitle</Label>
+                        <Input id="subtitle" value={data.subtitle} onChange={(e) => handleMainChange('subtitle', e.target.value)} />
+                    </div>
+
+                    <div className="space-y-6 pt-4">
+                        {data.components.map((component) => (
+                          <div key={component.id} className="space-y-4 p-4 border rounded-md relative">
+                            <div className="flex items-start gap-4">
+                                <div className="flex flex-col items-center gap-2">
+                                    <div className="rounded-lg bg-primary/10 p-3">
+                                        <ProductIcon name={component.icon} className="w-6 h-6 text-primary" />
+                                    </div>
+                                    <Input 
+                                        value={component.icon}
+                                        onChange={(e) => handleComponentChange(component.id, 'icon', e.target.value)}
+                                        placeholder="Icon Name"
+                                        className="w-28 text-center text-xs" />
+                                </div>
+                                <div className="flex-grow space-y-2">
+                                     <Input 
+                                        value={component.title}
+                                        onChange={(e) => handleComponentChange(component.id, 'title', e.target.value)}
+                                        className="font-bold text-lg"/>
+                                     <Textarea 
+                                        value={component.description} 
+                                        onChange={(e) => handleComponentChange(component.id, 'description', e.target.value)}
+                                        rows={3}
+                                    />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor={`imageUrl-${component.id}`}>Image URL</Label>
+                                <div className="flex gap-2">
+                                    <Input id={`imageUrl-${component.id}`} value={component.imageUrl} onChange={(e) => handleComponentChange(component.id, 'imageUrl', e.target.value)} />
+                                    <Button variant="outline" size="icon" onClick={() => fileInputRefs.current[component.id]?.click()} aria-label="Upload image">
+                                        <Upload className="h-4 w-4" />
+                                    </Button>
+                                    <input type="file" ref={(el) => (fileInputRefs.current[component.id] = el)} onChange={(e) => handleImageUpload(component.id, e)} accept="image/*" className="hidden" />
+                                </div>
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor={`imageHint-${component.id}`}>Image AI Hint</Label>
+                                <div className="flex gap-2">
+                                    <Input id={`imageHint-${component.id}`} value={component.imageHint} onChange={(e) => handleComponentChange(component.id, 'imageHint', e.target.value)} />
+                                    <Button variant="outline" size="icon" onClick={() => handleImageGenerate(component.id, component.imageHint)} disabled={generatingImages[component.id]} aria-label="Generate image with AI">
+                                        {generatingImages[component.id] ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+                                    </Button>
+                                </div>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                     <div className="text-sm text-muted-foreground p-4 border-dashed border-2 rounded-md">
+                        <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2"><Sparkles className="h-4 w-4"/>Icon Tip</h4>
+                        <p>Enter the name of a `lucide-react` icon (e.g., `ScanEye`, `Cpu`, `BrainCircuit`, `HeartPulse`). The icon preview will update automatically. Case matters!</p>
+                    </div>
+                </>
+            )}
+          </CardContent>
+        </Card>
+    );
+}
