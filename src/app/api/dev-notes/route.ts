@@ -29,8 +29,11 @@ const NOTES_FOLDER = 'spekulus/dev-notes';
 async function getNoteFromCloudinary(public_id: string): Promise<DevNote | null> {
     try {
         const config = getCloudinaryConfig();
-        const url = cloudinary.url(public_id, { resource_type: 'raw', ...config });
-        const response = await fetch(url);
+        // Construct the URL ensuring we don't double-add .json if it's already there.
+        const resourceUrl = public_id.endsWith('.json') ? public_id : `${public_id}.json`;
+        const url = cloudinary.url(resourceUrl, { resource_type: 'raw', ...config });
+
+        const response = await fetch(url, { next: { revalidate: 0 } }); // Disable caching for fresh data
         if (!response.ok) return null;
         return await response.json();
     } catch (error) {
@@ -49,7 +52,7 @@ export async function GET(request: NextRequest) {
 
         if (slug) {
             // Fetch single note by slug
-            const public_id = `${NOTES_FOLDER}/${slug}/${slug}.json`;
+            const public_id = `${NOTES_FOLDER}/${slug}/${slug}`;
             const note = await getNoteFromCloudinary(public_id);
             if (note) {
                 return NextResponse.json({ success: true, note });
@@ -95,13 +98,11 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, error: 'Slug and title are required.' }, { status: 400 });
         }
         
-        // 1. Create the dedicated folder for the note
-        const noteFolderPath = `${NOTES_FOLDER}/${note.slug}`;
-        await cloudinary.api.create_folder(noteFolderPath, config);
+        const public_id = `${NOTES_FOLDER}/${note.slug}/${note.slug}`;
         
-        // 2. Upload the JSON file into that folder
-        const public_id = `${noteFolderPath}/${note.slug}`;
-        
+        // Cloudinary automatically adds the .json extension when uploading a string buffer
+        // if the format is not explicitly set to something else.
+        // By setting public_id without extension, Cloudinary correctly handles it.
         const response: UploadApiResponse = await new Promise((resolve, reject) => {
             const uploadStream = cloudinary.uploader.upload_stream(
                 {
@@ -177,16 +178,20 @@ export async function DELETE(request: NextRequest) {
             return NextResponse.json({ success: false, error: 'Slug is required for deletion.' }, { status: 400 });
         }
         
-        // Delete the entire folder for the note
+        // Delete the entire folder for the note, including its contents
         const folderPath = `${NOTES_FOLDER}/${slug}`;
+        
+        // 1. Delete all resources within the folder.
+        await cloudinary.api.delete_resources_by_prefix(folderPath, { ...config, resource_type: 'raw' });
+        await cloudinary.api.delete_resources_by_prefix(folderPath, { ...config, resource_type: 'image' });
 
-        // This will delete the folder and all its contents
+        // 2. Delete the folder itself.
         const result = await cloudinary.api.delete_folder(folderPath, config);
 
         if (result.deleted && result.deleted[folderPath]) {
             return NextResponse.json({ success: true, message: `Note folder '${slug}' deleted.` });
         } else {
-             // Fallback to deleting just the JSON file if folder deletion is tricky
+            // Fallback for safety, though the above should work.
             const public_id = `${NOTES_FOLDER}/${slug}/${slug}.json`;
             const fileResult = await cloudinary.uploader.destroy(public_id, {
                 ...config,
