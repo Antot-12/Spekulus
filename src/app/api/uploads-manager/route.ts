@@ -26,7 +26,23 @@ export async function GET(request: NextRequest) {
   try {
     const config = getCloudinaryConfig();
     const { searchParams } = new URL(request.url);
-    const path = searchParams.get('path') || 'spekulus';
+    let path = searchParams.get('path') || 'spekulus';
+
+    // Normalize path to prevent trailing slashes from breaking logic
+    if (path.endsWith('/') && path.length > 1) {
+        path = path.slice(0, -1);
+    }
+    
+    // Fetch direct subfolders of the given path
+    const subfoldersResponse = await cloudinary.api.sub_folders(path, config);
+    
+    const folders = subfoldersResponse.folders.map((folder: any) => ({
+      ...folder,
+      isDirectory: true,
+      bytes: 0,
+      created_at: new Date().toISOString(),
+      asset_id: folder.path
+    }));
 
     // Fetch all resources (files) within the given path prefix
     const resourcesResponse = await cloudinary.api.resources({
@@ -36,17 +52,14 @@ export async function GET(request: NextRequest) {
       max_results: 500
     });
 
-    // Fetch direct subfolders of the given path
-    const subfoldersResponse = await cloudinary.api.sub_folders(path, config);
-    
-    // Filter to get only direct child files of the current path
+    // *** REVISED FILTERING LOGIC ***
+    // This logic correctly identifies direct children files.
     const files = resourcesResponse.resources
       .filter((file: any) => {
-        // A file is a direct child if its path has exactly one more '/' than the parent path.
-        const parentPathSlashes = (path.match(/\//g) || []).length;
-        const filePathSlashes = (file.public_id.match(/\//g) || []).length;
-        // Check if the file is in a direct subfolder.
-        return filePathSlashes === parentPathSlashes + 1;
+        // The public_id of a direct child file should not contain any slashes
+        // after the parent folder's path.
+        const relativePath = file.public_id.substring(path.length).replace(/^\//, '');
+        return !relativePath.includes('/');
       })
       .map((file: any) => ({
         ...file,
@@ -54,14 +67,6 @@ export async function GET(request: NextRequest) {
         name: file.public_id.split('/').pop(),
         path: file.public_id,
       }));
-
-    const folders = subfoldersResponse.folders.map((folder: any) => ({
-      ...folder,
-      isDirectory: true,
-      bytes: 0,
-      created_at: new Date().toISOString(),
-      asset_id: folder.path
-    }));
 
     const combined = [...folders, ...files];
 
