@@ -2,32 +2,32 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v2 as cloudinary } from 'cloudinary';
 
-const getCloudinaryApi = () => {
-    // This ensures that for every API call, we are using the correct, up-to-date credentials.
-    cloudinary.config({
+// This function creates the credentials object for each API call.
+const getCloudinaryCredentials = () => {
+    return {
         cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
         api_key: process.env.CLOUDINARY_API_KEY,
         api_secret: process.env.CLOUDINARY_API_SECRET,
-        secure: true,
-    });
-    return cloudinary.api;
+    };
 };
 
 export async function GET(request: NextRequest) {
-  const api = getCloudinaryApi();
   const { searchParams } = new URL(request.url);
   const path = searchParams.get('path') || 'spekulus';
 
   try {
     // Fetch all resources (files)
-    const resourcesResponse = await api.resources({
+    const resourcesResponse = await cloudinary.api.resources({
+      ...getCloudinaryCredentials(),
       type: 'upload',
       prefix: path,
       max_results: 500
     });
 
     // Fetch all subfolders
-    const subfoldersResponse = await api.sub_folders(path);
+    const subfoldersResponse = await cloudinary.api.sub_folders(path, {
+      ...getCloudinaryCredentials()
+    });
     
     const files = resourcesResponse.resources.map((file: any) => ({
       ...file,
@@ -65,7 +65,6 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const api = getCloudinaryApi();
   try {
     const body = await request.json();
     const { path, folderName } = body;
@@ -76,7 +75,9 @@ export async function POST(request: NextRequest) {
 
     const newFolderPath = path ? `${path}/${folderName}` : folderName;
 
-    await api.create_folder(newFolderPath);
+    await cloudinary.api.create_folder(newFolderPath, {
+      ...getCloudinaryCredentials()
+    });
     
     return NextResponse.json({ success: true, message: `Folder '${folderName}' created.` });
   } catch (error: any) {
@@ -89,7 +90,6 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const api = getCloudinaryApi();
   try {
     const body = await request.json();
     const { public_id, resource_type } = body;
@@ -99,9 +99,14 @@ export async function DELETE(request: NextRequest) {
     }
     
     if(resource_type === 'folder'){
-        await api.delete_folder(public_id);
+        await cloudinary.api.delete_folder(public_id, {
+          ...getCloudinaryCredentials()
+        });
     } else {
-        await cloudinary.uploader.destroy(public_id, { resource_type: resource_type || 'image' });
+        await cloudinary.uploader.destroy(public_id, {
+          ...getCloudinaryCredentials(),
+          resource_type: resource_type || 'image'
+        });
     }
     
     return NextResponse.json({ success: true, message: 'Item deleted successfully.' });

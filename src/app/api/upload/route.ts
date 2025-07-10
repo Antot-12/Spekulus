@@ -32,11 +32,12 @@ export async function POST(request: NextRequest) {
     const result: any = await new Promise((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
             {
-                folder: subdirectory ? `spekulus/${subdirectory}` : 'spekulus',
-                resource_type: 'auto',
+                // Pass credentials directly in the call
                 api_key: process.env.CLOUDINARY_API_KEY,
                 api_secret: process.env.CLOUDINARY_API_SECRET,
                 cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+                folder: subdirectory ? `spekulus/${subdirectory}` : 'spekulus',
+                resource_type: 'auto',
             },
             (error, result) => {
                 if (error) {
