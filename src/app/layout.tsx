@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import AppWrapper from '@/components/AppWrapper';
@@ -6,12 +6,13 @@ import AppWrapper from '@/components/AppWrapper';
 export const metadata: Metadata = {
   title: 'Spekulus Vision',
   description: 'Reflect smarter, live better.',
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 5,
-    userScalable: true,
-  },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
 };
 
 export default function RootLayout({
