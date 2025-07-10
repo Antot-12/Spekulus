@@ -1,16 +1,18 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { v2 as cloudinary } from 'cloudinary';
-require('dotenv').config();
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-  secure: true,
-});
+function configureCloudinary() {
+    cloudinary.config({
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+      api_key: process.env.CLOUDINARY_API_KEY,
+      api_secret: process.env.CLOUDINARY_API_SECRET,
+      secure: true,
+    });
+}
 
 export async function GET(request: NextRequest) {
+  configureCloudinary();
   const { searchParams } = new URL(request.url);
   const path = searchParams.get('path') || 'spekulus';
 
@@ -57,6 +59,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  configureCloudinary();
   try {
     const body = await request.json();
     const { path, folderName } = body;
@@ -80,6 +83,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  configureCloudinary();
   try {
     const body = await request.json();
     const { public_id, resource_type } = body;
