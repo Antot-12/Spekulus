@@ -98,14 +98,19 @@ export async function POST(request: NextRequest) {
 
         const langFolder = `${CREATORS_FOLDER}/${lang}`;
 
-        try {
-            await cloudinary.api.delete_folder(langFolder, config);
-        } catch (error: any) {
-            if ((error as any).http_code !== 404) {
-                 console.warn(`Could not delete folder ${langFolder}. It might not exist.`, (error as any).message);
-            }
-        }
+        const { resources } = await cloudinary.api.resources({ ...config, type: 'upload', prefix: `${langFolder}/`, max_results: 500 });
+        const existingSlugs = new Set(resources.map((r: any) => r.public_id.split('/')[3]).filter(Boolean));
+        const newSlugs = new Set(creators.map(c => c.slug));
 
+        // Delete creators that are no longer in the list
+        const slugsToDelete = [...existingSlugs].filter(slug => !newSlugs.has(slug));
+        if (slugsToDelete.length > 0) {
+            await Promise.all(slugsToDelete.map(slug => {
+                const folderPath = `${langFolder}/${slug}`;
+                return cloudinary.api.delete_folder(folderPath, config);
+            }));
+        }
+        
         const uploadPromises = creators.map(creator => {
             const public_id = `${langFolder}/${creator.slug}/${DATA_FILENAME}`;
             return new Promise((resolve, reject) => {
@@ -116,6 +121,7 @@ export async function POST(request: NextRequest) {
                         folder: `${langFolder}/${creator.slug}`,
                         resource_type: 'raw',
                         invalidate: true,
+                        overwrite: true,
                     },
                     (error, result) => {
                         if (error) return reject(error);
