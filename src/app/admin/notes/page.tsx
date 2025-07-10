@@ -58,7 +58,9 @@ export default function NotesAdminPage() {
                 const sortedNotes = data.notes.sort((a: DevNote, b: DevNote) => new Date(b.date).getTime() - new Date(a.date).getTime());
                 setNotes(sortedNotes);
                 if (activeNote) {
-                    setActiveNote(sortedNotes.find(n => n.id === activeNote.id) || null);
+                    // Refresh the active note with the latest data from the server
+                    const updatedActiveNote = sortedNotes.find(n => n.id === activeNote.id) || null;
+                    setActiveNote(updatedActiveNote);
                 }
             } else {
                 toast({ title: "Error", description: "Could not fetch developer notes.", variant: 'destructive' });
@@ -111,7 +113,8 @@ export default function NotesAdminPage() {
             if (result.success) {
                 toast({ title: "Note Saved", description: `"${activeNote.title}" has been saved.` });
                 logAction('Notes Update', 'Success', `Saved changes for note '${activeNote.title}'.`);
-                await fetchNotes(); // Refresh the list from server
+                // **CRITICAL FIX**: Refresh the list from the server after saving
+                await fetchNotes(); 
             } else {
                 toast({ title: "Save Failed", description: result.error || "Could not save changes.", variant: 'destructive' });
             }

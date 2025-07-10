@@ -29,9 +29,7 @@ const NOTES_FOLDER = 'spekulus/dev-notes';
 async function getNoteFromCloudinary(public_id: string): Promise<DevNote | null> {
     try {
         const config = getCloudinaryConfig();
-        // Construct the URL ensuring we don't double-add .json if it's already there.
-        const resourceUrl = public_id.endsWith('.json') ? public_id : `${public_id}.json`;
-        const url = cloudinary.url(resourceUrl, { resource_type: 'raw', ...config });
+        const url = cloudinary.url(public_id, { resource_type: 'raw', ...config });
 
         const response = await fetch(url, { next: { revalidate: 0 } }); // Disable caching for fresh data
         if (!response.ok) return null;
@@ -79,7 +77,8 @@ export async function GET(request: NextRequest) {
 
             const notes = (await Promise.all(
                 notePublicIds.map((public_id: string) => getNoteFromCloudinary(public_id))
-            )).filter(note => note !== null) as DevNote[];
+            )).filter((note): note is DevNote => note !== null);
+
 
             return NextResponse.json({ success: true, notes });
         }
@@ -100,6 +99,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, error: 'Slug and title are required.' }, { status: 400 });
         }
         
+        // The public_id *must* include the extension.
         const public_id = `${NOTES_FOLDER}/${note.slug}/${note.slug}.json`;
         
         const response: UploadApiResponse = await new Promise((resolve, reject) => {
@@ -107,6 +107,7 @@ export async function POST(request: NextRequest) {
                 {
                     ...config,
                     public_id: public_id,
+                    folder: `${NOTES_FOLDER}/${note.slug}`, // Ensure folder is created
                     resource_type: 'raw',
                     invalidate: true,
                 },
@@ -137,6 +138,7 @@ export async function PUT(request: NextRequest) {
             return NextResponse.json({ success: false, error: 'Slug and title are required.' }, { status: 400 });
         }
 
+        // The public_id *must* include the extension.
         const public_id = `${NOTES_FOLDER}/${note.slug}/${note.slug}.json`;
         
         // Overwrite the existing file
