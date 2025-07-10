@@ -1,13 +1,13 @@
 
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
-import { creatorsData, type Creator, type FeaturedProject, type Language, type GalleryImage } from '@/lib/data';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import type { Creator, FeaturedProject, Language, GalleryImage } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Trash2, PlusCircle, Upload, Github, Twitter, Linkedin, Wand2, Loader2, Music, Eye, EyeOff, Users, Heart, Camera, FileText, Link as LinkIcon, Image as ImageIcon } from 'lucide-react';
+import { Trash2, PlusCircle, Upload, Github, Twitter, Linkedin, Wand2, Loader2, Music, Eye, EyeOff, Users, Heart, Camera, FileText, Link as LinkIcon, Image as ImageIcon, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MarkdownEditor } from '@/components/ui/markdown-editor';
@@ -16,8 +16,8 @@ import { generateImage } from '@/ai/flows/generate-image-flow';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from '@/components/ui/switch';
 import { logAction } from '@/lib/logger';
-
-const LOCAL_STORAGE_KEY_PREFIX = 'spekulus-creators-';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { creatorsData as staticCreatorsData } from '@/lib/data';
 
 const newCreatorBioExample = `### About Me
 
@@ -47,81 +47,78 @@ const languageNames: Record<Language, string> = {
 export default function CreatorsAdminPage() {
     const { toast } = useToast();
     const [creators, setCreators] = useState<Creator[]>([]);
-    const [isLoaded, setIsLoaded] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
     const [generatingImages, setGeneratingImages] = useState<Record<string, boolean>>({});
     const [selectedLang, setSelectedLang] = useState<Language>('en');
     
     const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
-    useEffect(() => {
-        setIsLoaded(false);
-        const localStorageKey = `${LOCAL_STORAGE_KEY_PREFIX}${selectedLang}`;
+    const fetchCreators = useCallback(async (lang: Language) => {
+        setIsLoading(true);
         try {
-            const storedCreators = localStorage.getItem(localStorageKey);
-            if (storedCreators) {
-                setCreators(JSON.parse(storedCreators));
+            const response = await fetch(`/api/creators?lang=${lang}`);
+            const data = await response.json();
+            if (data.success) {
+                // If no creators are returned, initialize with static data for that language
+                setCreators(data.creators.length > 0 ? data.creators : staticCreatorsData[lang]);
             } else {
-                setCreators(creatorsData[selectedLang]);
+                toast({ title: "Error", description: `Could not fetch creators for ${languageNames[lang]}.`, variant: 'destructive' });
+                setCreators(staticCreatorsData[lang]);
             }
         } catch (error) {
-            console.error("Failed to load creators from localStorage", error);
-            setCreators(creatorsData[selectedLang]);
+            toast({ title: "Network Error", description: "Failed to connect to the server.", variant: 'destructive' });
+            setCreators(staticCreatorsData[lang]);
         }
-        setIsLoaded(true);
-    }, [selectedLang]);
+        setIsLoading(false);
+    }, [toast]);
+    
+    useEffect(() => {
+        fetchCreators(selectedLang);
+    }, [selectedLang, fetchCreators]);
 
-    const persistChanges = (newCreators: Creator[]) => {
-        const localStorageKey = `${LOCAL_STORAGE_KEY_PREFIX}${selectedLang}`;
+    const handleSave = async () => {
+        setIsSaving(true);
         try {
-            localStorage.setItem(localStorageKey, JSON.stringify(newCreators));
-            setCreators(newCreators);
+            const response = await fetch('/api/creators', {
+                method: 'POST', // Using POST to create/update the whole set
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ lang: selectedLang, creators }),
+            });
+            const result = await response.json();
+            if (result.success) {
+                toast({ title: "Saved!", description: `All creator changes for ${languageNames[selectedLang]} have been saved.` });
+                logAction('Creators Update', 'Success', `Saved all changes for ${languageNames[selectedLang]} creators.`);
+                fetchCreators(selectedLang);
+            } else {
+                toast({ title: "Save Failed", description: result.error || "Could not save changes.", variant: 'destructive' });
+            }
         } catch (error) {
-            console.error("Failed to save creators to localStorage", error);
-            toast({ title: "Save Failed", description: "Could not save changes.", variant: 'destructive' });
-        }
-    };
-
-    const updateCreatorField = (id: number, field: keyof Creator, value: any) => {
-        const updatedCreators = creators.map(creator =>
-            creator.id === id ? { ...creator, [field]: value } : creator
-        );
-        persistChanges(updatedCreators);
-
-        if (field === 'isVisible') {
-            const creatorName = creators.find(c => c.id === id)?.name || 'Unknown';
-            toast({ title: "Visibility Updated", description: `Profile for '${creatorName}' is now ${value ? 'visible' : 'hidden'}.` });
-            logAction('Creators Update', 'Success', `Visibility for creator '${creatorName}' (ID: ${id}) set to ${value ? 'visible' : 'hidden'}.`);
+            toast({ title: "Network Error", description: "Failed to save changes.", variant: 'destructive' });
+        } finally {
+            setIsSaving(false);
         }
     };
     
+    const handleFieldChange = (id: number, field: keyof Creator, value: any) => {
+        const updatedCreators = creators.map(creator =>
+            creator.id === id ? { ...creator, [field]: value } : creator
+        );
+        setCreators(updatedCreators);
+    };
+    
     const handleSocialChange = (id: number, platform: 'github' | 'twitter' | 'linkedin', value: string) => {
-        const updatedCreators = creators.map(creator => {
-            if (creator.id === id) {
-                return { ...creator, socials: { ...creator.socials, [platform]: value } };
-            }
-            return creator;
-        });
-        persistChanges(updatedCreators);
+        handleFieldChange(id, 'socials', { ...creators.find(c => c.id === id)?.socials, [platform]: value });
     };
 
     const handleMusicChange = (id: number, platform: keyof NonNullable<Creator['music']>, value: string) => {
-        const updatedCreators = creators.map(creator => {
-            if (creator.id === id) {
-                return { ...creator, music: { ...(creator.music || {}), [platform]: value } };
-            }
-            return creator;
-        });
-        persistChanges(updatedCreators);
+        handleFieldChange(id, 'music', { ...(creators.find(c => c.id === id)?.music || {}), [platform]: value });
     };
 
     const handleProjectChange = (id: number, field: keyof FeaturedProject, value: string) => {
-        const updatedCreators = creators.map(creator => {
-            if (creator.id === id) {
-                return { ...creator, featuredProject: { ...(creator.featuredProject || { title: '', url: '', description: '', imageUrl: '', imageHint: ''}), [field]: value } };
-            }
-            return creator;
-        });
-        persistChanges(updatedCreators);
+        const creator = creators.find(c => c.id === id);
+        const updatedProject = { ...(creator?.featuredProject || { title: '', url: '', description: '', imageUrl: '', imageHint: ''}), [field]: value };
+        handleFieldChange(id, 'featuredProject', updatedProject);
     };
 
     const handleCreatorAdd = () => {
@@ -132,16 +129,32 @@ export default function CreatorsAdminPage() {
             skills: [], gallery: [], featuredProject: { title: '', url: '', description: '', imageUrl: '', imageHint: '' },
             isVisible: false,
         };
-        persistChanges([...creators, newCreator]);
-        toast({ title: "Creator Added", description: "A new profile has been created as hidden. Make your changes and toggle visibility when ready." });
-        logAction('Creators Update', 'Success', `Added new creator 'New Creator' for ${languageNames[selectedLang]}.`);
+        setCreators([...creators, newCreator]);
+        toast({ title: "Creator Added", description: "A new profile has been added. Remember to save." });
     };
 
-    const handleCreatorDelete = (id: number) => {
-        const creatorName = creators.find(c => c.id === id)?.name || 'Unknown';
-        persistChanges(creators.filter(creator => creator.id !== id));
-        toast({ title: "Creator Deleted", variant: 'destructive' });
-        logAction('Creators Update', 'Success', `Deleted creator '${creatorName}' for ${languageNames[selectedLang]}.`);
+    const handleCreatorDelete = async (creatorToDelete: Creator) => {
+        // Optimistically remove from UI
+        setCreators(creators.filter(creator => creator.id !== creatorToDelete.id));
+
+        try {
+            const response = await fetch(`/api/creators?slug=${creatorToDelete.slug}&lang=${selectedLang}`, {
+                method: 'DELETE',
+            });
+            const result = await response.json();
+            if (result.success) {
+                toast({ title: "Creator Deleted", variant: 'destructive' });
+                logAction('Creators Update', 'Success', `Deleted creator '${creatorToDelete.name}'.`);
+                // The main save button will now persist the deletion.
+            } else {
+                toast({ title: "Deletion Failed", description: result.error, variant: 'destructive' });
+                // Revert UI change if delete failed
+                fetchCreators(selectedLang); 
+            }
+        } catch (error) {
+            toast({ title: "Network Error", description: "Failed to delete creator.", variant: 'destructive' });
+            fetchCreators(selectedLang);
+        }
     };
 
     const handleImageUpload = async (creatorId: number, field: string, event: React.ChangeEvent<HTMLInputElement>) => {
@@ -157,7 +170,7 @@ export default function CreatorsAdminPage() {
         toast({ title: "Uploading...", description: "Please wait while the image is uploaded." });
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('subdirectory', `creators/${creator.slug}`);
+        formData.append('subdirectory', `spekulus/creators/${selectedLang}/${creator.slug}`);
         
         try {
             const response = await fetch('/api/upload', { method: 'POST', body: formData });
@@ -170,16 +183,15 @@ export default function CreatorsAdminPage() {
                     const index = parseInt(field.split('.')[1], 10);
                     handleGalleryChange(creatorId, index, 'imageUrl', result.url);
                 } else {
-                    updateCreatorField(creatorId, field as keyof Creator, result.url);
+                    handleFieldChange(creatorId, field as keyof Creator, result.url);
                 }
-                toast({ title: "Image Uploaded", description: "Image has been updated successfully." });
+                toast({ title: "Image Uploaded", description: "Image has been updated. Remember to save." });
                 logAction('File Upload', 'Success', `Uploaded image for creator '${creator.name}' to ${result.url}`);
             } else {
-                toast({ title: "Upload Failed", description: result.error || "Could not upload image.", variant: 'destructive' });
+                toast({ title: "Upload Failed", description: result.error, variant: 'destructive' });
                 logAction('File Upload', 'Failure', `Failed to upload for creator '${creator.name}'. Reason: ${result.error}`);
             }
         } catch (error: any) {
-            console.error("Image upload error:", error);
             toast({ title: "Upload Failed", description: "An error occurred during upload.", variant: 'destructive' });
             logAction('File Upload', 'Failure', `Failed to upload for creator '${creator.name}'. Reason: ${error.message}`);
         } finally {
@@ -205,54 +217,43 @@ export default function CreatorsAdminPage() {
             } else if (field.startsWith('gallery') && galleryIndex !== undefined) {
                 handleGalleryChange(creatorId, galleryIndex, 'imageUrl', imageUrl);
             } else {
-                updateCreatorField(creatorId, field as keyof Creator, imageUrl);
+                handleFieldChange(creatorId, field as keyof Creator, imageUrl);
             }
-            toast({ title: "Image Generated!", description: "The new image has been set." });
+            toast({ title: "Image Generated!", description: "The new image has been set. Remember to save." });
             logAction('File Upload', 'Success', `Generated image for creator '${creatorName}' with hint: "${hint}"`);
         } catch (error: any) {
-            console.error("Image generation error:", error);
             toast({ title: "Generation Failed", description: "The AI could not generate an image.", variant: 'destructive' });
-            logAction('File Upload', 'Failure', `Failed to generate image for creator '${creatorName}' with hint: "${hint}". Reason: ${error.message}`);
+            logAction('File Upload', 'Failure', `Failed to generate image for creator '${creatorName}'. Reason: ${error.message}`);
         } finally {
             setGeneratingImages(prev => ({ ...prev, [uniqueId]: false }));
         }
     };
 
     const handleArrayChange = (id: number, field: keyof Creator, value: string) => {
-        const updatedCreators = creators.map(creator =>
-            creator.id === id ? { ...creator, [field]: value.split(',').map(s => s.trim()).filter(Boolean) } : creator
-        );
-        persistChanges(updatedCreators);
+        handleFieldChange(id, field, value.split(',').map(s => s.trim()).filter(Boolean));
     };
 
     const handleGalleryChange = (creatorId: number, index: number, field: keyof GalleryImage, value: string) => {
-        const updatedCreators = creators.map(c => {
-            if (c.id === creatorId) {
-                const newGallery = [...(c.gallery || [])];
-                newGallery[index] = { ...newGallery[index], [field]: value };
-                return { ...c, gallery: newGallery };
-            }
-            return c;
-        });
-        persistChanges(updatedCreators);
+        const creator = creators.find(c => c.id === creatorId);
+        if (!creator) return;
+        const newGallery = [...(creator.gallery || [])];
+        newGallery[index] = { ...newGallery[index], [field]: value };
+        handleFieldChange(creatorId, 'gallery', newGallery);
     };
 
     const handleGalleryAdd = (creatorId: number) => {
         const newImage: GalleryImage = { imageUrl: 'https://placehold.co/600x400.png', description: 'New Image', imageHint: 'placeholder' };
-        const updatedCreators = creators.map(c => c.id === creatorId ? { ...c, gallery: [...(c.gallery || []), newImage] } : c);
-        persistChanges(updatedCreators);
+        const creator = creators.find(c => c.id === creatorId);
+        if (!creator) return;
+        handleFieldChange(creatorId, 'gallery', [...(creator.gallery || []), newImage]);
         toast({ title: "Gallery Image Added" });
     };
 
     const handleGalleryDelete = (creatorId: number, index: number) => {
-        const updatedCreators = creators.map(c => {
-            if (c.id === creatorId) {
-                const newGallery = (c.gallery || []).filter((_, i) => i !== index);
-                return { ...c, gallery: newGallery };
-            }
-            return c;
-        });
-        persistChanges(updatedCreators);
+        const creator = creators.find(c => c.id === creatorId);
+        if (!creator) return;
+        const newGallery = (creator.gallery || []).filter((_, i) => i !== index);
+        handleFieldChange(creatorId, 'gallery', newGallery);
         toast({ title: "Gallery Image Deleted", variant: 'destructive' });
     };
 
@@ -262,7 +263,7 @@ export default function CreatorsAdminPage() {
                 <div className="flex flex-wrap gap-4 justify-between items-center">
                     <div>
                         <CardTitle>Manage Creators</CardTitle>
-                        <CardDescription>Add, edit, or delete creator profiles. Changes are saved automatically.</CardDescription>
+                        <CardDescription>Add, edit, or delete creator profiles. Press Save to persist all changes.</CardDescription>
                     </div>
                     <div className="flex gap-2">
                         <Select value={selectedLang} onValueChange={(value) => setSelectedLang(value as Language)}>
@@ -274,11 +275,15 @@ export default function CreatorsAdminPage() {
                             </SelectContent>
                         </Select>
                         <Button onClick={handleCreatorAdd}><PlusCircle className="mr-2 h-4 w-4" /> Add Creator</Button>
+                        <Button onClick={handleSave} disabled={isSaving}>
+                          {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4"/>}
+                          Save Changes
+                        </Button>
                     </div>
                 </div>
             </CardHeader>
             <CardContent className="space-y-6">
-                {!isLoaded ? (
+                {isLoading ? (
                     <div className="space-y-6">{[...Array(2)].map((_, i) => (<div key={i} className="space-y-4 p-4 border rounded-md"><Skeleton className="h-10 w-1/3" /><Skeleton className="h-10 w-1/2" /><Skeleton className="h-40 w-full" /></div>))}</div>
                 ) : (
                     creators.map((creator) => (
@@ -290,16 +295,16 @@ export default function CreatorsAdminPage() {
                                     </Label>
                                     <p className="text-sm text-muted-foreground">{creator.isVisible !== false ? "This profile is visible to the public." : "This profile is hidden."}</p>
                                 </div>
-                                <Switch id={`visible-${creator.id}`} checked={creator.isVisible !== false} onCheckedChange={(checked) => updateCreatorField(creator.id, 'isVisible', checked)} aria-label="Toggle profile visibility"/>
+                                <Switch id={`visible-${creator.id}`} checked={creator.isVisible !== false} onCheckedChange={(checked) => handleFieldChange(creator.id, 'isVisible', checked)} aria-label="Toggle profile visibility"/>
                             </div>
 
                             <Card><CardHeader><CardTitle className="font-headline flex items-center gap-2"><Users className="w-6 h-6"/>Core Information</CardTitle></CardHeader>
                                 <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2"><Label htmlFor={`name-${creator.id}`}>Name</Label><Input id={`name-${creator.id}`} value={creator.name ?? ''} onChange={(e) => updateCreatorField(creator.id, 'name', e.target.value)} /></div>
-                                    <div className="space-y-2"><Label htmlFor={`role-${creator.id}`}>Role</Label><Input id={`role-${creator.id}`} value={creator.role ?? ''} onChange={(e) => updateCreatorField(creator.id, 'role', e.target.value)} /></div>
-                                    <div className="space-y-2"><Label htmlFor={`slug-${creator.id}`}>Slug (URL)</Label><Input id={`slug-${creator.id}`} value={creator.slug ?? ''} onChange={(e) => updateCreatorField(creator.id, 'slug', e.target.value)} /></div>
-                                    <div className="space-y-2"><Label htmlFor={`location-${creator.id}`}>Location</Label><Input id={`location-${creator.id}`} value={creator.location ?? ''} onChange={(e) => updateCreatorField(creator.id, 'location', e.target.value)} placeholder="e.g., Kyiv, Ukraine" /></div>
-                                    <div className="space-y-2 md:col-span-2"><Label htmlFor={`cvUrl-${creator.id}`}>CV URL</Label><Input id={`cvUrl-${creator.id}`} value={creator.cvUrl ?? ''} onChange={(e) => updateCreatorField(creator.id, 'cvUrl', e.target.value)} placeholder="/documents/cv.pdf" /></div>
+                                    <div className="space-y-2"><Label htmlFor={`name-${creator.id}`}>Name</Label><Input id={`name-${creator.id}`} value={creator.name ?? ''} onChange={(e) => handleFieldChange(creator.id, 'name', e.target.value)} /></div>
+                                    <div className="space-y-2"><Label htmlFor={`role-${creator.id}`}>Role</Label><Input id={`role-${creator.id}`} value={creator.role ?? ''} onChange={(e) => handleFieldChange(creator.id, 'role', e.target.value)} /></div>
+                                    <div className="space-y-2"><Label htmlFor={`slug-${creator.id}`}>Slug (URL)</Label><Input id={`slug-${creator.id}`} value={creator.slug ?? ''} onChange={(e) => handleFieldChange(creator.id, 'slug', e.target.value)} /></div>
+                                    <div className="space-y-2"><Label htmlFor={`location-${creator.id}`}>Location</Label><Input id={`location-${creator.id}`} value={creator.location ?? ''} onChange={(e) => handleFieldChange(creator.id, 'location', e.target.value)} placeholder="e.g., Kyiv, Ukraine" /></div>
+                                    <div className="space-y-2 md:col-span-2"><Label htmlFor={`cvUrl-${creator.id}`}>CV URL</Label><Input id={`cvUrl-${creator.id}`} value={creator.cvUrl ?? ''} onChange={(e) => handleFieldChange(creator.id, 'cvUrl', e.target.value)} placeholder="/documents/cv.pdf" /></div>
                                 </CardContent>
                             </Card>
 
@@ -307,14 +312,14 @@ export default function CreatorsAdminPage() {
                                 <CardContent className="space-y-4">
                                     <div className="space-y-2"><Label htmlFor={`imageUrl-${creator.id}`}>Image URL</Label>
                                         <div className="flex gap-2">
-                                            <Input id={`imageUrl-${creator.id}`} value={creator.imageUrl ?? ''} onChange={(e) => updateCreatorField(creator.id, 'imageUrl', e.target.value)} />
+                                            <Input id={`imageUrl-${creator.id}`} value={creator.imageUrl ?? ''} onChange={(e) => handleFieldChange(creator.id, 'imageUrl', e.target.value)} />
                                             <Button variant="outline" size="icon" onClick={() => fileInputRefs.current[`creator-${creator.id}`]?.click()}><Upload className="h-4 w-4" /></Button>
                                             <input type="file" ref={(el) => (fileInputRefs.current[`creator-${creator.id}`] = el)} onChange={(e) => handleImageUpload(creator.id, 'imageUrl', e)} accept="image/*" className="hidden" />
                                         </div>
                                     </div>
                                     <div className="space-y-2"><Label htmlFor={`imageHint-${creator.id}`}>Image AI Hint</Label>
                                         <div className="flex gap-2">
-                                            <Input id={`imageHint-${creator.id}`} value={creator.imageHint ?? ''} onChange={(e) => updateCreatorField(creator.id, 'imageHint', e.target.value)} />
+                                            <Input id={`imageHint-${creator.id}`} value={creator.imageHint ?? ''} onChange={(e) => handleFieldChange(creator.id, 'imageHint', e.target.value)} />
                                             <Button variant="outline" size="icon" onClick={() => handleImageGenerate(creator.id, 'imageUrl', creator.imageHint || '')} disabled={generatingImages[`${creator.id}-imageUrl`]}>
                                                 {generatingImages[`${creator.id}-imageUrl`] ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
                                             </Button>
@@ -325,8 +330,8 @@ export default function CreatorsAdminPage() {
                             
                             <Card><CardHeader><CardTitle className="font-headline flex items-center gap-2"><Heart className="w-6 h-6"/>Personality &amp; Details</CardTitle></CardHeader>
                                 <CardContent className="space-y-4">
-                                    <div className="space-y-2"><Label htmlFor={`quote-${creator.id}`}>Inspirational Quote</Label><Textarea id={`quote-${creator.id}`} value={creator.quote ?? ''} onChange={(e) => updateCreatorField(creator.id, 'quote', e.target.value)} rows={2}/></div>
-                                    <div className="space-y-2"><Label htmlFor={`quote-author-${creator.id}`}>Quote Author</Label><Input id={`quote-author-${creator.id}`} value={creator.quoteAuthor ?? ''} onChange={(e) => updateCreatorField(creator.id, 'quoteAuthor', e.target.value)} /></div>
+                                    <div className="space-y-2"><Label htmlFor={`quote-${creator.id}`}>Inspirational Quote</Label><Textarea id={`quote-${creator.id}`} value={creator.quote ?? ''} onChange={(e) => handleFieldChange(creator.id, 'quote', e.target.value)} rows={2}/></div>
+                                    <div className="space-y-2"><Label htmlFor={`quote-author-${creator.id}`}>Quote Author</Label><Input id={`quote-author-${creator.id}`} value={creator.quoteAuthor ?? ''} onChange={(e) => handleFieldChange(creator.id, 'quoteAuthor', e.target.value)} /></div>
                                     <div className="space-y-2"><Label htmlFor={`skills-${creator.id}`}>Skills (comma-separated)</Label><Input id={`skills-${creator.id}`} value={creator.skills?.join(', ') ?? ''} onChange={(e) => handleArrayChange(creator.id, 'skills', e.target.value)} /></div>
                                     <div className="space-y-2"><Label htmlFor={`languages-${creator.id}`}>Languages (comma-separated)</Label><Input id={`languages-${creator.id}`} value={creator.languages?.join(', ') ?? ''} onChange={(e) => handleArrayChange(creator.id, 'languages', e.target.value)} /></div>
                                     <div className="space-y-2"><Label htmlFor={`contributions-${creator.id}`}>Contributions (comma-separated)</Label><Textarea id={`contributions-${creator.id}`} value={creator.contributions?.join(', ') ?? ''} onChange={(e) => handleArrayChange(creator.id, 'contributions', e.target.value)} rows={3}/></div>
@@ -373,7 +378,7 @@ export default function CreatorsAdminPage() {
                                 </CardContent>
                             </Card>
 
-                            <Card><CardHeader><CardTitle className="font-headline flex items-center gap-2"><Camera className="w-6 h-6"/>Gallery</CardTitle><CardDescription>Manage this creator's gallery. Changes are saved automatically.</CardDescription></CardHeader>
+                            <Card><CardHeader><CardTitle className="font-headline flex items-center gap-2"><Camera className="w-6 h-6"/>Gallery</CardTitle><CardDescription>Manage this creator's gallery. Remember to save changes.</CardDescription></CardHeader>
                                 <CardContent className="space-y-4">
                                     {(creator.gallery ?? []).map((image, index) => (
                                         <div key={index} className="space-y-4 p-4 border rounded-lg bg-muted/20 relative">
@@ -402,14 +407,28 @@ export default function CreatorsAdminPage() {
 
                             <Card><CardHeader><CardTitle className="font-headline flex items-center gap-2"><FileText className="w-6 h-6"/>Bio</CardTitle></CardHeader>
                                 <CardContent>
-                                    <MarkdownEditor value={creator.bio ?? ''} onChange={(value) => updateCreatorField(creator.id, 'bio', value)} rows={10} uploadSubdirectory={`creators/${creator.slug}`} />
+                                    <MarkdownEditor value={creator.bio ?? ''} onChange={(value) => handleFieldChange(creator.id, 'bio', value)} rows={10} uploadSubdirectory={`creators/${selectedLang}/${creator.slug}`} />
                                 </CardContent>
                             </Card>
                             
                             <p className="text-sm text-muted-foreground">Note: Education, Certifications, and Achievements are currently editable only in `src/lib/data.ts`.</p>
                             
                             <div className="flex justify-end pt-2">
-                                <Button variant="destructive" size="icon" onClick={() => handleCreatorDelete(creator.id)}><Trash2 className="h-4 w-4" /><span className="sr-only">Delete</span></Button>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button variant="destructive" size="icon"><Trash2 className="h-4 w-4" /><span className="sr-only">Delete</span></Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                        <AlertDialogDescription>This will delete the creator "{creator.name}". This action cannot be undone until you save all changes.</AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => setCreators(creators.filter(c => c.id !== creator.id))}>Delete</AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
                             </div>
                         </div>
                     ))

@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { creatorsData, type Creator } from '@/lib/data';
+import type { Creator } from '@/lib/data';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -15,29 +15,26 @@ export default function CreatorsPage() {
   const [creators, setCreators] = useState<Creator[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  const loadCreators = useCallback(() => {
-    const LOCAL_STORAGE_KEY = `spekulus-creators-${language}`;
+  const loadCreators = useCallback(async () => {
+    setIsLoaded(false);
     try {
-      const storedCreators = localStorage.getItem(LOCAL_STORAGE_KEY);
-      const creatorsDataList: Creator[] = storedCreators ? JSON.parse(storedCreators) : creatorsData[language];
-      setCreators(creatorsDataList.filter(c => c && c.slug && c.isVisible !== false));
+      const response = await fetch(`/api/creators?lang=${language}`);
+      const data = await response.json();
+      if (data.success) {
+        setCreators(data.creators.filter((c: Creator) => c && c.slug && c.isVisible !== false));
+      } else {
+        console.error("API error fetching creators:", data.error);
+        setCreators([]);
+      }
     } catch (error) {
       console.error("Failed to load creators", error);
-      setCreators(creatorsData[language].filter(c => c.isVisible !== false));
+      setCreators([]);
     }
     setIsLoaded(true);
   }, [language]);
 
   useEffect(() => {
     loadCreators();
-
-    window.addEventListener('storage', loadCreators);
-    window.addEventListener('focus', loadCreators);
-
-    return () => {
-      window.removeEventListener('storage', loadCreators);
-      window.removeEventListener('focus', loadCreators);
-    };
   }, [loadCreators]);
 
   return (
@@ -97,5 +94,3 @@ export default function CreatorsPage() {
     </div>
   );
 }
-
-    

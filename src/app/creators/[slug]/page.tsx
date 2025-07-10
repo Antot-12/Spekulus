@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { useParams, notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { creatorsData, type Creator, type Education, type Certification, type GalleryImage, type Achievement, type FeaturedProject } from '@/lib/data';
+import type { Creator, Education, Certification, GalleryImage, Achievement, FeaturedProject } from '@/lib/data';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ArrowLeft, ArrowRight, Github, Twitter, Linkedin, Loader2, Download, MapPin, Languages as LanguagesIcon, CheckCircle, Award, Briefcase, GraduationCap, Camera, Lightbulb, Users, Code, Heart, Quote as QuoteIcon, Music } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -385,22 +385,28 @@ export default function CreatorDetailPage() {
   const [creator, setCreator] = useState<Creator | null | undefined>(undefined);
 
   useEffect(() => {
-    const LOCAL_STORAGE_KEY = `spekulus-creators-${language}`;
-    const loadCreator = () => {
-      try {
-        const storedCreators = localStorage.getItem(LOCAL_STORAGE_KEY);
-        const creators = storedCreators ? JSON.parse(storedCreators) : creatorsData[language];
-        const foundCreator = creators.find((c: Creator) => c.slug === slug);
-        setCreator(foundCreator || null);
-      } catch (error) {
-        console.error("Failed to load creator", error);
-        const foundCreator = creatorsData[language].find((c) => c.slug === slug);
-        setCreator(foundCreator || null);
-      }
+    if (!slug || !language) return;
+
+    const fetchCreator = async () => {
+        try {
+            const response = await fetch(`/api/creators?slug=${slug}&lang=${language}`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.creator.isVisible !== false) {
+                    setCreator(data.creator);
+                } else {
+                    setCreator(null);
+                }
+            } else {
+                 setCreator(null);
+            }
+        } catch (error) {
+            console.error("Failed to fetch creator:", error);
+            setCreator(null);
+        }
     };
-    loadCreator();
-    window.addEventListener('storage', loadCreator);
-    return () => window.removeEventListener('storage', loadCreator);
+    
+    fetchCreator();
   }, [slug, language]);
 
   if (creator === undefined) {

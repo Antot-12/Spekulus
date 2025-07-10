@@ -1,10 +1,10 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { creatorsData, type Creator } from '@/lib/data';
+import type { Creator } from '@/lib/data';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,30 +16,29 @@ export function CreatorsSection() {
   const [creators, setCreators] = useState<Creator[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  useEffect(() => {
-    const LOCAL_STORAGE_KEY = `spekulus-creators-${language}`;
-    const loadCreators = () => {
-      try {
-        const storedCreators = localStorage.getItem(LOCAL_STORAGE_KEY);
-        const creatorsList = storedCreators ? JSON.parse(storedCreators) : creatorsData[language];
-        setCreators(creatorsList.filter((c: Creator) => c && c.slug && c.isVisible !== false).slice(0, 5));
-      } catch (error) {
-        console.error("Failed to load creators for landing page", error);
-        setCreators(creatorsData[language].filter(c => c.isVisible !== false).slice(0, 5));
+  const loadCreators = useCallback(async () => {
+    setIsLoaded(false);
+    try {
+      const response = await fetch(`/api/creators?lang=${language}`);
+      const data = await response.json();
+      if (data.success) {
+        const visibleCreators = data.creators.filter((c: Creator) => c && c.slug && c.isVisible !== false);
+        setCreators(visibleCreators.slice(0, 5));
+      } else {
+        console.error("API error fetching creators:", data.error);
+        setCreators([]);
       }
-      setIsLoaded(true);
-    };
-
-    loadCreators();
-
-    window.addEventListener('storage', loadCreators);
-    window.addEventListener('focus', loadCreators);
-
-    return () => {
-      window.removeEventListener('storage', loadCreators);
-      window.removeEventListener('focus', loadCreators);
-    };
+    } catch (error) {
+      console.error("Failed to load creators", error);
+      setCreators([]);
+    }
+    setIsLoaded(true);
   }, [language]);
+
+
+  useEffect(() => {
+    loadCreators();
+  }, [loadCreators]);
 
   return (
     <section id="creators" className="py-16 md:py-24 bg-background">
