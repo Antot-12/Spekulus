@@ -4,6 +4,8 @@ import { v2 as cloudinary, type UploadApiResponse } from 'cloudinary';
 import { z } from 'zod';
 import type { FaqItem, Language } from '@/lib/data';
 
+export const dynamic = 'force-dynamic';
+
 require('dotenv').config({ path: require('path').resolve(process.cwd(), 'env.txt') });
 
 const getCloudinaryConfig = () => {
