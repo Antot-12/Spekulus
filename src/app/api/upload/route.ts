@@ -1,6 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { v2 as cloudinary } from 'cloudinary';
+require('dotenv').config();
 
 // Configure Cloudinary with environment variables from .env
 if (!process.env.CLOUDINARY_URL) {

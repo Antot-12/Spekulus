@@ -1,6 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { v2 as cloudinary } from 'cloudinary';
+require('dotenv').config();
 
 if (!process.env.CLOUDINARY_URL) {
   console.error('CLOUDINARY_URL environment variable is not set');
@@ -25,15 +26,27 @@ export async function GET(request: NextRequest) {
     
     const files = resourcesResponse.resources.map((file: any) => ({
       ...file,
-      isDirectory: false
+      isDirectory: false,
+      name: file.public_id.split('/').pop(),
+      path: file.public_id,
     }));
 
     const folders = subfoldersResponse.folders.map((folder: any) => ({
       ...folder,
-      isDirectory: true
+      isDirectory: true,
+      bytes: 0,
+      created_at: new Date().toISOString(),
+      asset_id: folder.path
     }));
 
-    const combined = [...folders, ...files];
+    const combined = [...folders, ...files]
+      .filter(item => {
+          const itemPath = item.path.endsWith('/') ? item.path.slice(0, -1) : item.path;
+          const directParent = itemPath.substring(0, itemPath.lastIndexOf('/'));
+          const requestedPath = path.endsWith('/') ? path.slice(0, -1) : path;
+          return directParent === requestedPath || (item.isDirectory && item.path === `${requestedPath}/${item.name}`);
+      });
+      
 
     return NextResponse.json({ success: true, files: combined });
   } catch (error: any) {
