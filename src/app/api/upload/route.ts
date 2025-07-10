@@ -1,7 +1,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { v2 as cloudinary } from 'cloudinary';
-import { Readable } from 'stream';
 
 // Configure Cloudinary with credentials from environment variables
 cloudinary.config({
@@ -10,14 +9,6 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
   secure: true,
 });
-
-async function buffer(readable: ReadableStream<Uint8Array>): Promise<Buffer> {
-    const chunks = [];
-    for await(const chunk of readable) {
-        chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
-    }
-    return Buffer.concat(chunks);
-}
 
 export async function POST(request: NextRequest) {
   const data = await request.formData();
@@ -29,11 +20,12 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const fileBuffer = await buffer(file.stream());
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
     
-    // Use a promise to wrap the upload_stream logic, now sending the buffer directly
+    // Use a promise to wrap the upload_stream logic, now sending the buffer correctly
     const result: any = await new Promise((resolve, reject) => {
-        cloudinary.uploader.upload_stream(
+        const uploadStream = cloudinary.uploader.upload_stream(
             {
                 folder: subdirectory || 'spekulus_general',
                 resource_type: 'auto',
@@ -44,7 +36,8 @@ export async function POST(request: NextRequest) {
                 }
                 resolve(result);
             }
-        ).end(fileBuffer);
+        );
+        uploadStream.end(buffer);
     });
 
     return NextResponse.json({ success: true, url: result.secure_url });
