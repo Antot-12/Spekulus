@@ -4,6 +4,8 @@ import { v2 as cloudinary, type UploadApiResponse } from 'cloudinary';
 import { z } from 'zod';
 import type { DevNote } from '@/lib/data';
 
+export const dynamic = 'force-dynamic';
+
 // Load environment variables from env.txt
 require('dotenv').config({ path: require('path').resolve(process.cwd(), 'env.txt') });
 
@@ -102,7 +104,6 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, error: 'Slug and title are required.' }, { status: 400 });
         }
         
-        // The public_id *must* include the extension.
         const public_id = `${NOTES_FOLDER}/${note.slug}/${note.slug}.json`;
         
         const response: UploadApiResponse = await new Promise((resolve, reject) => {
@@ -141,7 +142,6 @@ export async function PUT(request: NextRequest) {
             return NextResponse.json({ success: false, error: 'Slug and title are required.' }, { status: 400 });
         }
 
-        // The public_id *must* include the extension.
         const public_id = `${NOTES_FOLDER}/${note.slug}/${note.slug}.json`;
         
         // Overwrite the existing file
