@@ -162,7 +162,7 @@ export async function DELETE(request: NextRequest) {
             return NextResponse.json({ success: false, error: 'Slug is required for deletion.' }, { status: 400 });
         }
         
-        const public_id = `${NOTES_FOLDER}/${slug}`;
+        const public_id = `${NOTES_FOLDER}/${slug}.json`;
 
         const result = await cloudinary.uploader.destroy(public_id, {
             resource_type: 'raw'
