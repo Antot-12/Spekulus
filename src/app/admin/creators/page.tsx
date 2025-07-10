@@ -152,7 +152,6 @@ export default function CreatorsAdminPage() {
         toast({ title: "Uploading...", description: "Please wait while the image is uploaded." });
         const formData = new FormData();
         formData.append('file', file);
-        // This is the key change: we construct the full, unique folder path for the creator.
         const subdirectory = `spekulus/creators/${selectedLang}/${creator.slug}`;
         formData.append('subdirectory', subdirectory);
         
