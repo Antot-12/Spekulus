@@ -1,7 +1,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { v2 as cloudinary } from 'cloudinary';
-import { Writable } from 'stream';
 
 // Configure Cloudinary with environment variables from .env
 if (!process.env.CLOUDINARY_URL) {
@@ -42,7 +41,6 @@ export async function POST(request: NextRequest) {
             {
                 folder: subdirectory ? `spekulus/${subdirectory}` : 'spekulus',
                 resource_type: 'auto',
-                // public_id is optional, Cloudinary will generate one if not provided
             },
             (error, result) => {
                 if (error) {
@@ -62,6 +60,6 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error in upload route:', error);
     const errorMessage = (error instanceof Error) ? error.message : 'An unknown error occurred';
-    return NextResponse.json({ success: false, error: `Failed to upload file to Cloudinary. ${errorMessage}` }, { status: 500 });
+    return NextResponse.json({ success: false, error: `Failed to upload file. ${errorMessage}` }, { status: 500 });
   }
 }
