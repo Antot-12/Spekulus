@@ -4,6 +4,9 @@ import { v2 as cloudinary, type UploadApiResponse } from 'cloudinary';
 import { z } from 'zod';
 import type { DevNote } from '@/lib/data';
 
+// Load environment variables from env.txt
+require('dotenv').config({ path: require('path').resolve(process.cwd(), 'env.txt') });
+
 const configureCloudinary = () => {
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
   const apiKey = process.env.CLOUDINARY_API_KEY;
