@@ -2,36 +2,42 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v2 as cloudinary } from 'cloudinary';
 
-// Explicitly load variables from env.txt for this specific project setup.
-require('dotenv').config({ path: require('path').resolve(process.cwd(), 'env.txt') });
+// Note: No need for dotenv.config(). Next.js handles .env files.
+// The custom `env.txt` is loaded by the hosting platform's build process.
 
+// This helper function ensures Cloudinary is configured for every API call.
+const configureCloudinary = () => {
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+    const apiKey = process.env.CLOUDINARY_API_KEY;
+    const apiSecret = process.env.CLOUDINARY_API_SECRET;
 
-// This function creates the credentials object for each API call.
-const getCloudinaryCredentials = () => {
-    return {
-        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-        api_key: process.env.CLOUDINARY_API_KEY,
-        api_secret: process.env.CLOUDINARY_API_SECRET,
-    };
+    if (!cloudName || !apiKey || !apiSecret) {
+        throw new Error('Cloudinary credentials are not configured in environment variables.');
+    }
+    
+    cloudinary.config({
+        cloud_name: cloudName,
+        api_key: apiKey,
+        api_secret: apiSecret,
+        secure: true,
+    });
 };
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const path = searchParams.get('path') || 'spekulus';
-
   try {
+    configureCloudinary();
+    const { searchParams } = new URL(request.url);
+    const path = searchParams.get('path') || 'spekulus';
+
     // Fetch all resources (files)
     const resourcesResponse = await cloudinary.api.resources({
-      ...getCloudinaryCredentials(),
       type: 'upload',
       prefix: path,
       max_results: 500
     });
 
     // Fetch all subfolders
-    const subfoldersResponse = await cloudinary.api.sub_folders(path, {
-      ...getCloudinaryCredentials()
-    });
+    const subfoldersResponse = await cloudinary.api.sub_folders(path);
     
     const files = resourcesResponse.resources.map((file: any) => ({
       ...file,
@@ -53,13 +59,12 @@ export async function GET(request: NextRequest) {
           const itemPath = item.path.endsWith('/') ? item.path.slice(0, -1) : item.path;
           const directParent = itemPath.substring(0, itemPath.lastIndexOf('/'));
           const requestedPath = path.endsWith('/') ? path.slice(0, -1) : path;
-          // Handle root case
+          // Handle root case where directParent would be empty string
           if (requestedPath === 'spekulus' && !directParent.includes('/')) {
             return true;
           }
           return directParent === requestedPath;
       });
-      
 
     return NextResponse.json({ success: true, files: combined });
   } catch (error: any) {
@@ -70,6 +75,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    configureCloudinary();
     const body = await request.json();
     const { path, folderName } = body;
 
@@ -79,9 +85,7 @@ export async function POST(request: NextRequest) {
 
     const newFolderPath = path ? `${path}/${folderName}` : folderName;
 
-    await cloudinary.api.create_folder(newFolderPath, {
-      ...getCloudinaryCredentials()
-    });
+    await cloudinary.api.create_folder(newFolderPath);
     
     return NextResponse.json({ success: true, message: `Folder '${folderName}' created.` });
   } catch (error: any) {
@@ -95,6 +99,7 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    configureCloudinary();
     const body = await request.json();
     const { public_id, resource_type } = body;
 
@@ -102,13 +107,11 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'File public_id is required.' }, { status: 400 });
     }
     
-    if(resource_type === 'folder'){
-        await cloudinary.api.delete_folder(public_id, {
-          ...getCloudinaryCredentials()
-        });
+    if (resource_type === 'folder') {
+        // Note: delete_folder also deletes all contents.
+        await cloudinary.api.delete_folder(public_id);
     } else {
         await cloudinary.uploader.destroy(public_id, {
-          ...getCloudinaryCredentials(),
           resource_type: resource_type || 'image'
         });
     }

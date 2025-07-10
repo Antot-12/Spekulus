@@ -2,8 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v2 as cloudinary } from 'cloudinary';
 
-// Explicitly load variables from env.txt for this specific project setup.
-require('dotenv').config({ path: require('path').resolve(process.cwd(), 'env.txt') });
+// Note: No need for dotenv.config() here. Next.js handles .env files.
+// The custom `env.txt` is loaded by the hosting platform's build process.
 
 // Helper to convert a file stream to a buffer
 async function streamToBuffer(stream: ReadableStream<Uint8Array>): Promise<Buffer> {
@@ -28,6 +28,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: false, error: 'No file uploaded.' }, { status: 400 });
   }
 
+  // Explicitly configure Cloudinary for this API call
+  // This is the most reliable way to ensure credentials are loaded
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+    secure: true,
+  });
+
   try {
     const fileBuffer = await streamToBuffer(file.stream());
     
@@ -35,10 +44,6 @@ export async function POST(request: NextRequest) {
     const result: any = await new Promise((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
             {
-                // Pass credentials directly in the call to ensure authentication
-                api_key: process.env.CLOUDINARY_API_KEY,
-                api_secret: process.env.CLOUDINARY_API_SECRET,
-                cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
                 folder: subdirectory ? `spekulus/${subdirectory}` : 'spekulus',
                 resource_type: 'auto',
             },
