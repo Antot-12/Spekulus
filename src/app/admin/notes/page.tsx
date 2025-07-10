@@ -64,7 +64,8 @@ export default function NotesAdminPage() {
 
     useEffect(() => {
         fetchNotes();
-    }, []); // Run only once on mount
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); 
 
     const handleFieldChange = (field: keyof DevNote, value: any) => {
         if (!activeNote) return;
@@ -90,7 +91,7 @@ export default function NotesAdminPage() {
                 toast({ title: "Note Saved", description: `"${activeNote.title}" has been updated.` });
                 logAction('Notes Update', 'Success', `Saved changes for note '${activeNote.title}'.`);
                 // Refresh the list to show the updated data
-                fetchNotes();
+                await fetchNotes();
             } else {
                 toast({ title: "Update Failed", description: result.error || "Could not save changes to the server.", variant: 'destructive' });
             }
@@ -150,7 +151,7 @@ export default function NotesAdminPage() {
                 if (activeNote?.id === noteToDelete.id) {
                     setActiveNote(null);
                 }
-                fetchNotes();
+                await fetchNotes();
             } else {
                 toast({ title: "Deletion Failed", description: result.error, variant: 'destructive' });
             }

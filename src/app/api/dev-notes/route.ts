@@ -201,7 +201,7 @@ export async function DELETE(request: NextRequest) {
 
     } catch (error: any) {
         // If the folder doesn't exist, it's not a server error, it's a success from the user's POV.
-        if (error.http_code === 404) {
+        if ((error as any).http_code === 404) {
             return NextResponse.json({ success: true, message: `Note folder '${slug}' already deleted.` });
         }
         console.error('Error deleting note from Cloudinary:', error);
