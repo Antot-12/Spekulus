@@ -2,18 +2,16 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import Link from 'next/link';
 import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { logAction } from '@/lib/logger';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { format } from 'date-fns';
-import { FolderKanban, Trash2, Folder, File, Upload, FolderUp, Search, PlusCircle, ExternalLink, Image as ImageIcon, Video, FileText } from 'lucide-react';
+import { FolderKanban, Trash2, Folder, File, Upload, Search, PlusCircle, ExternalLink, Image as ImageIcon, Video, FileText } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 type CloudinaryResource = {
@@ -85,7 +83,7 @@ export default function UploadsManagerPage() {
             const response = await fetch('/api/uploads-manager', {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ public_id: resource.path, resource_type: resource.resource_type === 'folder' ? 'folder' : resource.resource_type }),
+                body: JSON.stringify({ public_id: resource.path, resource_type: resource.isDirectory ? 'folder' : resource.resource_type }),
             });
             const result = await response.json();
             if (result.success) {
@@ -248,7 +246,7 @@ export default function UploadsManagerPage() {
                                         </AlertDialogFooter>
                                     </AlertDialogContent>
                                 </AlertDialog>
-                                {file.secure_url && (
+                                {file.secure_url && !file.isDirectory && (
                                    <Button asChild variant="secondary" size="icon" className="h-7 w-7">
                                        <a href={file.secure_url} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-4 w-4" /></a>
                                    </Button>

@@ -2,16 +2,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v2 as cloudinary } from 'cloudinary';
 
-// Configure Cloudinary inside the handler to ensure env vars are loaded
-const configureCloudinary = () => {
-    cloudinary.config({
-      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-      api_key: process.env.CLOUDINARY_API_KEY,
-      api_secret: process.env.CLOUDINARY_API_SECRET,
-      secure: true,
-    });
-}
-
 // Helper to convert a file stream to a buffer
 async function streamToBuffer(stream: ReadableStream<Uint8Array>): Promise<Buffer> {
   const reader = stream.getReader();
@@ -27,8 +17,6 @@ async function streamToBuffer(stream: ReadableStream<Uint8Array>): Promise<Buffe
 }
 
 export async function POST(request: NextRequest) {
-  configureCloudinary();
-
   const data = await request.formData();
   const file: File | null = data.get('file') as unknown as File;
   const subdirectory: string | null = data.get('subdirectory') as string | null;
@@ -46,11 +34,14 @@ export async function POST(request: NextRequest) {
             {
                 folder: subdirectory ? `spekulus/${subdirectory}` : 'spekulus',
                 resource_type: 'auto',
+                api_key: process.env.CLOUDINARY_API_KEY,
+                api_secret: process.env.CLOUDINARY_API_SECRET,
+                cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
             },
             (error, result) => {
                 if (error) {
                     console.error('Cloudinary upload error:', error);
-                    return reject(new Error('Failed to upload file to Cloudinary.'));
+                    return reject(new Error(error.message || 'Failed to upload file to Cloudinary.'));
                 }
                 resolve(result);
             }

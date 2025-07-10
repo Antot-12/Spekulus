@@ -2,30 +2,32 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v2 as cloudinary } from 'cloudinary';
 
-function configureCloudinary() {
+const getCloudinaryApi = () => {
+    // This ensures that for every API call, we are using the correct, up-to-date credentials.
     cloudinary.config({
-      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-      api_key: process.env.CLOUDINARY_API_KEY,
-      api_secret: process.env.CLOUDINARY_API_SECRET,
-      secure: true,
+        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+        api_key: process.env.CLOUDINARY_API_KEY,
+        api_secret: process.env.CLOUDINARY_API_SECRET,
+        secure: true,
     });
-}
+    return cloudinary.api;
+};
 
 export async function GET(request: NextRequest) {
-  configureCloudinary();
+  const api = getCloudinaryApi();
   const { searchParams } = new URL(request.url);
   const path = searchParams.get('path') || 'spekulus';
 
   try {
     // Fetch all resources (files)
-    const resourcesResponse = await cloudinary.api.resources({
+    const resourcesResponse = await api.resources({
       type: 'upload',
       prefix: path,
       max_results: 500
     });
 
     // Fetch all subfolders
-    const subfoldersResponse = await cloudinary.api.sub_folders(path);
+    const subfoldersResponse = await api.sub_folders(path);
     
     const files = resourcesResponse.resources.map((file: any) => ({
       ...file,
@@ -47,7 +49,11 @@ export async function GET(request: NextRequest) {
           const itemPath = item.path.endsWith('/') ? item.path.slice(0, -1) : item.path;
           const directParent = itemPath.substring(0, itemPath.lastIndexOf('/'));
           const requestedPath = path.endsWith('/') ? path.slice(0, -1) : path;
-          return directParent === requestedPath || (item.isDirectory && item.path === `${requestedPath}/${item.name}`);
+          // Handle root case
+          if (requestedPath === 'spekulus' && !directParent.includes('/')) {
+            return true;
+          }
+          return directParent === requestedPath;
       });
       
 
@@ -59,7 +65,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  configureCloudinary();
+  const api = getCloudinaryApi();
   try {
     const body = await request.json();
     const { path, folderName } = body;
@@ -70,7 +76,7 @@ export async function POST(request: NextRequest) {
 
     const newFolderPath = path ? `${path}/${folderName}` : folderName;
 
-    await cloudinary.api.create_folder(newFolderPath);
+    await api.create_folder(newFolderPath);
     
     return NextResponse.json({ success: true, message: `Folder '${folderName}' created.` });
   } catch (error: any) {
@@ -83,7 +89,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  configureCloudinary();
+  const api = getCloudinaryApi();
   try {
     const body = await request.json();
     const { public_id, resource_type } = body;
@@ -93,7 +99,7 @@ export async function DELETE(request: NextRequest) {
     }
     
     if(resource_type === 'folder'){
-        await cloudinary.api.delete_folder(public_id);
+        await api.delete_folder(public_id);
     } else {
         await cloudinary.uploader.destroy(public_id, { resource_type: resource_type || 'image' });
     }
