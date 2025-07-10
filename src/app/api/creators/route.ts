@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
 
             const creators = (await Promise.all(
                 creatorPublicIds.map((public_id: string) => getCreatorFromCloudinary(public_id))
-            )).filter(creator => creator !== null) as Creator[];
+            )).filter((creator): creator is Creator => creator !== null);
 
             return NextResponse.json({ success: true, creators });
         }
@@ -96,14 +96,19 @@ export async function POST(request: NextRequest) {
 
         const langFolder = `${CREATORS_FOLDER}/${lang}`;
 
-        try {
-            await cloudinary.api.delete_resources_by_prefix(langFolder, { ...config, resource_type: 'raw' });
-            await cloudinary.api.delete_resources_by_prefix(langFolder, { ...config, resource_type: 'image' });
-            await cloudinary.api.delete_folder(langFolder, config);
-        } catch (error: any) {
-            if ((error as any).http_code !== 404) {
-                 console.warn(`Could not delete folder ${langFolder}. It might not exist.`, (error as any).message);
-            }
+        // Get all existing folders within the language directory
+        const existingFoldersResponse = await cloudinary.api.sub_folders(langFolder, config);
+        const existingFolders = new Set(existingFoldersResponse.folders.map((f: { name: string }) => f.name));
+        const currentSlugs = new Set(creators.map(c => c.slug));
+
+        // Determine which folders to delete
+        const foldersToDelete = [...existingFolders].filter(folderSlug => !currentSlugs.has(folderSlug));
+
+        // Delete folders for creators that are no longer in the list
+        for (const slug of foldersToDelete) {
+             const folderPath = `${langFolder}/${slug}`;
+             // This deletes the folder and all its contents
+             await cloudinary.api.delete_folder(folderPath, config);
         }
 
         const uploadPromises = creators.map(creator => {
@@ -116,6 +121,7 @@ export async function POST(request: NextRequest) {
                         folder: `${langFolder}/${creator.slug}`,
                         resource_type: 'raw',
                         invalidate: true,
+                        overwrite: true,
                     },
                     (error, result) => {
                         if (error) return reject(error);
@@ -149,14 +155,15 @@ export async function DELETE(request: NextRequest) {
         
         const folderPath = `${CREATORS_FOLDER}/${lang}/${slug}`;
         
-        await cloudinary.api.delete_resources_by_prefix(folderPath, { ...config, resource_type: 'raw' });
-        await cloudinary.api.delete_resources_by_prefix(folderPath, { ...config, resource_type: 'image' });
-
-        const result = await cloudinary.api.delete_folder(folderPath, config);
+        // delete_folder is the most efficient way to remove a creator and all their assets
+        await cloudinary.api.delete_folder(folderPath, config);
         
-        return NextResponse.json({ success: true, message: `Creator folder '${slug}' deleted.`, result });
+        return NextResponse.json({ success: true, message: `Creator folder '${slug}' deleted.` });
 
     } catch (error: any) {
+        if ((error as any).http_code === 404) {
+            return NextResponse.json({ success: true, message: `Creator folder '${slug}' already deleted.` });
+        }
         console.error('Error deleting creator from Cloudinary:', error);
         return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
