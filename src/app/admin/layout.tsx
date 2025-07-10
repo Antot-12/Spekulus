@@ -129,6 +129,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     <Link href="/admin/pages"><LayoutGrid />Pages</Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
+            <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname === '/admin/uploads'}>
+                    <Link href="/admin/uploads"><FolderKanban />Uploads</Link>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
              <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={pathname === '/admin/logs'}>
                     <Link href="/admin/logs"><History />Logs</Link>

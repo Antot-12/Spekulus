@@ -161,9 +161,98 @@ export default function UploadsManagerPage() {
     const breadcrumbs = path.split('/').filter(Boolean);
 
     return (
-        <div className="text-center p-8 text-muted-foreground">
-            <h2 className="text-xl font-semibold">Uploads Manager Disabled</h2>
-            <p className="mt-2">This feature has been temporarily removed.</p>
-        </div>
+        <Card className="opacity-0 animate-fade-in-up">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><FolderKanban />Uploads Manager</CardTitle>
+                <CardDescription>Browse, upload, and delete files on the Cloudinary server.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="flex flex-wrap gap-2 mb-4 p-4 border rounded-lg bg-muted/50 items-center">
+                    <div className="relative flex-grow min-w-[200px]">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                        <Input placeholder="Search files in this folder..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10" />
+                    </div>
+                    <form onSubmit={handleCreateFolder} className="flex gap-2 flex-grow sm:flex-grow-0">
+                        <Input placeholder="New folder name..." value={newFolderName} onChange={e => setNewFolderName(e.target.value)} />
+                        <Button type="submit" variant="outline"><PlusCircle className="mr-2" />Create</Button>
+                    </form>
+                    <Button onClick={() => fileInputRef.current?.click()} className="w-full sm:w-auto"><Upload className="mr-2"/>Upload File</Button>
+                    <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
+                </div>
+
+                <div className="mb-4 flex items-center gap-1 text-sm text-muted-foreground">
+                    <button onClick={() => setPath('spekulus')} className="hover:text-primary">spekulus</button>
+                    {breadcrumbs.slice(1).map((crumb, index) => (
+                        <React.Fragment key={crumb}>
+                            <span>/</span>
+                            <button onClick={() => setPath(breadcrumbs.slice(0, index + 2).join('/'))} className="hover:text-primary">{crumb}</button>
+                        </React.Fragment>
+                    ))}
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+                    {isLoading ? [...Array(12)].map((_, i) => (
+                        <div key={i} className="aspect-square"><Skeleton className="h-full w-full" /></div>
+                    )) : filteredFiles.length > 0 ? filteredFiles.map(file => (
+                        <div key={file.asset_id} className="group relative aspect-square border rounded-lg overflow-hidden bg-card shadow-sm hover:shadow-primary/20 transition-shadow">
+                            {file.isDirectory ? (
+                                <button onClick={() => setPath(file.path)} className="w-full h-full flex flex-col items-center justify-center p-2 text-center text-muted-foreground hover:text-primary transition-colors">
+                                    <Folder className="h-16 w-16" />
+                                    <span className="font-semibold mt-2 truncate w-full">{file.name}</span>
+                                </button>
+                            ) : (
+                                <div className="w-full h-full flex flex-col items-center justify-center">
+                                    <div className="relative w-full h-full flex-grow">
+                                        {file.resource_type === 'image' ? (
+                                            <Image src={file.secure_url} alt={file.name} layout="fill" objectFit="cover" className="bg-muted" />
+                                        ) : (
+                                            <div className="flex items-center justify-center h-full w-full bg-muted p-4 text-muted-foreground">
+                                                {getFileIcon(file)}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <p className="p-2 text-xs truncate w-full bg-card-foreground/5 text-center">{file.name}</p>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p>{file.name}</p>
+                                                <p className="text-muted-foreground">{formatBytes(file.bytes)}</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                </div>
+                            )}
+
+                            <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                {!file.isDirectory && (
+                                     <Button asChild variant="secondary" size="icon" className="h-8 w-8">
+                                        <a href={file.secure_url} target="_blank" rel="noopener noreferrer"><ExternalLink /></a>
+                                    </Button>
+                                )}
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="destructive" size="icon" className="h-8 w-8"><Trash2 /></Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                            <AlertDialogDescription>This will permanently delete the {file.isDirectory ? 'folder' : 'file'} "{file.name}" and all its contents. This action cannot be undone.</AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => handleDelete(file)}>Delete</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </div>
+                        </div>
+                    )) : (
+                        <p className="col-span-full text-center text-muted-foreground py-10">This folder is empty.</p>
+                    )}
+                </div>
+            </CardContent>
+        </Card>
     );
 }
