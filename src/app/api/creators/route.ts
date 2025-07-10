@@ -48,8 +48,10 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ success: false, error: 'Language parameter is required (en, uk, sk)' }, { status: 400 });
         }
 
+        const langFolder = `${CREATORS_FOLDER}/${lang}`;
+
         if (slug) {
-            const public_id = `${CREATORS_FOLDER}/${lang}/${slug}/${slug}.json`;
+            const public_id = `${langFolder}/${slug}/${slug}.json`;
             const creator = await getCreatorFromCloudinary(public_id);
             if (creator) {
                 return NextResponse.json({ success: true, creator });
@@ -61,12 +63,12 @@ export async function GET(request: NextRequest) {
                 ...config,
                 type: 'upload',
                 resource_type: 'raw',
-                prefix: `${CREATORS_FOLDER}/${lang}/`,
+                prefix: `${langFolder}/`,
                 max_results: 500
             });
             
             const creatorPublicIds = results.resources
-                .filter((res: { format: string; }) => res.format === 'json')
+                .filter((res: { format: string, public_id: string }) => res.format === 'json' && res.public_id.endsWith(`/${res.public_id.split('/').slice(-2)[0]}.json`))
                 .map((res: { public_id: string; }) => res.public_id);
 
             const creators = (await Promise.all(
@@ -135,21 +137,25 @@ export async function DELETE(request: NextRequest) {
         
         const folderPath = `${CREATORS_FOLDER}/${lang}/${slug}`;
         
-        await cloudinary.api.delete_resources_by_prefix(folderPath, { ...config, resource_type: 'raw' });
-        await cloudinary.api.delete_resources_by_prefix(folderPath, { ...config, resource_type: 'image' });
+        await cloudinary.api.delete_resources_by_prefix(folderPath, { ...config, resource_type: 'raw', type: 'upload' });
+        await cloudinary.api.delete_resources_by_prefix(folderPath, { ...config, resource_type: 'image', type: 'upload' });
 
         const result = await cloudinary.api.delete_folder(folderPath, config);
 
+        // This check is often sufficient, but we add a fallback just in case.
         if (result.deleted && result.deleted[folderPath]) {
             return NextResponse.json({ success: true, message: `Creator folder '${slug}' deleted.` });
         } else {
-             // Fallback for safety
-             const public_id = `${folderPath}/${slug}.json`;
-             const fileResult = await cloudinary.uploader.destroy(public_id, { ...config, resource_type: 'raw' });
-             if (fileResult.result === 'ok') {
-                return NextResponse.json({ success: true, message: `Creator file '${slug}' deleted.` });
+             // Fallback for safety if the folder was already empty or the response is unexpected
+             const file_id = `${folderPath}/${slug}.json`;
+             const fileResult = await cloudinary.uploader.destroy(file_id, { ...config, resource_type: 'raw' });
+
+             if (fileResult.result === 'ok' || fileResult.result === 'not found') {
+                return NextResponse.json({ success: true, message: `Creator '${slug}' assets cleaned up.` });
              }
-             return NextResponse.json({ success: false, error: 'Could not delete creator folder or file.' }, { status: 404 });
+
+             console.warn(`Could not confirm deletion of folder ${folderPath}, but the main file might be gone.`);
+             return NextResponse.json({ success: false, error: 'Could not definitively delete creator folder. It may already be removed.' }, { status: 404 });
         }
 
     } catch (error: any) {
