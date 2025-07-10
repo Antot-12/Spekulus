@@ -1,26 +1,17 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
-import { faqData } from '@/lib/data';
+import { useState, useEffect, useCallback } from 'react';
+import type { FaqItem, Language } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Trash2, PlusCircle, Save } from 'lucide-react';
+import { Trash2, PlusCircle, Save, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { Language } from '@/components/AppWrapper';
 import { MarkdownEditor } from '@/components/ui/markdown-editor';
 import { logAction } from '@/lib/logger';
-
-type FaqItem = {
-    id: string;
-    question: string;
-    answer: string;
-};
-
-const LOCAL_STORAGE_KEY_PREFIX = 'spekulus-faqs-';
 
 const LanguageFlag = ({ lang }: { lang: Language }) => {
     const flags: Record<string, string> = {
@@ -40,43 +31,52 @@ const languageNames: Record<Language, string> = {
 export default function FaqAdminPage() {
     const { toast } = useToast();
     const [faqs, setFaqs] = useState<FaqItem[]>([]);
-    const [isLoaded, setIsLoaded] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
     const [selectedLang, setSelectedLang] = useState<Language>('en');
 
-    useEffect(() => {
-        setIsLoaded(false);
-        const localStorageKey = `${LOCAL_STORAGE_KEY_PREFIX}${selectedLang}`;
+    const fetchFaqs = useCallback(async (lang: Language) => {
+        setIsLoading(true);
         try {
-            const storedFaqs = localStorage.getItem(localStorageKey);
-            if (storedFaqs) {
-                const parsedFaqs = JSON.parse(storedFaqs);
-                setFaqs(parsedFaqs);
+            const response = await fetch(`/api/faq?lang=${lang}`);
+            const data = await response.json();
+            if (data.success) {
+                setFaqs(data.faqs || []);
             } else {
-                setFaqs(faqData[selectedLang] || []);
+                toast({ title: "Error", description: `Could not fetch FAQs for ${languageNames[lang]}.`, variant: 'destructive' });
+                setFaqs([]);
             }
         } catch (error) {
-            console.error(`Failed to load FAQs from localStorage for ${selectedLang}`, error);
-            setFaqs(faqData[selectedLang] || []);
+            toast({ title: "Network Error", description: "Failed to connect to the server.", variant: 'destructive' });
         }
-        setIsLoaded(true);
-    }, [selectedLang]);
+        setIsLoading(false);
+    }, [toast]);
     
-    const persistChanges = (newFaqs: FaqItem[]) => {
-        const localStorageKey = `${LOCAL_STORAGE_KEY_PREFIX}${selectedLang}`;
-        try {
-            localStorage.setItem(localStorageKey, JSON.stringify(newFaqs));
-            setFaqs(newFaqs);
-        } catch (error) {
-            console.error(`Failed to save FAQs to localStorage for ${selectedLang}`, error);
-            toast({ title: "Save Failed", description: "Could not save changes.", variant: 'destructive' });
-        }
-    }
+    useEffect(() => {
+        fetchFaqs(selectedLang);
+    }, [selectedLang, fetchFaqs]);
 
-    const handleSave = () => {
-        persistChanges(faqs);
-        toast({ title: "Saved!", description: `All FAQ changes for ${languageNames[selectedLang]} have been saved.`});
-        logAction('FAQ Update', 'Success', `Saved all changes for ${languageNames[selectedLang]} FAQs.`);
-    }
+    const handleSave = async () => {
+        setIsSaving(true);
+        try {
+            const response = await fetch('/api/faq', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ lang: selectedLang, faqs }),
+            });
+            const result = await response.json();
+            if (result.success) {
+                toast({ title: "Saved!", description: `All FAQ changes for ${languageNames[selectedLang]} have been saved.` });
+                logAction('FAQ Update', 'Success', `Saved all changes for ${languageNames[selectedLang]} FAQs.`);
+            } else {
+                toast({ title: "Save Failed", description: result.error || "Could not save changes.", variant: 'destructive' });
+            }
+        } catch (error) {
+            toast({ title: "Network Error", description: "Failed to save changes.", variant: 'destructive' });
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     const handleFaqChange = (id: string, field: 'question' | 'answer', value: string) => {
         const updatedFaqs = faqs.map(faq => 
@@ -87,19 +87,15 @@ export default function FaqAdminPage() {
 
     const handleFaqAdd = () => {
         const newFaq: FaqItem = {id: `q${Date.now()}`, question: 'New Question?', answer: 'New Answer.'};
-        const newFaqs = [...faqs, newFaq];
-        persistChanges(newFaqs);
-        toast({ title: "FAQ Added", description: "A new FAQ has been added and saved." });
-        logAction('FAQ Update', 'Success', `Added new FAQ for ${languageNames[selectedLang]}.`);
+        setFaqs(prev => [...prev, newFaq]);
+        toast({ title: "FAQ Added", description: "A new FAQ has been added. Remember to save your changes." });
     };
     
     const handleFaqDelete = (idToDelete: string) => {
         const faqToDelete = faqs.find(faq => faq.id === idToDelete);
-        const newFaqs = faqs.filter(faq => faq.id !== idToDelete);
-        persistChanges(newFaqs);
-        toast({ title: "FAQ Deleted", variant: 'destructive'});
-        logAction('FAQ Update', 'Success', `Deleted FAQ "${faqToDelete?.question}" for ${languageNames[selectedLang]}.`);
-    }
+        setFaqs(prev => prev.filter(faq => faq.id !== idToDelete));
+        toast({ title: "FAQ Deleted", variant: 'destructive', description: "Remember to save your changes."});
+    };
 
     return (
         <Card className="opacity-0 animate-fade-in-up">
@@ -107,7 +103,7 @@ export default function FaqAdminPage() {
              <div className="flex flex-wrap gap-4 justify-between items-center">
                 <div>
                     <CardTitle>Manage FAQ</CardTitle>
-                    <CardDescription>Edit questions and answers for each language. Changes are saved to your browser.</CardDescription>
+                    <CardDescription>Edit questions and answers for each language. Changes are saved to Cloudinary.</CardDescription>
                 </div>
                 <div className="flex items-center gap-2">
                     <Select value={selectedLang} onValueChange={(value) => setSelectedLang(value as Language)}>
@@ -120,41 +116,26 @@ export default function FaqAdminPage() {
                             </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="en">
-                                <div className="flex items-center">
-                                    <LanguageFlag lang="en" />
-                                    {languageNames['en']}
-                                </div>
-                            </SelectItem>
-                            <SelectItem value="uk">
-                                <div className="flex items-center">
-                                    <LanguageFlag lang="uk" />
-                                    {languageNames['uk']}
-                                </div>
-                            </SelectItem>
-                            <SelectItem value="sk">
-                                <div className="flex items-center">
-                                    <LanguageFlag lang="sk" />
-                                    {languageNames['sk']}
-                                </div>
-                            </SelectItem>
+                            <SelectItem value="en"><LanguageFlag lang="en" />{languageNames['en']}</SelectItem>
+                            <SelectItem value="uk"><LanguageFlag lang="uk" />{languageNames['uk']}</SelectItem>
+                            <SelectItem value="sk"><LanguageFlag lang="sk" />{languageNames['sk']}</SelectItem>
                         </SelectContent>
                     </Select>
                     <Button onClick={handleFaqAdd}><PlusCircle className="mr-2 h-4 w-4"/> Add</Button>
-                    <Button onClick={handleSave}><Save className="mr-2 h-4 w-4"/> Save</Button>
+                    <Button onClick={handleSave} disabled={isSaving}>
+                        {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4"/>}
+                        Save
+                    </Button>
                 </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
-            {!isLoaded ? (
+            {isLoading ? (
                 <div className="space-y-6">
                     {[...Array(3)].map((_, i) => (
                         <div key={i} className="space-y-2 p-4 border rounded-md">
                             <Skeleton className="h-8 w-1/2" />
                             <Skeleton className="h-16 w-full" />
-                            <div className="flex justify-end gap-2 pt-2">
-                                <Skeleton className="h-10 w-10" />
-                            </div>
                         </div>
                     ))}
                 </div>

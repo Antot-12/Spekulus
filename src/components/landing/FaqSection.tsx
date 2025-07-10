@@ -1,9 +1,8 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { faqData } from "@/lib/data";
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
@@ -19,47 +18,37 @@ type FaqItem = {
     answer: string;
 };
 
-const LOCAL_STORAGE_KEY_PREFIX = 'spekulus-faqs-';
-
 export function FaqSection() {
   const { language, translations } = useLanguage();
   const [faqs, setFaqs] = useState<FaqItem[]>([]);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [openItems, setOpenItems] = useState<string[]>([]);
 
-  useEffect(() => {
-    const loadFaqs = () => {
-        setIsLoaded(false);
-        try {
-            const localStorageKey = `${LOCAL_STORAGE_KEY_PREFIX}${language}`;
-            const storedFaqs = localStorage.getItem(localStorageKey);
-            
-            const dataToSet = storedFaqs ? JSON.parse(storedFaqs) : faqData[language] || faqData.en;
-
-            if (dataToSet.length > 0) {
-                setFaqs(dataToSet);
-            } else {
-                setFaqs(faqData[language] || faqData.en);
-            }
-        } catch (error) {
-            console.error(`Failed to load FAQs for language: ${language}`, error);
-            setFaqs(faqData[language] || faqData.en);
+  const fetchFaqs = useCallback(async (lang: Language) => {
+    setIsLoading(true);
+    try {
+        const response = await fetch(`/api/faq?lang=${lang}`);
+        const data = await response.json();
+        if (data.success && data.faqs.length > 0) {
+            setFaqs(data.faqs);
+        } else {
+            // Fallback to static data if API fails or returns no items
+            // This is a temporary measure for robustness.
+            const { faqData } = await import('@/lib/data');
+            setFaqs(faqData[lang] || []);
         }
-        setIsLoaded(true);
+    } catch (error) {
+        console.error("Failed to fetch FAQs, falling back to static data", error);
+        const { faqData } = await import('@/lib/data');
+        setFaqs(faqData[lang] || []);
     }
-
-    loadFaqs();
-    
-    window.addEventListener('storage', loadFaqs);
-    window.addEventListener('focus', loadFaqs);
-    
-    return () => {
-        window.removeEventListener('storage', loadFaqs);
-        window.removeEventListener('focus', loadFaqs);
-    };
-
-  }, [language]);
+    setIsLoading(false);
+  }, []);
+  
+  useEffect(() => {
+    fetchFaqs(language);
+  }, [language, fetchFaqs]);
   
   const filteredFaqs = faqs.filter(faq => 
     faq.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -99,7 +88,7 @@ export function FaqSection() {
         </div>
 
         <Accordion type="multiple" value={openItems} onValueChange={setOpenItems} className="w-full">
-          {!isLoaded ? (
+          {isLoading ? (
               [...Array(5)].map((_, i) => (
                 <div key={i} className="flex flex-col gap-2 py-4 border-b">
                   <Skeleton className="h-6 w-3/4" />

@@ -30,7 +30,7 @@ async function getNoteFromCloudinary(public_id: string): Promise<DevNote | null>
     try {
         const config = getCloudinaryConfig();
         const url = cloudinary.url(public_id, { resource_type: 'raw', ...config });
-        const response = await fetch(url);
+        const response = await fetch(url, { next: { revalidate: 0 } });
         if (!response.ok) return null;
         return await response.json();
     } catch (error) {
@@ -104,6 +104,7 @@ export async function POST(request: NextRequest) {
                     public_id: public_id,
                     resource_type: 'raw',
                     invalidate: true,
+                    format: 'json',
                 },
                 (error, result) => {
                     if (error) return reject(error);
@@ -143,6 +144,7 @@ export async function PUT(request: NextRequest) {
                     resource_type: 'raw',
                     overwrite: true,
                     invalidate: true,
+                    format: 'json',
                 },
                 (error, result) => {
                     if (error) return reject(error);
@@ -172,28 +174,32 @@ export async function DELETE(request: NextRequest) {
             return NextResponse.json({ success: false, error: 'Slug is required for deletion.' }, { status: 400 });
         }
         
-        // Delete the entire folder for the note
+        // Delete the entire folder for the note, including its contents
         const folderPath = `${NOTES_FOLDER}/${slug}`;
+        
+        // 1. Delete all resources within the folder.
+        await cloudinary.api.delete_resources_by_prefix(folderPath, { ...config, resource_type: 'raw' });
+        await cloudinary.api.delete_resources_by_prefix(folderPath, { ...config, resource_type: 'image' });
 
-        // This will delete the folder and all its contents
+        // 2. Delete the folder itself.
         const result = await cloudinary.api.delete_folder(folderPath, config);
 
-        if (result.deleted && result.deleted[folderPath]) {
-            return NextResponse.json({ success: true, message: `Note folder '${slug}' deleted.` });
-        } else {
-             // Fallback to deleting just the JSON file if folder deletion is tricky
-            const public_id = `${NOTES_FOLDER}/${slug}/${slug}.json`;
-            const fileResult = await cloudinary.uploader.destroy(public_id, {
-                ...config,
-                resource_type: 'raw'
-            });
+        // Check if the primary folder was deleted. The API returns an object with deleted folder paths.
+        // It might not always return a value if the folder was already empty and thus implicitly deleted.
+        // So we also check the fallback file deletion result for robustness.
 
-            if (fileResult.result === 'ok') {
-                return NextResponse.json({ success: true, message: `Note file '${slug}' deleted.` });
-            }
-
-            return NextResponse.json({ success: false, error: 'Could not delete note folder or file.' }, { status: 404 });
+        const public_id = `${NOTES_FOLDER}/${slug}/${slug}.json`;
+        const fileResult = await cloudinary.uploader.destroy(public_id, {
+            ...config,
+            resource_type: 'raw'
+        });
+        
+        // If either the folder deletion API reports success, or the file deletion call worked, we're good.
+        if ((result.deleted && result.deleted[folderPath]) || fileResult.result === 'ok') {
+            return NextResponse.json({ success: true, message: `Note folder '${slug}' and its contents deleted.` });
         }
+
+        return NextResponse.json({ success: false, error: 'Could not delete note folder or file. It may have already been removed.' }, { status: 404 });
 
     } catch (error: any) {
         console.error('Error deleting note from Cloudinary:', error);
