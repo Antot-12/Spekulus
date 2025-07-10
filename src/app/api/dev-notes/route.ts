@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, error: 'Slug and title are required.' }, { status: 400 });
         }
         
-        const public_id = `${NOTES_FOLDER}/${note.slug}/${note.slug}`;
+        const public_id = `${NOTES_FOLDER}/${note.slug}/${note.slug}.json`;
         
         const response: UploadApiResponse = await new Promise((resolve, reject) => {
             const uploadStream = cloudinary.uploader.upload_stream(
@@ -109,7 +109,6 @@ export async function POST(request: NextRequest) {
                     public_id: public_id,
                     resource_type: 'raw',
                     invalidate: true,
-                    format: 'json', // Ensure it saves as a .json file
                 },
                 (error, result) => {
                     if (error) return reject(error);
@@ -138,7 +137,7 @@ export async function PUT(request: NextRequest) {
             return NextResponse.json({ success: false, error: 'Slug and title are required.' }, { status: 400 });
         }
 
-        const public_id = `${NOTES_FOLDER}/${note.slug}/${note.slug}`;
+        const public_id = `${NOTES_FOLDER}/${note.slug}/${note.slug}.json`;
         
         // Overwrite the existing file
         const response: UploadApiResponse = await new Promise((resolve, reject) => {
@@ -149,7 +148,6 @@ export async function PUT(request: NextRequest) {
                     resource_type: 'raw',
                     overwrite: true,
                     invalidate: true,
-                    format: 'json', // Ensure it saves as a .json file
                 },
                 (error, result) => {
                     if (error) return reject(error);
