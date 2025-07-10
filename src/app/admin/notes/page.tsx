@@ -31,6 +31,15 @@ This is a paragraph of text. You can use **bold**, *italics*, or ~~strikethrough
 [This is a link to Google](https://google.com)
 `;
 
+// Function to generate a URL-friendly slug from a string
+const generateSlug = (title: string) => {
+    return title
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '') // remove special chars
+        .replace(/\s+/g, '-')         // replace spaces with hyphens
+        .replace(/-+/g, '-');          // remove consecutive hyphens
+};
+
 export default function NotesAdminPage() {
     const { toast } = useToast();
     const [notes, setNotes] = useState<DevNote[]>([]);
@@ -48,7 +57,6 @@ export default function NotesAdminPage() {
             if (data.success) {
                 const sortedNotes = data.notes.sort((a: DevNote, b: DevNote) => new Date(b.date).getTime() - new Date(a.date).getTime());
                 setNotes(sortedNotes);
-                // If an active note was being edited, refresh its state from the fetched data
                 if (activeNote) {
                     setActiveNote(sortedNotes.find(n => n.id === activeNote.id) || null);
                 }
@@ -69,7 +77,15 @@ export default function NotesAdminPage() {
 
     const handleFieldChange = (field: keyof DevNote, value: any) => {
         if (!activeNote) return;
-        setActiveNote(prev => prev ? { ...prev, [field]: value } : null);
+        setActiveNote(prev => {
+            if (!prev) return null;
+            const newActiveNote = { ...prev, [field]: value };
+            // If the title changes, update the slug automatically
+            if (field === 'title') {
+                newActiveNote.slug = generateSlug(value);
+            }
+            return newActiveNote;
+        });
     };
 
     const handleArrayChange = (field: keyof DevNote, value: string) => {
@@ -79,21 +95,25 @@ export default function NotesAdminPage() {
     
     const handleSaveNote = async () => {
         if (!activeNote) return;
+
+        // Check if a note with the same ID already exists in the list
+        const isExistingNote = notes.some(note => note.id === activeNote.id);
+        const method = isExistingNote ? 'PUT' : 'POST';
+
         setIsSaving(true);
         try {
             const response = await fetch('/api/dev-notes', {
-                method: 'PUT',
+                method: method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(activeNote),
             });
             const result = await response.json();
             if (result.success) {
-                toast({ title: "Note Saved", description: `"${activeNote.title}" has been updated.` });
+                toast({ title: "Note Saved", description: `"${activeNote.title}" has been saved.` });
                 logAction('Notes Update', 'Success', `Saved changes for note '${activeNote.title}'.`);
-                // Refresh the list to show the updated data
-                await fetchNotes();
+                await fetchNotes(); // Refresh the list from server
             } else {
-                toast({ title: "Update Failed", description: result.error || "Could not save changes to the server.", variant: 'destructive' });
+                toast({ title: "Save Failed", description: result.error || "Could not save changes.", variant: 'destructive' });
             }
         } catch (error) {
             toast({ title: "Network Error", description: "Failed to connect to the server.", variant: 'destructive' });
@@ -102,12 +122,11 @@ export default function NotesAdminPage() {
         }
     };
 
-    const handleNoteAdd = async () => {
-        const slug = `new-note-${Date.now()}`;
+    const handleNoteAdd = () => {
         const newNote: DevNote = {
             id: Date.now(),
             title: 'New Note Title',
-            slug: slug,
+            slug: 'new-note-title', // Initial slug, will be updated as title changes
             date: new Date().toISOString().split('T')[0],
             summary: 'A brief summary of the new note.',
             content: newNoteContentExample,
@@ -118,25 +137,8 @@ export default function NotesAdminPage() {
             isVisible: false,
             reactionCounts: {},
         };
-
-        try {
-            const response = await fetch('/api/dev-notes', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newNote),
-            });
-            const result = await response.json();
-            if (result.success) {
-                toast({ title: "Note Added", description: "A new draft note has been created." });
-                logAction('Notes Update', 'Success', `Added new note 'New Note Title'.`);
-                await fetchNotes(); // Refresh list
-                setActiveNote(newNote); // Set the new note as active for editing
-            } else {
-                toast({ title: "Creation Failed", description: result.error, variant: 'destructive' });
-            }
-        } catch (error) {
-            toast({ title: "Network Error", description: "Failed to create note.", variant: 'destructive' });
-        }
+        // Add to local state to be edited, but don't save to server yet
+        setActiveNote(newNote); 
     };
 
     const handleNoteDelete = async (noteToDelete: DevNote) => {
@@ -308,6 +310,11 @@ export default function NotesAdminPage() {
                                     <Input id="date" type="date" value={activeNote.date} onChange={(e) => handleFieldChange('date', e.target.value)} />
                                 </div>
                             </div>
+                            
+                            <div className="space-y-2">
+                                <Label htmlFor="slug">Slug (auto-generated from title)</Label>
+                                <Input id="slug" value={activeNote.slug} disabled className="text-muted-foreground" />
+                            </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
@@ -369,3 +376,5 @@ export default function NotesAdminPage() {
         </div>
     );
 }
+
+    
