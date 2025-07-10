@@ -2,6 +2,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v2 as cloudinary } from 'cloudinary';
 
+// Explicitly load variables from env.txt for this specific project setup.
+require('dotenv').config({ path: require('path').resolve(process.cwd(), 'env.txt') });
+
+
 // This function creates the credentials object for each API call.
 const getCloudinaryCredentials = () => {
     return {

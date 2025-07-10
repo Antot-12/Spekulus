@@ -2,6 +2,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v2 as cloudinary } from 'cloudinary';
 
+// Explicitly load variables from env.txt for this specific project setup.
+require('dotenv').config({ path: require('path').resolve(process.cwd(), 'env.txt') });
+
 // Helper to convert a file stream to a buffer
 async function streamToBuffer(stream: ReadableStream<Uint8Array>): Promise<Buffer> {
   const reader = stream.getReader();
@@ -32,7 +35,7 @@ export async function POST(request: NextRequest) {
     const result: any = await new Promise((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
             {
-                // Pass credentials directly in the call
+                // Pass credentials directly in the call to ensure authentication
                 api_key: process.env.CLOUDINARY_API_KEY,
                 api_secret: process.env.CLOUDINARY_API_SECRET,
                 cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
