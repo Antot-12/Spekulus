@@ -30,12 +30,12 @@ export async function POST(request: NextRequest) {
 
   try {
     const fileBuffer = await buffer(file.stream());
-
-    // Use a promise to wrap the upload_stream logic
+    
+    // Use a promise to wrap the upload_stream logic, now sending the buffer directly
     const result: any = await new Promise((resolve, reject) => {
-        const uploadStream = cloudinary.uploader.upload_stream(
+        cloudinary.uploader.upload_stream(
             {
-                folder: subdirectory || 'spekulus_general', // Use subdirectory as folder or a default
+                folder: subdirectory || 'spekulus_general',
                 resource_type: 'auto',
             },
             (error, result) => {
@@ -44,10 +44,7 @@ export async function POST(request: NextRequest) {
                 }
                 resolve(result);
             }
-        );
-
-        const stream = Readable.from(fileBuffer);
-        stream.pipe(uploadStream);
+        ).end(fileBuffer);
     });
 
     return NextResponse.json({ success: true, url: result.secure_url });
