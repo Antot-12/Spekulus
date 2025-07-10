@@ -1,6 +1,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { v2 as cloudinary } from 'cloudinary';
+import { v2 as cloudinary, type UploadApiResponse } from 'cloudinary';
 
 // Load environment variables from env.txt
 require('dotenv').config({ path: require('path').resolve(process.cwd(), 'env.txt') });
@@ -43,11 +43,16 @@ export async function POST(request: NextRequest) {
     const fileBuffer = await streamToBuffer(file.stream());
     
     // Use a promise to handle the upload stream
-    const result: any = await new Promise((resolve, reject) => {
+    const result: UploadApiResponse = await new Promise((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
             {
                 ...config,
-                folder: subdirectory ? `${subdirectory}` : 'spekulus',
+                // The `folder` option automatically creates non-existent folders.
+                folder: subdirectory || 'spekulus/uploads',
+                // Use original filename but make it unique to avoid overwrites
+                use_filename: true,
+                unique_filename: true,
+                overwrite: false,
                 resource_type: 'auto',
             },
             (error, result) => {
@@ -55,7 +60,9 @@ export async function POST(request: NextRequest) {
                     console.error('Cloudinary upload error:', error);
                     return reject(new Error(error.message || 'Failed to upload file to Cloudinary.'));
                 }
-                resolve(result);
+                if (result) {
+                    resolve(result);
+                }
             }
         );
 
@@ -63,7 +70,7 @@ export async function POST(request: NextRequest) {
         uploadStream.end(fileBuffer);
     });
     
-    return NextResponse.json({ success: true, url: result.secure_url, ...result });
+    return NextResponse.json({ success: true, url: result.secure_url, public_id: result.public_id });
 
   } catch (error) {
     console.error('Error in upload route:', error);

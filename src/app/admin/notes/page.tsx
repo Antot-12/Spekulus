@@ -277,7 +277,7 @@ export default function NotesAdminPage() {
                                         </AlertDialogContent>
                                     </AlertDialog>
                                     <Button onClick={handleSaveNote} disabled={isSaving}>
-                                        {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                        {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                                         Save Changes
                                     </Button>
                                 </div>
@@ -354,12 +354,6 @@ export default function NotesAdminPage() {
                                 />
                             </div>
 
-                            <div className="flex justify-between items-center pt-2">
-                                <Button variant="outline" onClick={() => handleResetReactions(activeNote.id)}>
-                                    <RotateCcw className="mr-2 h-4 w-4"/> Reset Local Reactions
-                                </Button>
-                            </div>
-
                         </CardContent>
                     </Card>
                 ) : (
@@ -374,18 +368,3 @@ export default function NotesAdminPage() {
         </div>
     );
 }
-
-const handleResetReactions = (noteId: number) => {
-    // This functionality is purely client-side as reactions are per-user.
-    // In a real app with user accounts, this would be a server call.
-    try {
-        const userReactionKey = `spekulus-user-reaction-${noteId}`;
-        localStorage.removeItem(userReactionKey);
-        // Note: We are not resetting the global counts here, just the user's vote.
-        // A full implementation would require a backend to store reaction counts.
-        alert(`Your personal reactions for this note have been cleared from this browser.`);
-    } catch (error) {
-        console.error("Failed to reset reactions", error);
-    }
-};
-

@@ -162,15 +162,17 @@ export default function CreatorsAdminPage() {
         if (!file) return;
 
         const creator = creators.find(c => c.id === creatorId);
-        if (!creator) {
-            toast({ title: "Creator not found", variant: "destructive" });
+        if (!creator || !creator.slug) {
+            toast({ title: "Creator or slug not found", description: "Please ensure the creator has a valid slug before uploading.", variant: "destructive" });
             return;
         }
 
         toast({ title: "Uploading...", description: "Please wait while the image is uploaded." });
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('subdirectory', `spekulus/creators/${selectedLang}/${creator.slug}`);
+        // This is the key change: we construct the full, unique folder path for the creator.
+        const subdirectory = `spekulus/creators/${selectedLang}/${creator.slug}`;
+        formData.append('subdirectory', subdirectory);
         
         try {
             const response = await fetch('/api/upload', { method: 'POST', body: formData });
@@ -407,7 +409,7 @@ export default function CreatorsAdminPage() {
 
                             <Card><CardHeader><CardTitle className="font-headline flex items-center gap-2"><FileText className="w-6 h-6"/>Bio</CardTitle></CardHeader>
                                 <CardContent>
-                                    <MarkdownEditor value={creator.bio ?? ''} onChange={(value) => handleFieldChange(creator.id, 'bio', value)} rows={10} uploadSubdirectory={`creators/${selectedLang}/${creator.slug}`} />
+                                    <MarkdownEditor value={creator.bio ?? ''} onChange={(value) => handleFieldChange(creator.id, 'bio', value)} rows={10} uploadSubdirectory={`spekulus/creators/${selectedLang}/${creator.slug}`} />
                                 </CardContent>
                             </Card>
                             
