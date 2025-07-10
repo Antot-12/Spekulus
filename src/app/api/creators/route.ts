@@ -98,19 +98,29 @@ export async function POST(request: NextRequest) {
 
         const langFolder = `${CREATORS_FOLDER}/${lang}`;
 
+        // Get existing creator slugs from Cloudinary
         const { resources } = await cloudinary.api.resources({ ...config, type: 'upload', prefix: `${langFolder}/`, max_results: 500 });
-        const existingSlugs = new Set(resources.map((r: any) => r.public_id.split('/')[3]).filter(Boolean));
+        const existingSlugs = new Set(resources.map((r: any) => {
+            const parts = r.public_id.split('/');
+            // Expected path: spekulus/creators/[lang]/[slug]/...
+            return parts.length > 3 ? parts[3] : null;
+        }).filter(Boolean));
+
         const newSlugs = new Set(creators.map(c => c.slug));
 
-        // Delete creators that are no longer in the list
+        // Determine which creator folders to delete
         const slugsToDelete = [...existingSlugs].filter(slug => !newSlugs.has(slug));
         if (slugsToDelete.length > 0) {
             await Promise.all(slugsToDelete.map(slug => {
                 const folderPath = `${langFolder}/${slug}`;
-                return cloudinary.api.delete_folder(folderPath, config);
+                // Use delete_folder which deletes the folder and all its contents
+                return cloudinary.api.delete_folder(folderPath, config).catch(err => {
+                    console.error(`Failed to delete folder ${folderPath}`, err);
+                });
             }));
         }
         
+        // Create or update creators
         const uploadPromises = creators.map(creator => {
             const public_id = `${langFolder}/${creator.slug}/${DATA_FILENAME}`;
             return new Promise((resolve, reject) => {
@@ -155,9 +165,7 @@ export async function DELETE(request: NextRequest) {
         
         const folderPath = `${CREATORS_FOLDER}/${lang}/${slug}`;
         
-        await cloudinary.api.delete_resources_by_prefix(folderPath, { ...config, resource_type: 'raw' });
-        await cloudinary.api.delete_resources_by_prefix(folderPath, { ...config, resource_type: 'image' });
-
+        // This command deletes the folder and all assets within it.
         const result = await cloudinary.api.delete_folder(folderPath, config);
         
         return NextResponse.json({ success: true, message: `Creator folder '${slug}' deleted.`, result });
