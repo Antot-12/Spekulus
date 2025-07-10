@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from 'react';
-import { Bold, Italic, Strikethrough, Heading, Quote, Link as LinkIcon, Image as ImageIcon, List, ListOrdered, Code, Minus } from 'lucide-react';
+import { Bold, Italic, Strikethrough, Heading, Quote, Link as LinkIcon, Image as ImageIcon, List, ListOrdered, Code, Minus, FileUp } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -27,6 +27,7 @@ const UnderlineIcon = (props: React.SVGProps<SVGSVGElement>) => (
 export function MarkdownEditor({ value, onChange, rows = 12, uploadSubdirectory }: MarkdownEditorProps) {
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const imageInputRef = React.useRef<HTMLInputElement>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const applyFormatting = (before: string, after: string = '') => {
@@ -63,17 +64,20 @@ export function MarkdownEditor({ value, onChange, rows = 12, uploadSubdirectory 
     }
   };
 
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, isImage: boolean) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     const formData = new FormData();
     formData.append('file', file);
-    if (uploadSubdirectory) {
-      formData.append('subdirectory', uploadSubdirectory);
+
+    let finalSubdirectory = uploadSubdirectory || 'spekulus/uploads';
+    if (!isImage && uploadSubdirectory) {
+        finalSubdirectory = `${uploadSubdirectory}/attachments`;
     }
+    formData.append('subdirectory', finalSubdirectory);
     
-    toast({ title: "Uploading...", description: "Please wait while the image is uploaded." });
+    toast({ title: "Uploading...", description: "Please wait while the file is uploaded." });
 
     try {
       const response = await fetch('/api/upload', {
@@ -84,13 +88,17 @@ export function MarkdownEditor({ value, onChange, rows = 12, uploadSubdirectory 
       const result = await response.json();
 
       if (result.success) {
-        applyFormatting(`\n![alt text](${result.url})\n`);
-        toast({ title: "Image Uploaded", description: "Image successfully added to content." });
+        if (isImage) {
+            applyFormatting(`\n![${file.name}](${result.url})\n`);
+        } else {
+            applyFormatting(`[Download ${file.name}](${result.url})`);
+        }
+        toast({ title: "Upload Complete", description: "File successfully added to content." });
       } else {
-        toast({ title: "Upload Failed", description: result.error || "Could not upload image.", variant: 'destructive' });
+        toast({ title: "Upload Failed", description: result.error || "Could not upload file.", variant: 'destructive' });
       }
     } catch (error) {
-        console.error("Image upload error:", error);
+        console.error("File upload error:", error);
         toast({ title: "Upload Failed", description: "An error occurred during upload.", variant: 'destructive' });
     } finally {
         if (event.target) {
@@ -99,9 +107,8 @@ export function MarkdownEditor({ value, onChange, rows = 12, uploadSubdirectory 
     }
   };
 
-  const triggerImageUpload = () => {
-    imageInputRef.current?.click();
-  };
+  const triggerImageUpload = () => imageInputRef.current?.click();
+  const triggerFileUpload = () => fileInputRef.current?.click();
 
   const insertList = (type: 'ul' | 'ol') => {
     const textarea = textareaRef.current;
@@ -148,6 +155,7 @@ export function MarkdownEditor({ value, onChange, rows = 12, uploadSubdirectory 
     { isSeparator: true },
     { icon: LinkIcon, action: insertLink, tooltip: 'Insert Link' },
     { icon: ImageIcon, action: triggerImageUpload, tooltip: 'Upload Image' },
+    { icon: FileUp, action: triggerFileUpload, tooltip: 'Upload Attachment' },
     { isSeparator: true },
     { icon: List, action: () => insertList('ul'), tooltip: 'Unordered List' },
     { icon: ListOrdered, action: () => insertList('ol'), tooltip: 'Ordered List' },
@@ -159,8 +167,14 @@ export function MarkdownEditor({ value, onChange, rows = 12, uploadSubdirectory 
         <input
             type="file"
             ref={imageInputRef}
-            onChange={handleImageUpload}
+            onChange={(e) => handleFileUpload(e, true)}
             accept="image/*"
+            className="hidden"
+        />
+        <input
+            type="file"
+            ref={fileInputRef}
+            onChange={(e) => handleFileUpload(e, false)}
             className="hidden"
         />
         <Tabs defaultValue="write" className="w-full">
