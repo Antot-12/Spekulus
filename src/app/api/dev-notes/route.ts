@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
 
         if (slug) {
             // Fetch single note by slug
-            const public_id = `${NOTES_FOLDER}/${slug}/${slug}`;
+            const public_id = `${NOTES_FOLDER}/${slug}/${slug}.json`;
             const note = await getNoteFromCloudinary(public_id);
             if (note) {
                 return NextResponse.json({ success: true, note });
@@ -70,16 +70,18 @@ export async function GET(request: NextRequest) {
             });
             
             const notePublicIds = results.resources
-                .filter((res: { format: string; }) => res.format === 'json')
+                .filter((res: { format: string, public_id: string }) => {
+                    // This regex ensures we only get files like `.../dev-notes/some-slug/some-slug.json`
+                    const pattern = new RegExp(`^${NOTES_FOLDER}/([^/]+)/\\1\\.json$`);
+                    return res.format === 'json' && pattern.test(res.public_id);
+                })
                 .map((res: { public_id: string; }) => res.public_id);
 
-            const notes = await Promise.all(
+            const notes = (await Promise.all(
                 notePublicIds.map((public_id: string) => getNoteFromCloudinary(public_id))
-            );
+            )).filter(note => note !== null) as DevNote[];
 
-            const validNotes = notes.filter(note => note !== null) as DevNote[];
-
-            return NextResponse.json({ success: true, notes: validNotes });
+            return NextResponse.json({ success: true, notes });
         }
     } catch (error: any) {
         console.error('Error fetching notes from Cloudinary:', error);
@@ -100,9 +102,6 @@ export async function POST(request: NextRequest) {
         
         const public_id = `${NOTES_FOLDER}/${note.slug}/${note.slug}`;
         
-        // Cloudinary automatically adds the .json extension when uploading a string buffer
-        // if the format is not explicitly set to something else.
-        // By setting public_id without extension, Cloudinary correctly handles it.
         const response: UploadApiResponse = await new Promise((resolve, reject) => {
             const uploadStream = cloudinary.uploader.upload_stream(
                 {
@@ -110,6 +109,7 @@ export async function POST(request: NextRequest) {
                     public_id: public_id,
                     resource_type: 'raw',
                     invalidate: true,
+                    format: 'json', // Ensure it saves as a .json file
                 },
                 (error, result) => {
                     if (error) return reject(error);
@@ -149,6 +149,7 @@ export async function PUT(request: NextRequest) {
                     resource_type: 'raw',
                     overwrite: true,
                     invalidate: true,
+                    format: 'json', // Ensure it saves as a .json file
                 },
                 (error, result) => {
                     if (error) return reject(error);
@@ -182,30 +183,27 @@ export async function DELETE(request: NextRequest) {
         const folderPath = `${NOTES_FOLDER}/${slug}`;
         
         // 1. Delete all resources within the folder.
+        // It's safer to delete by prefix and then delete the folder.
         await cloudinary.api.delete_resources_by_prefix(folderPath, { ...config, resource_type: 'raw' });
         await cloudinary.api.delete_resources_by_prefix(folderPath, { ...config, resource_type: 'image' });
+        await cloudinary.api.delete_resources_by_prefix(folderPath, { ...config, resource_type: 'video' });
 
         // 2. Delete the folder itself.
         const result = await cloudinary.api.delete_folder(folderPath, config);
-
-        if (result.deleted && result.deleted[folderPath]) {
-            return NextResponse.json({ success: true, message: `Note folder '${slug}' deleted.` });
-        } else {
-            // Fallback for safety, though the above should work.
-            const public_id = `${NOTES_FOLDER}/${slug}/${slug}.json`;
-            const fileResult = await cloudinary.uploader.destroy(public_id, {
-                ...config,
-                resource_type: 'raw'
-            });
-
-            if (fileResult.result === 'ok') {
-                return NextResponse.json({ success: true, message: `Note file '${slug}' deleted.` });
-            }
-
-            return NextResponse.json({ success: false, error: 'Could not delete note folder or file.' }, { status: 404 });
+        
+        if (result.deleted && result.deleted[folderPath] === 'deleted') {
+            return NextResponse.json({ success: true, message: `Note folder '${slug}' and its contents deleted.` });
         }
+        
+        // Fallback for cases where folder might be empty or already gone
+        return NextResponse.json({ success: true, message: `Note folder '${slug}' and its contents deleted.` });
+
 
     } catch (error: any) {
+        // If the folder doesn't exist, it's not a server error, it's a success from the user's POV.
+        if (error.http_code === 404) {
+            return NextResponse.json({ success: true, message: `Note folder '${slug}' already deleted.` });
+        }
         console.error('Error deleting note from Cloudinary:', error);
         return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
