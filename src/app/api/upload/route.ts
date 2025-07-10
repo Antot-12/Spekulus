@@ -31,43 +31,30 @@ export async function POST(request: NextRequest) {
   try {
     const fileBuffer = await buffer(file.stream());
 
-    const uploadStream = cloudinary.uploader.upload_stream(
-      {
-        folder: subdirectory || 'spekulus_general', // Use subdirectory as folder or a default
-        resource_type: 'auto',
-      },
-      (error, result) => {
-        if (error) {
-          // This callback handles errors from the Cloudinary SDK
-          console.error('Cloudinary upload error:', error);
-          // Note: we resolve the promise below, so can't return NextResponse here.
-          // The outer catch block will handle sending the response.
-        }
-      }
-    );
-    
-    // Convert buffer to readable stream and pipe to Cloudinary
-    const stream = Readable.from(fileBuffer);
-    
-    // Use a promise to wait for the upload to finish
+    // Use a promise to wrap the upload_stream logic
     const result: any = await new Promise((resolve, reject) => {
-        stream.pipe(uploadStream).on('finish', resolve).on('error', reject);
+        const uploadStream = cloudinary.uploader.upload_stream(
+            {
+                folder: subdirectory || 'spekulus_general', // Use subdirectory as folder or a default
+                resource_type: 'auto',
+            },
+            (error, result) => {
+                if (error) {
+                    return reject(error);
+                }
+                resolve(result);
+            }
+        );
+
+        const stream = Readable.from(fileBuffer);
+        stream.pipe(uploadStream);
     });
 
-    // Cloudinary's Node SDK's upload_stream resolves with upload metadata
-    // but the actual result is passed to its callback. A more promise-friendly
-    // way is to wrap it. A bit of a hack: let's assume if we got here without error, we need the URL.
-    // We'll re-fetch the asset details for a stable URL. This is less efficient but more reliable.
-    const finalResult = await cloudinary.api.resource(result.public_id);
-
-
-    return NextResponse.json({ success: true, url: finalResult.secure_url });
+    return NextResponse.json({ success: true, url: result.secure_url });
 
   } catch (error) {
     console.error('Error uploading to Cloudinary:', error);
-    return NextResponse.json({ success: false, error: 'Failed to upload file to Cloudinary.' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    return NextResponse.json({ success: false, error: `Failed to upload file to Cloudinary. ${errorMessage}` }, { status: 500 });
   }
 }
-
-// We need an API route to list/delete files from Cloudinary for the manager, but that's a larger scope.
-// For now, let's remove the old API route for local file management.

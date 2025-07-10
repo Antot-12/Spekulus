@@ -1,10 +1,13 @@
 
+"use client"
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Cloud, ExternalLink } from "lucide-react";
-import Link from "next/link";
 
 export default function UploadsManagerPage() {
+    // This URL can be constructed to go directly to your Cloudinary media library.
+    // Replace the part after `console/` with your actual Cloudinary path if known.
     const cloudinaryUrl = `https://cloudinary.com/console/c-ab7365c276f82c3c6d485d45012b18/media_library/search?q=`;
 
     return (
