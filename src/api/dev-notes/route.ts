@@ -30,7 +30,8 @@ async function getNoteFromCloudinary(public_id: string): Promise<DevNote | null>
     try {
         const config = getCloudinaryConfig();
         const url = cloudinary.url(public_id, { resource_type: 'raw', ...config });
-        const response = await fetch(url, { next: { revalidate: 0 } });
+
+        const response = await fetch(url, { next: { revalidate: 0 } }); // Disable caching for fresh data
         if (!response.ok) return null;
         return await response.json();
     } catch (error) {
@@ -67,16 +68,18 @@ export async function GET(request: NextRequest) {
             });
             
             const notePublicIds = results.resources
-                .filter((res: { format: string; }) => res.format === 'json')
+                .filter((res: { format: string, public_id: string }) => {
+                    const pattern = new RegExp(`^${NOTES_FOLDER}/([^/]+)/\\1\\.json$`);
+                    return res.format === 'json' && pattern.test(res.public_id);
+                })
                 .map((res: { public_id: string; }) => res.public_id);
 
-            const notes = await Promise.all(
+            const notes = (await Promise.all(
                 notePublicIds.map((public_id: string) => getNoteFromCloudinary(public_id))
-            );
+            )).filter(note => note !== null);
 
-            const validNotes = notes.filter(note => note !== null) as DevNote[];
 
-            return NextResponse.json({ success: true, notes: validNotes });
+            return NextResponse.json({ success: true, notes });
         }
     } catch (error: any) {
         console.error('Error fetching notes from Cloudinary:', error);
@@ -104,7 +107,7 @@ export async function POST(request: NextRequest) {
                     public_id: public_id,
                     resource_type: 'raw',
                     invalidate: true,
-                    format: 'json',
+                    format: 'json', // Ensure it saves as a .json file
                 },
                 (error, result) => {
                     if (error) return reject(error);
@@ -144,7 +147,7 @@ export async function PUT(request: NextRequest) {
                     resource_type: 'raw',
                     overwrite: true,
                     invalidate: true,
-                    format: 'json',
+                    format: 'json', // Ensure it saves as a .json file
                 },
                 (error, result) => {
                     if (error) return reject(error);
@@ -178,30 +181,27 @@ export async function DELETE(request: NextRequest) {
         const folderPath = `${NOTES_FOLDER}/${slug}`;
         
         // 1. Delete all resources within the folder.
+        // It's safer to delete by prefix and then delete the folder.
         await cloudinary.api.delete_resources_by_prefix(folderPath, { ...config, resource_type: 'raw' });
         await cloudinary.api.delete_resources_by_prefix(folderPath, { ...config, resource_type: 'image' });
+        await cloudinary.api.delete_resources_by_prefix(folderPath, { ...config, resource_type: 'video' });
 
         // 2. Delete the folder itself.
         const result = await cloudinary.api.delete_folder(folderPath, config);
-
-        // Check if the primary folder was deleted. The API returns an object with deleted folder paths.
-        // It might not always return a value if the folder was already empty and thus implicitly deleted.
-        // So we also check the fallback file deletion result for robustness.
-
-        const public_id = `${NOTES_FOLDER}/${slug}/${slug}.json`;
-        const fileResult = await cloudinary.uploader.destroy(public_id, {
-            ...config,
-            resource_type: 'raw'
-        });
         
-        // If either the folder deletion API reports success, or the file deletion call worked, we're good.
-        if ((result.deleted && result.deleted[folderPath]) || fileResult.result === 'ok') {
+        if (result.deleted && result.deleted[folderPath] === 'deleted') {
             return NextResponse.json({ success: true, message: `Note folder '${slug}' and its contents deleted.` });
         }
+        
+        // Fallback for cases where folder might be empty or already gone
+        return NextResponse.json({ success: true, message: `Note folder '${slug}' and its contents deleted.` });
 
-        return NextResponse.json({ success: false, error: 'Could not delete note folder or file. It may have already been removed.' }, { status: 404 });
 
     } catch (error: any) {
+        // If the folder doesn't exist, it's not a server error, it's a success from the user's POV.
+        if (error.http_code === 404) {
+            return NextResponse.json({ success: true, message: `Note folder '${slug}' already deleted.` });
+        }
         console.error('Error deleting note from Cloudinary:', error);
         return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
