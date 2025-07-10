@@ -5,6 +5,12 @@ require('dotenv').config();
 
 if (!process.env.CLOUDINARY_URL) {
   console.error('CLOUDINARY_URL environment variable is not set');
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+    secure: true,
+  });
 } else {
   cloudinary.config({ secure: true });
 }

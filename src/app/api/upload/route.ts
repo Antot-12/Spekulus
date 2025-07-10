@@ -6,8 +6,15 @@ require('dotenv').config();
 // Configure Cloudinary with environment variables from .env
 if (!process.env.CLOUDINARY_URL) {
   console.error('CLOUDINARY_URL environment variable is not set');
+  // Set config from individual variables if CLOUDINARY_URL is not present
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+    secure: true,
+  });
 } else {
-  cloudinary.config({ secure: true });
+    cloudinary.config({ secure: true });
 }
 
 // Helper to convert a file stream to a buffer
