@@ -28,22 +28,25 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const path = searchParams.get('path') || 'spekulus';
 
-    // Fetch all resources (files)
+    // Fetch all resources (files) within the given path prefix
     const resourcesResponse = await cloudinary.api.resources({
       ...config,
       type: 'upload',
-      prefix: path === 'spekulus' ? `${path}/` : path, // Add trailing slash only for root
+      prefix: `${path}/`, // Use prefix to get all items in and under the folder
       max_results: 500
     });
 
-    // Fetch all subfolders
+    // Fetch direct subfolders of the given path
     const subfoldersResponse = await cloudinary.api.sub_folders(path, config);
     
+    // Filter to get only direct child files of the current path
     const files = resourcesResponse.resources
       .filter((file: any) => {
-        // Filter out files that are in sub-folders of the current path
-        const fileFolderPath = file.public_id.substring(0, file.public_id.lastIndexOf('/'));
-        return fileFolderPath === path;
+        // A file is a direct child if its path has exactly one more '/' than the parent path.
+        const parentPathSlashes = (path.match(/\//g) || []).length;
+        const filePathSlashes = (file.public_id.match(/\//g) || []).length;
+        // Check if the file is in a direct subfolder.
+        return filePathSlashes === parentPathSlashes + 1;
       })
       .map((file: any) => ({
         ...file,
