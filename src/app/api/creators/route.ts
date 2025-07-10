@@ -69,9 +69,9 @@ export async function GET(request: NextRequest) {
             
             const creatorPublicIds = results.resources
                 .filter((res: { format: string, public_id: string }) => {
-                    const parts = res.public_id.split('/');
-                    // This ensures we only get files like `spekulus/creators/en/anton-shyrko/anton-shyrko.json`
-                    return res.format === 'json' && parts.length > 3 && parts.slice(-2)[0] === parts.slice(-1)[0].replace('.json', '');
+                    // This regex ensures we only get files like `.../creators/en/some-slug/some-slug.json`
+                    const pattern = new RegExp(`^${CREATORS_FOLDER}/${lang}/([^/]+)/\\1\\.json$`);
+                    return res.format === 'json' && pattern.test(res.public_id);
                 })
                 .map((res: { public_id: string; }) => res.public_id);
 
@@ -96,30 +96,33 @@ export async function POST(request: NextRequest) {
         if (!lang || !creators) {
              return NextResponse.json({ success: false, error: 'Language and creators array are required.' }, { status: 400 });
         }
-        
-        // First, get all existing creator folders for the language
-        const { folders } = await cloudinary.api.sub_folders(`${CREATORS_FOLDER}/${lang}`, config);
-        const existingSlugs = new Set(folders.map((f: { name: string }) => f.name));
-        const currentSlugs = new Set(creators.map(c => c.slug));
 
-        // Determine which folders need to be deleted
-        const foldersToDelete = [...existingSlugs].filter(slug => !currentSlugs.has(slug));
+        const langFolder = `${CREATORS_FOLDER}/${lang}`;
 
-        // Delete folders for creators that no longer exist
-        const deletePromises = foldersToDelete.map(slug => {
-            const folderPath = `${CREATORS_FOLDER}/${lang}/${slug}`;
-            return cloudinary.api.delete_folder(folderPath, config);
-        });
+        // 1. Atomically delete the entire language folder and its contents.
+        // This is a "delete and recreate" strategy to ensure perfect state sync.
+        // It's aggressive but guarantees consistency.
+        // We wrap in a try-catch in case the folder doesn't exist yet, which is not an error.
+        try {
+            await cloudinary.api.delete_resources_by_prefix(langFolder, { ...config, resource_type: 'raw' });
+            await cloudinary.api.delete_resources_by_prefix(langFolder, { ...config, resource_type: 'image' });
+            await cloudinary.api.delete_folder(langFolder, config);
+        } catch (error: any) {
+            // It's okay if deletion fails because the folder doesn't exist.
+            if (error.http_code !== 404) {
+                 console.warn(`Could not delete folder ${langFolder}. It might not exist.`, error.message);
+            }
+        }
 
+        // 2. Re-create each creator from the provided list.
         const uploadPromises = creators.map(creator => {
-            const public_id = `${CREATORS_FOLDER}/${lang}/${creator.slug}/${creator.slug}`;
+            const public_id = `${langFolder}/${creator.slug}/${creator.slug}`;
             return new Promise((resolve, reject) => {
                 const uploadStream = cloudinary.uploader.upload_stream(
                     {
                         ...config,
                         public_id: public_id,
                         resource_type: 'raw',
-                        overwrite: true,
                         invalidate: true,
                         format: 'json',
                     },
@@ -132,10 +135,7 @@ export async function POST(request: NextRequest) {
             });
         });
 
-        const [uploadResponses] = await Promise.all([
-             Promise.all(uploadPromises),
-             Promise.all(deletePromises)
-        ]);
+        const uploadResponses = await Promise.all(uploadPromises);
         
         return NextResponse.json({ success: true, creators, responses: uploadResponses });
 
@@ -160,10 +160,12 @@ export async function DELETE(request: NextRequest) {
         
         // This is a more aggressive deletion. It's often better to handle deletion
         // by syncing state as done in the POST request. This remains for direct calls if needed.
-        await cloudinary.api.delete_resources_by_prefix(folderPath, config);
+        await cloudinary.api.delete_resources_by_prefix(folderPath, { ...config, resource_type: 'raw' });
+        await cloudinary.api.delete_resources_by_prefix(folderPath, { ...config, resource_type: 'image' });
+
         const result = await cloudinary.api.delete_folder(folderPath, config);
 
-        if (result.deleted && result.deleted[folderPath]) {
+        if (result.deleted && result.deleted.includes(folderPath)) {
             return NextResponse.json({ success: true, message: `Creator folder '${slug}' deleted.` });
         } else {
              return NextResponse.json({ success: false, error: 'Could not definitively delete creator folder. It may already be removed or empty.' }, { status: 404 });
