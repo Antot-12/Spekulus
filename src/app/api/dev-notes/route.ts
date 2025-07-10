@@ -68,10 +68,13 @@ export async function GET(request: NextRequest) {
             });
             
             const notePublicIds = results.resources
-                .filter((res: { format: string, public_id: string }) => {
-                    // This regex ensures we only get files like `.../dev-notes/some-slug/some-slug.json`
-                    const pattern = new RegExp(`^${NOTES_FOLDER}/([^/]+)/\\1\\.json$`);
-                    return res.format === 'json' && pattern.test(res.public_id);
+                .filter((res: { public_id: string }) => {
+                    // Correctly filter for files like `.../dev-notes/[slug]/[slug].json`
+                    const parts = res.public_id.split('/');
+                    if (parts.length < 4) return false; // Must be at least spekulus/dev-notes/slug/file.json
+                    const slug = parts[parts.length - 2];
+                    const filename = parts[parts.length - 1];
+                    return filename === `${slug}.json`;
                 })
                 .map((res: { public_id: string; }) => res.public_id);
 
