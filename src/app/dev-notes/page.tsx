@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { devNotes, type DevNote } from '@/lib/data';
+import type { DevNote } from '@/lib/data';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge';
 type SortOrder = 'newest' | 'oldest';
 
 const calculateReadingTime = (text: string): number => {
+    if (!text) return 0;
     const wordsPerMinute = 200;
     const wordCount = text.split(/\s+/).length;
     return Math.ceil(wordCount / wordsPerMinute);
@@ -26,7 +27,7 @@ const calculateReadingTime = (text: string): number => {
 export default function DevNotesPage() {
   const { language, translations } = useLanguage();
   const [notes, setNotes] = useState<DevNote[]>([]);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOrder, setSortOrder] = useState<SortOrder>('newest');
   
@@ -35,31 +36,25 @@ export default function DevNotesPage() {
   const tagFilter = searchParams.get('tag');
   const authorFilter = searchParams.get('author');
 
-  const loadNotes = useCallback(() => {
-    const LOCAL_STORAGE_KEY = `spekulus-dev-notes-${language}`;
+  const fetchNotes = useCallback(async () => {
+    setIsLoading(true);
     try {
-      const storedNotes = localStorage.getItem(LOCAL_STORAGE_KEY);
-      let notesData = storedNotes ? JSON.parse(storedNotes) : devNotes[language];
-      notesData = notesData.filter((note: DevNote) => note && note.slug);
-      setNotes(notesData);
+        const response = await fetch('/api/dev-notes');
+        const data = await response.json();
+        if (data.success) {
+            setNotes(data.notes);
+        } else {
+            console.error("Failed to fetch notes:", data.error);
+        }
     } catch (error) {
-      console.error("Failed to load notes", error);
-      setNotes(devNotes[language]);
+        console.error("Network error fetching notes:", error);
     }
-    setIsLoaded(true);
-  }, [language]);
-  
+    setIsLoading(false);
+  }, []);
+
   useEffect(() => {
-    loadNotes();
-
-    window.addEventListener('storage', loadNotes);
-    window.addEventListener('focus', loadNotes);
-
-    return () => {
-      window.removeEventListener('storage', loadNotes);
-      window.removeEventListener('focus', loadNotes);
-    };
-  }, [loadNotes]);
+    fetchNotes();
+  }, [fetchNotes]);
 
   const filteredAndSortedNotes = useMemo(() => {
     return notes
@@ -131,7 +126,7 @@ export default function DevNotesPage() {
         </div>
       )}
 
-      {!isLoaded ? (
+      {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {[...Array(6)].map((_, i) => (
             <Card key={i} className="bg-card border-border/50 overflow-hidden">
@@ -221,5 +216,3 @@ export default function DevNotesPage() {
     </div>
   );
 }
-
-    

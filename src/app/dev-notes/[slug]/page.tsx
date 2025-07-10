@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { useParams, notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { devNotes, type DevNote } from '@/lib/data';
+import type { DevNote } from '@/lib/data';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ArrowLeft, Calendar, User, Clock, Tag, ImageIcon } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Reactions } from '@/components/dev-notes/Reactions';
 
 const calculateReadingTime = (text: string): number => {
+    if (!text) return 0;
     const wordsPerMinute = 200;
     const wordCount = text.split(/\s+/).length;
     return Math.ceil(wordCount / wordsPerMinute);
@@ -30,30 +31,25 @@ export default function DevNotePage() {
   const [note, setNote] = useState<DevNote | null | undefined>(undefined);
 
   useEffect(() => {
-    const LOCAL_STORAGE_KEY = `spekulus-dev-notes-${language}`;
-    const loadNote = () => {
+    if (!slug) return;
+
+    const fetchNote = async () => {
       try {
-        const storedNotes = localStorage.getItem(LOCAL_STORAGE_KEY);
-        const notesData: DevNote[] = storedNotes ? JSON.parse(storedNotes) : devNotes[language];
-        const foundNote = notesData.find((n) => n.slug === slug);
-        setNote(foundNote || null);
+        const response = await fetch(`/api/dev-notes?slug=${slug}`);
+        const data = await response.json();
+        if (data.success && data.note.isVisible !== false) {
+          setNote(data.note);
+        } else {
+          setNote(null);
+        }
       } catch (error) {
-        console.error("Failed to load note", error);
-        const foundNote = devNotes[language].find((n) => n.slug === slug);
-        setNote(foundNote || null);
+        console.error("Failed to fetch note:", error);
+        setNote(null);
       }
     };
 
-    loadNote();
-
-    window.addEventListener('storage', loadNote);
-    window.addEventListener('focus', loadNote);
-
-    return () => {
-      window.removeEventListener('storage', loadNote);
-      window.removeEventListener('focus', loadNote);
-    };
-  }, [slug, language]);
+    fetchNote();
+  }, [slug]);
 
   if (note === undefined) {
     return (

@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
-import { devNotes, type DevNote, type Language } from '@/lib/data';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import type { DevNote, Language } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,8 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { logAction } from '@/lib/logger';
-
-const LOCAL_STORAGE_KEY_PREFIX = 'spekulus-dev-notes-';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 const newNoteContentExample = `### This is a Subheading
 
@@ -32,80 +31,73 @@ This is a paragraph of text. You can use **bold**, *italics*, or ~~strikethrough
 [This is a link to Google](https://google.com)
 `;
 
-const LanguageFlag = ({ lang }: { lang: Language }) => {
-    const flags: Record<string, string> = {
-      en: '🇬🇧',
-      uk: '🇺🇦',
-      sk: '🇸🇰',
-    };
-    return <span className="mr-2 text-base" role="img" aria-label={`${lang} flag`}>{flags[lang]}</span>;
-};
-
-const languageNames: Record<Language, string> = {
-    en: 'English',
-    uk: 'Ukrainian',
-    sk: 'Slovak'
-};
-
 export default function NotesAdminPage() {
     const { toast } = useToast();
     const [notes, setNotes] = useState<DevNote[]>([]);
-    const [isLoaded, setIsLoaded] = useState(false);
-    const [selectedLang, setSelectedLang] = useState<Language>('en');
+    const [isLoading, setIsLoading] = useState(true);
     const [generatingImages, setGeneratingImages] = useState<Record<number, boolean>>({});
     const fileInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
 
-    useEffect(() => {
-        setIsLoaded(false);
-        const localStorageKey = `${LOCAL_STORAGE_KEY_PREFIX}${selectedLang}`;
+    const fetchNotes = useCallback(async () => {
+        setIsLoading(true);
         try {
-            const storedNotes = localStorage.getItem(localStorageKey);
-            if (storedNotes) {
-                setNotes(JSON.parse(storedNotes));
+            const response = await fetch('/api/dev-notes');
+            const data = await response.json();
+            if (data.success) {
+                // Assuming language-specific notes are not yet implemented in the backend,
+                // we'll manage one list of notes for now.
+                setNotes(data.notes.sort((a: DevNote, b: DevNote) => new Date(b.date).getTime() - new Date(a.date).getTime()));
             } else {
-                setNotes(devNotes[selectedLang]);
+                toast({ title: "Error", description: "Could not fetch developer notes.", variant: 'destructive' });
             }
         } catch (error) {
-            console.error("Failed to load notes from localStorage", error);
-            setNotes(devNotes[selectedLang]);
+            toast({ title: "Network Error", description: "Failed to connect to the server.", variant: 'destructive' });
         }
-        setIsLoaded(true);
-    }, [selectedLang]);
+        setIsLoading(false);
+    }, [toast]);
 
-    const persistChanges = (newNotes: DevNote[]) => {
-        const localStorageKey = `${LOCAL_STORAGE_KEY_PREFIX}${selectedLang}`;
-        try {
-            localStorage.setItem(localStorageKey, JSON.stringify(newNotes));
-            setNotes(newNotes);
-        } catch (error) {
-            console.error("Failed to save notes to localStorage", error);
-            toast({ title: "Save Failed", description: "Could not save changes.", variant: 'destructive' });
-        }
-    };
+    useEffect(() => {
+        fetchNotes();
+    }, [fetchNotes]);
 
-    const handleNoteChange = (id: number, field: keyof DevNote, value: any) => {
-        const updatedNotes = notes.map(note => 
+    const handleNoteChange = async (id: number, field: keyof DevNote, value: any) => {
+        const updatedNotes = notes.map(note =>
             note.id === id ? { ...note, [field]: value } : note
         );
-        persistChanges(updatedNotes);
+        setNotes(updatedNotes);
         
-        if (field === 'isVisible') {
-            const noteTitle = notes.find(n => n.id === id)?.title || 'Unknown';
-            toast({ title: "Visibility Updated", description: `Note '${noteTitle}' is now ${value ? 'visible' : 'hidden'}.` });
-            logAction('Notes Update', 'Success', `Visibility for note '${noteTitle}' (ID: ${id}) set to ${value ? 'visible' : 'hidden'}.`);
+        const noteToUpdate = updatedNotes.find(n => n.id === id);
+        if (noteToUpdate) {
+            try {
+                const response = await fetch('/api/dev-notes', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(noteToUpdate),
+                });
+                const result = await response.json();
+                if (!result.success) {
+                    toast({ title: "Update Failed", description: "Could not save changes to the server.", variant: 'destructive' });
+                } else {
+                     if (field === 'isVisible') {
+                        const noteTitle = notes.find(n => n.id === id)?.title || 'Unknown';
+                        toast({ title: "Visibility Updated", description: `Note '${noteTitle}' is now ${value ? 'visible' : 'hidden'}.` });
+                        logAction('Notes Update', 'Success', `Visibility for note '${noteTitle}' (ID: ${id}) set to ${value ? 'visible' : 'hidden'}.`);
+                    }
+                }
+            } catch (error) {
+                 toast({ title: "Network Error", description: "Failed to connect to the server.", variant: 'destructive' });
+            }
         }
     };
 
     const handleArrayChange = (id: number, field: keyof DevNote, value: string) => {
-        const updatedNotes = notes.map(note =>
-            note.id === id ? { ...note, [field]: value.split(',').map(s => s.trim()).filter(Boolean) } : note
-        );
-        persistChanges(updatedNotes);
+        const arrayValue = value.split(',').map(s => s.trim()).filter(Boolean);
+        handleNoteChange(id, field, arrayValue);
     };
 
-    const handleNoteAdd = () => {
-        const newNote: DevNote = { 
-            id: Date.now(), 
+    const handleNoteAdd = async () => {
+        const newNote: DevNote = {
+            id: Date.now(),
             title: 'New Note Title',
             slug: `new-note-${Date.now()}`,
             date: new Date().toISOString().split('T')[0],
@@ -118,18 +110,42 @@ export default function NotesAdminPage() {
             isVisible: false,
             reactionCounts: {},
         };
-        const newNotes = [...notes, newNote];
-        persistChanges(newNotes);
-        toast({ title: "Note Added", description: "A new draft note has been created. Make changes and toggle visibility when ready." });
-        logAction('Notes Update', 'Success', `Added new note 'New Note Title' for ${languageNames[selectedLang]}.`);
+
+        try {
+            const response = await fetch('/api/dev-notes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newNote),
+            });
+            const result = await response.json();
+            if (result.success) {
+                setNotes(prev => [newNote, ...prev]);
+                toast({ title: "Note Added", description: "A new draft note has been created." });
+                logAction('Notes Update', 'Success', `Added new note 'New Note Title'.`);
+            } else {
+                toast({ title: "Creation Failed", description: result.error, variant: 'destructive' });
+            }
+        } catch (error) {
+            toast({ title: "Network Error", description: "Failed to create note.", variant: 'destructive' });
+        }
     };
 
-    const handleNoteDelete = (id: number) => {
-        const noteTitle = notes.find(n => n.id === id)?.title || 'Unknown';
-        const newNotes = notes.filter(note => note.id !== id);
-        persistChanges(newNotes);
-        toast({ title: "Note Deleted", variant: 'destructive' });
-        logAction('Notes Update', 'Success', `Deleted note '${noteTitle}' for ${languageNames[selectedLang]}.`);
+    const handleNoteDelete = async (noteToDelete: DevNote) => {
+        try {
+            const response = await fetch(`/api/dev-notes?slug=${noteToDelete.slug}`, {
+                method: 'DELETE',
+            });
+            const result = await response.json();
+            if (result.success) {
+                setNotes(prev => prev.filter(note => note.id !== noteToDelete.id));
+                toast({ title: "Note Deleted", variant: 'destructive' });
+                logAction('Notes Update', 'Success', `Deleted note '${noteToDelete.title}'.`);
+            } else {
+                toast({ title: "Deletion Failed", description: result.error, variant: 'destructive' });
+            }
+        } catch (error) {
+            toast({ title: "Network Error", description: "Failed to delete note.", variant: 'destructive' });
+        }
     };
     
     const handleHeaderImageUpload = async (noteId: number, event: React.ChangeEvent<HTMLInputElement>) => {
@@ -187,7 +203,7 @@ export default function NotesAdminPage() {
 
         try {
             const imageUrl = await generateImage(hint);
-            handleNoteChange(noteId, 'imageUrl', imageUrl);
+            await handleNoteChange(noteId, 'imageUrl', imageUrl);
             toast({ title: "Image Generated!", description: "The new header image has been set." });
             logAction('File Upload', 'Success', `Generated image for note '${noteTitle}' with hint: "${hint}"`);
         } catch (error: any) {
@@ -200,11 +216,12 @@ export default function NotesAdminPage() {
     };
     
     const handleResetReactions = (noteId: number) => {
+        // This still uses localStorage as reactions are per-user, not global.
         try {
             const noteTitle = notes.find(n => n.id === noteId)?.title || 'Unknown Note';
             localStorage.removeItem(`spekulus-reactions-${noteId}`);
-            toast({ title: "Reactions Reset", description: `Reactions for note "${noteTitle}" have been cleared.` });
-            logAction('Reactions Reset', 'Success', `Reactions for note ID ${noteId} ("${noteTitle}") have been reset.`);
+            toast({ title: "Reactions Reset", description: `Reactions for note "${noteTitle}" have been cleared from this browser.` });
+            logAction('Reactions Reset', 'Success', `Reactions for note ID ${noteId} ("${noteTitle}") have been reset locally.`);
         } catch (error) {
             console.error("Failed to reset reactions", error);
             toast({ title: "Error", description: "Could not reset reactions.", variant: "destructive" });
@@ -218,30 +235,15 @@ export default function NotesAdminPage() {
             <div className="flex flex-wrap gap-4 justify-between items-center">
               <div>
                 <CardTitle>Manage Developer Notes</CardTitle>
-                <CardDescription>Add, edit, or delete developer notes. Changes are saved automatically.</CardDescription>
+                <CardDescription>Add, edit, or delete notes. Changes are saved to Cloudinary.</CardDescription>
               </div>
               <div className="flex gap-2">
-                <Select value={selectedLang} onValueChange={(value) => setSelectedLang(value as Language)}>
-                    <SelectTrigger className="w-[150px]">
-                        <SelectValue>
-                            <div className="flex items-center">
-                                <LanguageFlag lang={selectedLang} />
-                                {languageNames[selectedLang]}
-                            </div>
-                        </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                       <SelectItem value="en"><LanguageFlag lang="en" /> {languageNames['en']}</SelectItem>
-                       <SelectItem value="uk"><LanguageFlag lang="uk" /> {languageNames['uk']}</SelectItem>
-                       <SelectItem value="sk"><LanguageFlag lang="sk" /> {languageNames['sk']}</SelectItem>
-                    </SelectContent>
-                </Select>
                 <Button onClick={handleNoteAdd}><PlusCircle className="mr-2 h-4 w-4"/> Add Note</Button>
               </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
-            {!isLoaded ? (
+            {isLoading ? (
                  <div className="space-y-6">
                     {[...Array(2)].map((_, i) => (
                         <div key={i} className="space-y-4 p-4 border rounded-md">
@@ -282,7 +284,7 @@ export default function NotesAdminPage() {
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor={`slug-${note.id}`}>Slug (URL)</Label>
-                            <Input id={`slug-${note.id}`} value={note.slug ?? ''} onChange={(e) => handleNoteChange(note.id, 'slug', e.target.value)} />
+                            <Input id={`slug-${note.id}`} value={note.slug ?? ''} onChange={(e) => handleNoteChange(note.id, 'slug', e.target.value)} disabled />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor={`date-${note.id}`}>Date</Label>
@@ -348,12 +350,25 @@ export default function NotesAdminPage() {
                     </div>
                     <div className="flex justify-between items-center pt-2">
                         <Button variant="outline" onClick={() => handleResetReactions(note.id)}>
-                            <RotateCcw className="mr-2 h-4 w-4"/> Reset Reactions
+                            <RotateCcw className="mr-2 h-4 w-4"/> Reset Local Reactions
                         </Button>
-                        <Button variant="destructive" size="icon" onClick={() => handleNoteDelete(note.id)}>
-                            <Trash2 className="h-4 w-4"/>
-                            <span className="sr-only">Delete</span>
-                        </Button>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive" size="icon"><Trash2 className="h-4 w-4" /></Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This will permanently delete the note "{note.title}" from Cloudinary. This action cannot be undone.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleNoteDelete(note)}>Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                     </div>
                   </div>
                 ))

@@ -1,10 +1,10 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { devNotes, DevNote } from '@/lib/data';
+import type { DevNote } from '@/lib/data';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,35 +17,27 @@ export function DevNotesSection() {
   const [notes, setNotes] = useState<DevNote[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
+  const fetchNotes = useCallback(async () => {
+    setIsLoaded(false);
+    try {
+        const response = await fetch('/api/dev-notes');
+        const data = await response.json();
+        if (data.success) {
+            const visibleNotes = data.notes.filter((note: DevNote) => note.isVisible !== false);
+            const sortedNotes = visibleNotes.sort((a: DevNote, b: DevNote) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            setNotes(sortedNotes.slice(0, 3));
+        } else {
+            console.error("Failed to fetch notes for landing page:", data.error);
+        }
+    } catch (error) {
+        console.error("Network error fetching notes:", error);
+    }
+    setIsLoaded(true);
+  }, []);
+
   useEffect(() => {
-    const LOCAL_STORAGE_KEY = `spekulus-dev-notes-${language}`;
-    const loadNotes = () => {
-      try {
-          const storedNotes = localStorage.getItem(LOCAL_STORAGE_KEY);
-          let notesData = storedNotes ? JSON.parse(storedNotes) : devNotes[language];
-          notesData = notesData.filter((note: DevNote) => note && note.slug && note.isVisible !== false);
-          
-          const sortedNotes = (notesData)
-            .sort((a: DevNote, b: DevNote) => new Date(b.date).getTime() - new Date(a.date).getTime());
-          setNotes(sortedNotes.slice(0, 3));
-      } catch (error) {
-          console.error("Failed to load notes", error);
-          const sortedNotes = devNotes[language].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-          setNotes(sortedNotes.slice(0, 3));
-      }
-      setIsLoaded(true);
-    };
-
-    loadNotes();
-    
-    window.addEventListener('storage', loadNotes);
-    window.addEventListener('focus', loadNotes);
-
-    return () => {
-      window.removeEventListener('storage', loadNotes);
-      window.removeEventListener('focus', loadNotes);
-    };
-  }, [language]);
+    fetchNotes();
+  }, [fetchNotes]);
 
   return (
     <section id="dev-notes" className="py-16 md:py-24 bg-background/50">
