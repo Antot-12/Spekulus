@@ -115,18 +115,6 @@ export default function NotesAdminPage() {
         };
 
         try {
-            // First create the folder for the note
-            const folderResponse = await fetch('/api/uploads-manager', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ path: 'spekulus/dev-notes', folderName: slug }),
-            });
-            const folderResult = await folderResponse.json();
-            if (!folderResult.success && !folderResult.error.includes('already exists')) {
-                toast({ title: "Creation Failed", description: `Could not create note folder: ${folderResult.error}`, variant: 'destructive' });
-                return;
-            }
-
             const response = await fetch('/api/dev-notes', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -375,7 +363,7 @@ export default function NotesAdminPage() {
                                 <AlertDialogHeader>
                                     <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                        This will permanently delete the note "{note.title}" from Cloudinary. This action cannot be undone.
+                                        This will permanently delete the note "{note.title}" and all its assets from Cloudinary. This action cannot be undone.
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
