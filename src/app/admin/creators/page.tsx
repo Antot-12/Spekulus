@@ -133,28 +133,10 @@ export default function CreatorsAdminPage() {
         toast({ title: "Creator Added", description: "A new profile has been added. Remember to save." });
     };
 
-    const handleCreatorDelete = async (creatorToDelete: Creator) => {
-        // Optimistically remove from UI
-        setCreators(creators.filter(creator => creator.id !== creatorToDelete.id));
-
-        try {
-            const response = await fetch(`/api/creators?slug=${creatorToDelete.slug}&lang=${selectedLang}`, {
-                method: 'DELETE',
-            });
-            const result = await response.json();
-            if (result.success) {
-                toast({ title: "Creator Deleted", variant: 'destructive' });
-                logAction('Creators Update', 'Success', `Deleted creator '${creatorToDelete.name}'.`);
-                // The main save button will now persist the deletion.
-            } else {
-                toast({ title: "Deletion Failed", description: result.error, variant: 'destructive' });
-                // Revert UI change if delete failed
-                fetchCreators(selectedLang); 
-            }
-        } catch (error) {
-            toast({ title: "Network Error", description: "Failed to delete creator.", variant: 'destructive' });
-            fetchCreators(selectedLang);
-        }
+    const handleCreatorDelete = (idToDelete: number) => {
+        const creatorToDelete = creators.find(creator => creator.id === idToDelete);
+        setCreators(creators.filter(creator => creator.id !== idToDelete));
+        toast({ title: "Creator Removed", description: `"${creatorToDelete?.name}" has been removed. Press 'Save Changes' to confirm the deletion.`, variant: 'destructive' });
     };
 
     const handleImageUpload = async (creatorId: number, field: string, event: React.ChangeEvent<HTMLInputElement>) => {
@@ -418,16 +400,16 @@ export default function CreatorsAdminPage() {
                             <div className="flex justify-end pt-2">
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
-                                      <Button variant="destructive" size="icon"><Trash2 className="h-4 w-4" /><span className="sr-only">Delete</span></Button>
+                                      <Button variant="destructive"><Trash2 className="mr-2 h-4 w-4" />Delete Creator</Button>
                                     </AlertDialogTrigger>
                                     <AlertDialogContent>
                                       <AlertDialogHeader>
                                         <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                        <AlertDialogDescription>This will delete the creator "{creator.name}". This action cannot be undone until you save all changes.</AlertDialogDescription>
+                                        <AlertDialogDescription>This will remove the creator "{creator.name}" from this list. This action is not final until you press "Save Changes".</AlertDialogDescription>
                                       </AlertDialogHeader>
                                       <AlertDialogFooter>
                                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => setCreators(creators.filter(c => c.id !== creator.id))}>Delete</AlertDialogAction>
+                                        <AlertDialogAction onClick={() => handleCreatorDelete(creator.id)}>Remove</AlertDialogAction>
                                       </AlertDialogFooter>
                                     </AlertDialogContent>
                                 </AlertDialog>
