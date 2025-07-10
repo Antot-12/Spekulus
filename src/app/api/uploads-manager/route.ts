@@ -1,73 +1,44 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { readdir, stat, unlink, mkdir, rm } from 'fs/promises';
-import { join } from 'path';
+import { v2 as cloudinary } from 'cloudinary';
 
-const UPLOADS_DIR = join(process.cwd(), 'public/uploads');
-
-type FileInfo = {
-  name: string;
-  path: string;
-  size: number;
-  mtime: number;
-  isDirectory: boolean;
-  children?: FileInfo[];
-};
-
-async function getFilesRecursively(dir: string, relativePath: string = ''): Promise<FileInfo[]> {
-  let dirents: any[];
-  try {
-    dirents = await readdir(dir, { withFileTypes: true });
-  } catch(e: any) {
-    if (e.code === 'ENOENT') {
-      await mkdir(dir, { recursive: true });
-      dirents = [];
-    } else {
-        throw e;
-    }
-  }
-
-  const files = await Promise.all(
-    dirents.map(async (dirent) => {
-      const fullPath = join(dir, dirent.name);
-      const currentRelativePath = join(relativePath, dirent.name);
-      const stats = await stat(fullPath);
-
-      if (dirent.isDirectory()) {
-        return {
-          name: dirent.name,
-          path: currentRelativePath,
-          size: stats.size,
-          mtime: stats.mtime.getTime(),
-          isDirectory: true,
-          children: await getFilesRecursively(fullPath, currentRelativePath),
-        };
-      } else {
-        return {
-          name: dirent.name,
-          path: currentRelativePath,
-          size: stats.size,
-          mtime: stats.mtime.getTime(),
-          isDirectory: false,
-        };
-      }
-    })
-  );
-  return files.sort((a, b) => {
-    if (a.isDirectory !== b.isDirectory) {
-        return a.isDirectory ? -1 : 1;
-    }
-    return a.name.localeCompare(b.name);
-  });
+if (!process.env.CLOUDINARY_URL) {
+  console.error('CLOUDINARY_URL environment variable is not set');
+} else {
+  cloudinary.config({ secure: true });
 }
 
 export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const path = searchParams.get('path') || 'spekulus';
+
   try {
-    const files = await getFilesRecursively(UPLOADS_DIR);
-    return NextResponse.json({ success: true, files });
-  } catch (error) {
-    console.error('Error reading uploads directory:', error);
-    return NextResponse.json({ success: false, error: 'Failed to read uploads directory.' }, { status: 500 });
+    // Fetch all resources (files)
+    const resourcesResponse = await cloudinary.api.resources({
+      type: 'upload',
+      prefix: path,
+      max_results: 500
+    });
+
+    // Fetch all subfolders
+    const subfoldersResponse = await cloudinary.api.sub_folders(path);
+    
+    const files = resourcesResponse.resources.map((file: any) => ({
+      ...file,
+      isDirectory: false
+    }));
+
+    const folders = subfoldersResponse.folders.map((folder: any) => ({
+      ...folder,
+      isDirectory: true
+    }));
+
+    const combined = [...folders, ...files];
+
+    return NextResponse.json({ success: true, files: combined });
+  } catch (error: any) {
+    console.error('Error fetching Cloudinary resources:', error);
+    return NextResponse.json({ success: false, error: error.message || 'Failed to fetch files.' }, { status: 500 });
   }
 }
 
@@ -80,21 +51,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Invalid folder name.' }, { status: 400 });
     }
 
-    const currentDirectory = join(UPLOADS_DIR, path || '');
-    if (!currentDirectory.startsWith(UPLOADS_DIR)) {
-      return NextResponse.json({ success: false, error: 'Access denied.' }, { status: 403 });
-    }
+    const newFolderPath = path ? `${path}/${folderName}` : folderName;
 
-    const newFolderPath = join(currentDirectory, folderName);
-    
-    await mkdir(newFolderPath);
+    await cloudinary.api.create_folder(newFolderPath);
     
     return NextResponse.json({ success: true, message: `Folder '${folderName}' created.` });
   } catch (error: any) {
-    if (error.code === 'EEXIST') {
+    console.error('Error creating Cloudinary folder:', error);
+     if (error.http_code === 409) {
       return NextResponse.json({ success: false, error: 'A folder with that name already exists.' }, { status: 409 });
     }
-    console.error('Error creating directory:', error);
     return NextResponse.json({ success: false, error: 'Failed to create directory.' }, { status: 500 });
   }
 }
@@ -102,31 +68,22 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const body = await request.json();
-    const { path: relativePath, isDirectory } = body;
+    const { public_id, resource_type } = body;
 
-    if (!relativePath || typeof relativePath !== 'string') {
-      return NextResponse.json({ success: false, error: 'File or folder path is required.' }, { status: 400 });
+    if (!public_id) {
+      return NextResponse.json({ success: false, error: 'File public_id is required.' }, { status: 400 });
     }
     
-    const finalPath = join(UPLOADS_DIR, relativePath);
-    
-    if (!finalPath.startsWith(UPLOADS_DIR)) {
-        return NextResponse.json({ success: false, error: 'Access denied.' }, { status: 403 });
-    }
-
-    if (isDirectory) {
-        await rm(finalPath, { recursive: true, force: true });
+    if(resource_type === 'folder'){
+        await cloudinary.api.delete_folder(public_id);
     } else {
-        await unlink(finalPath);
+        await cloudinary.uploader.destroy(public_id, { resource_type: resource_type || 'image' });
     }
     
     return NextResponse.json({ success: true, message: 'Item deleted successfully.' });
 
   } catch (error: any) {
-    console.error('Error deleting item:', error);
-    if(error.code === 'ENOENT'){
-      return NextResponse.json({ success: false, error: 'Item not found. It may have already been deleted.' }, { status: 404 });
-    }
-    return NextResponse.json({ success: false, error: 'Failed to delete item.' }, { status: 500 });
+    console.error('Error deleting Cloudinary item:', error);
+    return NextResponse.json({ success: false, error: error.message || 'Failed to delete item.' }, { status: 500 });
   }
 }

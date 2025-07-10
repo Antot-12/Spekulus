@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
         uploadStream.end(fileBuffer);
     });
     
-    return NextResponse.json({ success: true, url: result.secure_url });
+    return NextResponse.json({ success: true, url: result.secure_url, ...result });
 
   } catch (error) {
     console.error('Error in upload route:', error);
