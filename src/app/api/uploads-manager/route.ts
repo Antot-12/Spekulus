@@ -32,19 +32,25 @@ export async function GET(request: NextRequest) {
     const resourcesResponse = await cloudinary.api.resources({
       ...config,
       type: 'upload',
-      prefix: path,
+      prefix: path === 'spekulus' ? `${path}/` : path, // Add trailing slash only for root
       max_results: 500
     });
 
     // Fetch all subfolders
     const subfoldersResponse = await cloudinary.api.sub_folders(path, config);
     
-    const files = resourcesResponse.resources.map((file: any) => ({
-      ...file,
-      isDirectory: false,
-      name: file.public_id.split('/').pop(),
-      path: file.public_id,
-    }));
+    const files = resourcesResponse.resources
+      .filter((file: any) => {
+        // Filter out files that are in sub-folders of the current path
+        const fileFolderPath = file.public_id.substring(0, file.public_id.lastIndexOf('/'));
+        return fileFolderPath === path;
+      })
+      .map((file: any) => ({
+        ...file,
+        isDirectory: false,
+        name: file.public_id.split('/').pop(),
+        path: file.public_id,
+      }));
 
     const folders = subfoldersResponse.folders.map((folder: any) => ({
       ...folder,
@@ -54,21 +60,7 @@ export async function GET(request: NextRequest) {
       asset_id: folder.path
     }));
 
-    const combined = [...folders, ...files]
-      .filter(item => {
-          const itemPath = item.path.endsWith('/') ? item.path.slice(0, -1) : item.path;
-          const directParent = itemPath.substring(0, itemPath.lastIndexOf('/'));
-          const requestedPath = path.endsWith('/') ? path.slice(0, -1) : path;
-          // Handle root case where directParent would be empty string
-          if (requestedPath === 'spekulus' && directParent === 'spekulus') {
-            return true;
-          }
-           // Handle cases where the item is directly in the root (e.g. 'spekulus/file.jpg')
-          if (requestedPath === 'spekulus' && !directParent.includes('/')) {
-              return true;
-          }
-          return directParent === requestedPath;
-      });
+    const combined = [...folders, ...files];
 
     return NextResponse.json({ success: true, files: combined });
   } catch (error: any) {
