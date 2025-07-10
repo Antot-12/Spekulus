@@ -76,6 +76,8 @@ export default function NotesAdminPage() {
                 const result = await response.json();
                 if (!result.success) {
                     toast({ title: "Update Failed", description: "Could not save changes to the server.", variant: 'destructive' });
+                    // Revert state if update fails
+                    fetchNotes();
                 } else {
                      if (field === 'isVisible') {
                         const noteTitle = notes.find(n => n.id === id)?.title || 'Unknown';
@@ -85,6 +87,7 @@ export default function NotesAdminPage() {
                 }
             } catch (error) {
                  toast({ title: "Network Error", description: "Failed to connect to the server.", variant: 'destructive' });
+                 fetchNotes(); // Revert state
             }
         }
     };
@@ -95,10 +98,11 @@ export default function NotesAdminPage() {
     };
 
     const handleNoteAdd = async () => {
+        const slug = `new-note-${Date.now()}`;
         const newNote: DevNote = {
             id: Date.now(),
             title: 'New Note Title',
-            slug: `new-note-${Date.now()}`,
+            slug: slug,
             date: new Date().toISOString().split('T')[0],
             summary: 'A brief summary of the new note.',
             content: newNoteContentExample,
@@ -111,6 +115,18 @@ export default function NotesAdminPage() {
         };
 
         try {
+            // First create the folder for the note
+            const folderResponse = await fetch('/api/uploads-manager', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path: 'spekulus/dev-notes', folderName: slug }),
+            });
+            const folderResult = await folderResponse.json();
+            if (!folderResult.success && !folderResult.error.includes('already exists')) {
+                toast({ title: "Creation Failed", description: `Could not create note folder: ${folderResult.error}`, variant: 'destructive' });
+                return;
+            }
+
             const response = await fetch('/api/dev-notes', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -159,7 +175,7 @@ export default function NotesAdminPage() {
 
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('subdirectory', `dev-notes/${note.slug}`);
+        formData.append('subdirectory', `spekulus/dev-notes/${note.slug}`);
         
         toast({ title: "Uploading...", description: "Please wait while the header image is uploaded." });
 
@@ -344,7 +360,7 @@ export default function NotesAdminPage() {
                             value={note.content ?? ''}
                             onChange={(value) => handleNoteChange(note.id, 'content', value)}
                             rows={12}
-                            uploadSubdirectory={`dev-notes/${note.slug}`}
+                            uploadSubdirectory={`spekulus/dev-notes/${note.slug}`}
                         />
                     </div>
                     <div className="flex justify-between items-center pt-2">

@@ -2,11 +2,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v2 as cloudinary } from 'cloudinary';
 
-// Note: No need for dotenv.config(). Next.js handles .env files.
-// The custom `env.txt` is loaded by the hosting platform's build process.
+// Load environment variables from env.txt
+require('dotenv').config({ path: require('path').resolve(process.cwd(), 'env.txt') });
 
 // This helper function ensures Cloudinary is configured for every API call.
-const configureCloudinary = () => {
+const getCloudinaryConfig = () => {
     const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
     const apiKey = process.env.CLOUDINARY_API_KEY;
     const apiSecret = process.env.CLOUDINARY_API_SECRET;
@@ -15,29 +15,29 @@ const configureCloudinary = () => {
         throw new Error('Cloudinary credentials are not configured in environment variables.');
     }
     
-    cloudinary.config({
+    return {
         cloud_name: cloudName,
         api_key: apiKey,
         api_secret: apiSecret,
-        secure: true,
-    });
+    };
 };
 
 export async function GET(request: NextRequest) {
   try {
-    configureCloudinary();
+    const config = getCloudinaryConfig();
     const { searchParams } = new URL(request.url);
     const path = searchParams.get('path') || 'spekulus';
 
     // Fetch all resources (files)
     const resourcesResponse = await cloudinary.api.resources({
+      ...config,
       type: 'upload',
       prefix: path,
       max_results: 500
     });
 
     // Fetch all subfolders
-    const subfoldersResponse = await cloudinary.api.sub_folders(path);
+    const subfoldersResponse = await cloudinary.api.sub_folders(path, config);
     
     const files = resourcesResponse.resources.map((file: any) => ({
       ...file,
@@ -60,8 +60,12 @@ export async function GET(request: NextRequest) {
           const directParent = itemPath.substring(0, itemPath.lastIndexOf('/'));
           const requestedPath = path.endsWith('/') ? path.slice(0, -1) : path;
           // Handle root case where directParent would be empty string
-          if (requestedPath === 'spekulus' && !directParent.includes('/')) {
+          if (requestedPath === 'spekulus' && directParent === 'spekulus') {
             return true;
+          }
+           // Handle cases where the item is directly in the root (e.g. 'spekulus/file.jpg')
+          if (requestedPath === 'spekulus' && !directParent.includes('/')) {
+              return true;
           }
           return directParent === requestedPath;
       });
@@ -75,7 +79,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    configureCloudinary();
+    const config = getCloudinaryConfig();
     const body = await request.json();
     const { path, folderName } = body;
 
@@ -85,7 +89,7 @@ export async function POST(request: NextRequest) {
 
     const newFolderPath = path ? `${path}/${folderName}` : folderName;
 
-    await cloudinary.api.create_folder(newFolderPath);
+    await cloudinary.api.create_folder(newFolderPath, config);
     
     return NextResponse.json({ success: true, message: `Folder '${folderName}' created.` });
   } catch (error: any) {
@@ -99,7 +103,7 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    configureCloudinary();
+    const config = getCloudinaryConfig();
     const body = await request.json();
     const { public_id, resource_type } = body;
 
@@ -109,9 +113,10 @@ export async function DELETE(request: NextRequest) {
     
     if (resource_type === 'folder') {
         // Note: delete_folder also deletes all contents.
-        await cloudinary.api.delete_folder(public_id);
+        await cloudinary.api.delete_folder(public_id, config);
     } else {
         await cloudinary.uploader.destroy(public_id, {
+          ...config,
           resource_type: resource_type || 'image'
         });
     }
