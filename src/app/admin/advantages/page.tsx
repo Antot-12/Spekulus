@@ -1,20 +1,20 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
-import { advantagesData, type Advantage, type Language } from '@/lib/data';
+import { useState, useEffect, useCallback } from 'react';
+import { advantagesData as defaultData, type Advantage, type Language } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Trash2, PlusCircle, Save, Sparkles } from 'lucide-react';
+import { Trash2, PlusCircle, Save, Sparkles, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AdvantageIcon } from '@/components/AdvantageIcon';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { logAction } from '@/lib/logger';
 
-const LOCAL_STORAGE_KEY_PREFIX = 'spekulus-advantages-';
+const SECTION_KEY = 'advantages';
 
 const LanguageFlag = ({ lang }: { lang: Language }) => {
     const flags: Record<string, string> = {
@@ -34,41 +34,51 @@ const languageNames: Record<Language, string> = {
 export default function AdvantagesAdminPage() {
     const { toast } = useToast();
     const [advantages, setAdvantages] = useState<Advantage[]>([]);
-    const [isLoaded, setIsLoaded] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
     const [selectedLang, setSelectedLang] = useState<Language>('en');
 
-    useEffect(() => {
-        setIsLoaded(false);
-        const localStorageKey = `${LOCAL_STORAGE_KEY_PREFIX}${selectedLang}`;
+    const fetchData = useCallback(async (lang: Language) => {
+        setIsLoading(true);
         try {
-            const storedData = localStorage.getItem(localStorageKey);
-            if (storedData) {
-                setAdvantages(JSON.parse(storedData));
+            const response = await fetch(`/api/content?lang=${lang}&section=${SECTION_KEY}`);
+            const result = await response.json();
+            if (result.success && result.content) {
+                setAdvantages(result.content);
             } else {
-                setAdvantages(advantagesData[selectedLang]);
+                setAdvantages(defaultData[lang]);
             }
         } catch (error) {
-            console.error("Failed to load advantages from localStorage", error);
-            setAdvantages(advantagesData[selectedLang]);
+            console.error(`Failed to fetch advantages data for ${lang}`, error);
+            setAdvantages(defaultData[lang]);
         }
-        setIsLoaded(true);
-    }, [selectedLang]);
+        setIsLoading(false);
+    }, []);
 
-    const persistChanges = (newData: Advantage[]) => {
-        const localStorageKey = `${LOCAL_STORAGE_KEY_PREFIX}${selectedLang}`;
+    useEffect(() => {
+        fetchData(selectedLang);
+    }, [selectedLang, fetchData]);
+
+    const handleSave = async () => {
+        setIsSaving(true);
         try {
-            localStorage.setItem(localStorageKey, JSON.stringify(newData));
-            setAdvantages(newData);
+            const response = await fetch('/api/content', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ lang: selectedLang, section: SECTION_KEY, content: advantages }),
+            });
+            const result = await response.json();
+            if (result.success) {
+                toast({ title: "Saved!", description: `All advantage changes for ${languageNames[selectedLang]} have been saved.`});
+                logAction('Advantages Update', 'Success', `Saved all changes for ${languageNames[selectedLang]} advantages.`);
+            } else {
+                 toast({ title: "Save Failed", description: result.error || "Could not save changes.", variant: 'destructive' });
+            }
         } catch (error) {
-            console.error("Failed to save advantages to localStorage", error);
-            toast({ title: "Save Failed", description: "Could not save changes.", variant: 'destructive' });
+            toast({ title: "Save Failed", description: "An error occurred during save.", variant: 'destructive' });
+        } finally {
+            setIsSaving(false);
         }
-    };
-
-    const handleSave = () => {
-        persistChanges(advantages);
-        toast({ title: "Saved!", description: `All advantage changes for ${languageNames[selectedLang]} have been saved.`});
-        logAction('Advantages Update', 'Success', `Saved all changes for ${languageNames[selectedLang]} advantages.`);
     };
 
     const handleAdvantageChange = (id: number, field: keyof Advantage, value: string) => {
@@ -85,17 +95,14 @@ export default function AdvantagesAdminPage() {
             description: 'A brief description of this new advantage.',
             icon: 'Sparkles'
         };
-        const newAdvantages = [...advantages, newAdvantage];
-        persistChanges(newAdvantages);
-        toast({ title: "Advantage Added", description: "A new advantage has been added." });
-        logAction('Advantages Update', 'Success', `Added new advantage for ${languageNames[selectedLang]}.`);
+        setAdvantages(prev => [...prev, newAdvantage]);
+        toast({ title: "Advantage Added", description: "A new advantage has been added. Remember to save." });
     };
     
     const handleAdvantageDelete = (id: number) => {
         const itemToDelete = advantages.find(item => item.id === id);
-        const newAdvantages = advantages.filter(item => item.id !== id);
-        persistChanges(newAdvantages);
-        toast({ title: "Advantage Deleted", variant: 'destructive'});
+        setAdvantages(prev => prev.filter(item => item.id !== id));
+        toast({ title: "Advantage Deleted", variant: 'destructive', description: "Remember to save changes."});
         logAction('Advantages Update', 'Success', `Deleted advantage "${itemToDelete?.title}" for ${languageNames[selectedLang]}.`);
     };
 
@@ -105,7 +112,7 @@ export default function AdvantagesAdminPage() {
             <div className="flex flex-wrap gap-4 justify-between items-center">
                 <div>
                     <CardTitle>Manage Advantages</CardTitle>
-                    <CardDescription>Edit the key advantages displayed on the homepage. Changes are saved to your browser.</CardDescription>
+                    <CardDescription>Edit the key advantages displayed on the homepage. Press Save to persist changes.</CardDescription>
                 </div>
                 <div className="flex gap-2">
                     <Select value={selectedLang} onValueChange={(value) => setSelectedLang(value as Language)}>
@@ -124,12 +131,15 @@ export default function AdvantagesAdminPage() {
                         </SelectContent>
                     </Select>
                     <Button onClick={handleAdvantageAdd}><PlusCircle className="mr-2 h-4 w-4"/> Add Advantage</Button>
-                    <Button onClick={handleSave}><Save className="mr-2 h-4 w-4"/> Save Changes</Button>
+                    <Button onClick={handleSave} disabled={isSaving}>
+                        {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4"/>}
+                        Save Changes
+                    </Button>
                 </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
-            {!isLoaded ? (
+            {isLoading ? (
                 <div className="space-y-6">
                     {[...Array(3)].map((_, i) => (
                         <div key={i} className="space-y-2 p-4 border rounded-md">

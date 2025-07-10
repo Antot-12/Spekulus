@@ -1,50 +1,45 @@
+
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import Link from 'next/link';
 import { CheckCircle } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { heroSectionData, type HeroSectionData } from '@/lib/data';
+import { heroSectionData as defaultData, type HeroSectionData, type Language } from '@/lib/data';
 import { Skeleton } from '../ui/skeleton';
 
 export function HeroSection() {
   const { language, translations } = useLanguage();
-  const [data, setData] = useState<HeroSectionData>(heroSectionData.en);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [data, setData] = useState<HeroSectionData>(defaultData.en);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchData = useCallback(async (lang: Language) => {
+    setIsLoading(true);
+    try {
+        const response = await fetch(`/api/content?lang=${lang}&section=hero`);
+        const result = await response.json();
+        if (result.success && result.content) {
+            setData(result.content);
+        } else {
+            setData(defaultData[lang]);
+        }
+    } catch (error) {
+        console.error("Failed to load hero data, using default.", error);
+        setData(defaultData[lang]);
+    }
+    setIsLoading(false);
+  }, []);
 
   useEffect(() => {
-    const LOCAL_STORAGE_KEY = `spekulus-hero-section-${language}`;
-    const loadData = () => {
-      try {
-        const storedData = localStorage.getItem(LOCAL_STORAGE_KEY);
-        if (storedData) {
-          setData(JSON.parse(storedData));
-        } else {
-          setData(heroSectionData[language]);
-        }
-      } catch (error) {
-        console.error("Failed to load hero section data from localStorage", error);
-        setData(heroSectionData[language]);
-      }
-      setIsLoaded(true);
-    };
-
-    loadData();
-    window.addEventListener('storage', loadData);
-    window.addEventListener('focus', loadData);
-
-    return () => {
-      window.removeEventListener('storage', loadData);
-      window.removeEventListener('focus', loadData);
-    };
-  }, [language]);
+    fetchData(language);
+  }, [language, fetchData]);
 
   return (
     <section className="relative w-full min-h-[80vh] flex items-center justify-center text-center overflow-hidden">
       <div className="absolute inset-0 z-0">
-        {!isLoaded ? (
+        {isLoading ? (
           <Skeleton className="w-full h-full" />
         ) : (
           <Image
@@ -60,7 +55,7 @@ export function HeroSection() {
       </div>
 
       <div className="relative z-10 container px-4 md:px-6 flex flex-col items-center">
-        {!isLoaded ? (
+        {isLoading ? (
           <div className="max-w-3xl w-full space-y-6 flex flex-col items-center">
             <Skeleton className="h-16 w-full" />
             <Skeleton className="h-8 w-4/5" />

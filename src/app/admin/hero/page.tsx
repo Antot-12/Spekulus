@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { heroSectionData as defaultData, type HeroSectionData, type Language } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,7 +15,7 @@ import { generateImage } from '@/ai/flows/generate-image-flow';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { logAction } from '@/lib/logger';
 
-const LOCAL_STORAGE_KEY_PREFIX = 'spekulus-hero-section-';
+const SECTION_KEY = 'hero';
 
 const LanguageFlag = ({ lang }: { lang: Language }) => {
     const flags: Record<string, string> = {
@@ -35,43 +35,53 @@ const languageNames: Record<Language, string> = {
 export default function HeroSectionAdminPage() {
     const { toast } = useToast();
     const [data, setData] = useState<HeroSectionData>(defaultData.en);
-    const [isLoaded, setIsLoaded] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
     const [selectedLang, setSelectedLang] = useState<Language>('en');
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-    useEffect(() => {
-        setIsLoaded(false);
-        const localStorageKey = `${LOCAL_STORAGE_KEY_PREFIX}${selectedLang}`;
+    const fetchData = useCallback(async (lang: Language) => {
+        setIsLoading(true);
         try {
-            const storedData = localStorage.getItem(localStorageKey);
-            if (storedData) {
-                setData(JSON.parse(storedData));
+            const response = await fetch(`/api/content?lang=${lang}&section=${SECTION_KEY}`);
+            const result = await response.json();
+            if (result.success && result.content) {
+                setData(result.content);
             } else {
-                setData(defaultData[selectedLang]);
+                setData(defaultData[lang]);
             }
         } catch (error) {
-            console.error("Failed to load hero section data from localStorage", error);
-            setData(defaultData[selectedLang]);
+            console.error(`Failed to fetch hero data for ${lang}`, error);
+            setData(defaultData[lang]);
         }
-        setIsLoaded(true);
-    }, [selectedLang]);
-    
-    const persistChanges = (newData: HeroSectionData) => {
-        const localStorageKey = `${LOCAL_STORAGE_KEY_PREFIX}${selectedLang}`;
+        setIsLoading(false);
+    }, []);
+
+    useEffect(() => {
+        fetchData(selectedLang);
+    }, [selectedLang, fetchData]);
+
+    const handleSave = async () => {
+        setIsSaving(true);
         try {
-            localStorage.setItem(localStorageKey, JSON.stringify(newData));
-            setData(newData);
+            const response = await fetch('/api/content', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ lang: selectedLang, section: SECTION_KEY, content: data }),
+            });
+            const result = await response.json();
+            if (result.success) {
+                toast({ title: "Saved!", description: `Changes to the Hero section for ${languageNames[selectedLang]} have been saved.`});
+                logAction('Hero Update', 'Success', `Saved changes for ${languageNames[selectedLang]} hero section.`);
+            } else {
+                toast({ title: "Save Failed", description: result.error || "Could not save changes.", variant: 'destructive' });
+            }
         } catch (error) {
-            console.error("Failed to save hero section data to localStorage", error);
-            toast({ title: "Save Failed", description: "Could not save changes.", variant: 'destructive' });
+            toast({ title: "Save Failed", description: "An error occurred during save.", variant: 'destructive' });
+        } finally {
+            setIsSaving(false);
         }
-    };
-    
-    const handleSave = () => {
-        persistChanges(data);
-        toast({ title: "Saved!", description: `Changes to the Hero section for ${languageNames[selectedLang]} have been saved.`});
-        logAction('Hero Update', 'Success', `Saved changes for ${languageNames[selectedLang]} hero section.`);
     };
 
     const handleChange = (field: keyof HeroSectionData, value: string) => {
@@ -163,12 +173,15 @@ export default function HeroSectionAdminPage() {
                            <SelectItem value="sk"><LanguageFlag lang="sk" /> {languageNames['sk']}</SelectItem>
                         </SelectContent>
                     </Select>
-                    <Button onClick={handleSave}><Save className="mr-2 h-4 w-4"/> Save Changes</Button>
+                    <Button onClick={handleSave} disabled={isSaving}>
+                        {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4"/>}
+                        Save Changes
+                    </Button>
                 </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
-            {!isLoaded ? (
+            {isLoading ? (
                 <div className="space-y-4 p-4">
                     <Skeleton className="h-10 w-1/3" />
                     <Skeleton className="h-10 w-full" />

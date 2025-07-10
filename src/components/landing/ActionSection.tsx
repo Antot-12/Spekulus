@@ -1,49 +1,43 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { actionSectionData } from '@/lib/data';
-import type { ActionSectionData } from '@/lib/data';
+import { actionSectionData as defaultData } from '@/lib/data';
+import type { ActionSectionData, Language } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 
 export function ActionSection() {
   const { language } = useLanguage();
-  const [data, setData] = useState<ActionSectionData>(actionSectionData.en);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [data, setData] = useState<ActionSectionData>(defaultData.en);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchData = useCallback(async (lang: Language) => {
+    setIsLoading(true);
+    try {
+        const response = await fetch(`/api/content?lang=${lang}&section=action-section`);
+        const result = await response.json();
+        if (result.success && result.content) {
+            setData(result.content);
+        } else {
+            setData(defaultData[lang]);
+        }
+    } catch (error) {
+        console.error("Failed to load action section data, using default.", error);
+        setData(defaultData[lang]);
+    }
+    setIsLoading(false);
+  }, []);
 
   useEffect(() => {
-    const LOCAL_STORAGE_KEY = `spekulus-action-section-${language}`;
-    const loadData = () => {
-      try {
-        const storedData = localStorage.getItem(LOCAL_STORAGE_KEY);
-        if (storedData) {
-          setData({ ...actionSectionData[language], ...JSON.parse(storedData) });
-        } else {
-          setData(actionSectionData[language]);
-        }
-      } catch (error) {
-        console.error("Failed to load action section data from localStorage", error);
-        setData(actionSectionData[language]);
-      }
-      setIsLoaded(true);
-    };
+    fetchData(language);
+  }, [language, fetchData]);
 
-    loadData();
-    window.addEventListener('storage', loadData);
-    window.addEventListener('focus', loadData);
-
-    return () => {
-      window.removeEventListener('storage', loadData);
-      window.removeEventListener('focus', loadData);
-    };
-  }, [language]);
-
-  if (!isLoaded) {
+  if (isLoading) {
     return (
         <section className="py-16 md:py-24">
             <div className="container mx-auto px-4 text-center">

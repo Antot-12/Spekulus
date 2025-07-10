@@ -1,45 +1,38 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { advantagesData, type Advantage } from '@/lib/data';
+import { advantagesData as defaultData, type Advantage, type Language } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AdvantageIcon } from '@/components/AdvantageIcon';
 
 export function AdvantagesSection() {
   const { language, translations } = useLanguage();
   const [advantages, setAdvantages] = useState<Advantage[]>([]);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchData = useCallback(async (lang: Language) => {
+    setIsLoading(true);
+    try {
+        const response = await fetch(`/api/content?lang=${lang}&section=advantages`);
+        const result = await response.json();
+        if (result.success && result.content) {
+            setAdvantages(result.content);
+        } else {
+            setAdvantages(defaultData[lang]);
+        }
+    } catch (error) {
+        console.error("Failed to load advantages data, using default.", error);
+        setAdvantages(defaultData[lang]);
+    }
+    setIsLoading(false);
+  }, []);
 
   useEffect(() => {
-    const LOCAL_STORAGE_KEY = `spekulus-advantages-${language}`;
-    const loadAdvantages = () => {
-      setIsLoaded(false);
-      try {
-        const storedAdvantages = localStorage.getItem(LOCAL_STORAGE_KEY);
-        if (storedAdvantages) {
-          setAdvantages(JSON.parse(storedAdvantages));
-        } else {
-          setAdvantages(advantagesData[language]);
-        }
-      } catch (error) {
-        console.error("Failed to load advantages from localStorage", error);
-        setAdvantages(advantagesData[language]);
-      }
-      setIsLoaded(true);
-    };
-
-    loadAdvantages();
-    window.addEventListener('storage', loadAdvantages);
-    window.addEventListener('focus', loadAdvantages);
-
-    return () => {
-      window.removeEventListener('storage', loadAdvantages);
-      window.removeEventListener('focus', loadAdvantages);
-    };
-  }, [language]);
+    fetchData(language);
+  }, [language, fetchData]);
 
 
   return (
@@ -50,7 +43,7 @@ export function AdvantagesSection() {
           <p className="text-lg text-foreground/70 mt-2">{translations.advantages.subtitle}</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {!isLoaded ? (
+          {isLoading ? (
              [...Array(6)].map((_, index) => (
                 <Card key={index} className="bg-card border-border/50 h-full p-6">
                   <div className="mb-4">

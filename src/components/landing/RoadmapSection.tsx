@@ -1,15 +1,13 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { roadmapEvents as staticRoadmapEvents } from '@/lib/data';
 import { Calendar, Lightbulb, FlaskConical, Rocket, Store, Wand2, PackageCheck, Globe, Flag } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { RoadmapEvent } from '@/lib/data';
-
-const LOCAL_STORAGE_KEY_PREFIX = 'spekulus-roadmap-events-';
+import type { RoadmapEvent, Language } from '@/lib/data';
 
 const getRoadmapIcon = (title: string) => {
     const lowerTitle = title.toLowerCase();
@@ -26,35 +24,28 @@ const getRoadmapIcon = (title: string) => {
 export function RoadmapSection() {
   const { language, translations } = useLanguage();
   const [roadmapEvents, setRoadmapEvents] = useState<RoadmapEvent[]>([]);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchData = useCallback(async (lang: Language) => {
+    setIsLoading(true);
+    try {
+        const response = await fetch(`/api/content?lang=${lang}&section=roadmap`);
+        const result = await response.json();
+        if (result.success && result.content) {
+            setRoadmapEvents(result.content);
+        } else {
+            setRoadmapEvents(staticRoadmapEvents[lang]);
+        }
+    } catch (error) {
+        console.error("Failed to load roadmap data, using default.", error);
+        setRoadmapEvents(staticRoadmapEvents[lang]);
+    }
+    setIsLoading(false);
+  }, []);
 
   useEffect(() => {
-    const localStorageKey = `${LOCAL_STORAGE_KEY_PREFIX}${language}`;
-    const loadRoadmap = () => {
-        try {
-            const storedRoadmap = localStorage.getItem(localStorageKey);
-            if (storedRoadmap) {
-                setRoadmapEvents(JSON.parse(storedRoadmap));
-            } else {
-                setRoadmapEvents(staticRoadmapEvents[language]);
-            }
-        } catch (error) {
-            console.error("Failed to load roadmap from localStorage", error);
-            setRoadmapEvents(staticRoadmapEvents[language]);
-        }
-        setIsLoaded(true);
-    }
-    
-    loadRoadmap();
-
-    window.addEventListener('storage', loadRoadmap);
-    window.addEventListener('focus', loadRoadmap);
-    
-    return () => {
-        window.removeEventListener('storage', loadRoadmap);
-        window.removeEventListener('focus', loadRoadmap);
-    };
-  }, [language]);
+    fetchData(language);
+  }, [language, fetchData]);
 
   return (
     <section id="roadmap" className="py-16 md:py-24 bg-background/50">
@@ -67,7 +58,7 @@ export function RoadmapSection() {
         <div className="relative wrap overflow-hidden p-2 md:p-10 h-full">
           <div className="absolute h-full border border-dashed border-border/40 left-5 md:left-1/2 -translate-x-1/2"></div>
           
-          {!isLoaded ? (
+          {isLoading ? (
             [...Array(4)].map((_, i) => (
                 <div key={i} className={`mb-8 flex justify-between items-center w-full ${i % 2 === 0 ? 'flex-row-reverse' : ''}`}>
                     <div className="order-1 w-5/12"></div>

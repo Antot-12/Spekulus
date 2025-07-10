@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
-import { productSectionData, type ProductSectionData, type ProductComponent, type Language } from '@/lib/data';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { productSectionData as defaultData, type ProductSectionData, type ProductComponent, type Language } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -16,7 +16,7 @@ import { generateImage } from '@/ai/flows/generate-image-flow';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { logAction } from '@/lib/logger';
 
-const LOCAL_STORAGE_KEY_PREFIX = 'spekulus-product-section-';
+const SECTION_KEY = 'product-section';
 
 const LanguageFlag = ({ lang }: { lang: Language }) => {
     const flags: Record<string, string> = {
@@ -35,45 +35,55 @@ const languageNames: Record<Language, string> = {
 
 export default function ProductSectionAdminPage() {
     const { toast } = useToast();
-    const [data, setData] = useState<ProductSectionData>(productSectionData.en);
-    const [isLoaded, setIsLoaded] = useState(false);
+    const [data, setData] = useState<ProductSectionData>(defaultData.en);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
     const [selectedLang, setSelectedLang] = useState<Language>('en');
     const [generatingImages, setGeneratingImages] = useState<{ [key: number]: boolean }>({});
     const fileInputRefs = useRef<{ [key: number]: HTMLInputElement | null }>({});
 
 
-    useEffect(() => {
-        setIsLoaded(false);
-        const localStorageKey = `${LOCAL_STORAGE_KEY_PREFIX}${selectedLang}`;
+    const fetchData = useCallback(async (lang: Language) => {
+        setIsLoading(true);
         try {
-            const storedData = localStorage.getItem(localStorageKey);
-            if (storedData) {
-                setData(JSON.parse(storedData));
+            const response = await fetch(`/api/content?lang=${lang}&section=${SECTION_KEY}`);
+            const result = await response.json();
+            if (result.success && result.content) {
+                setData(result.content);
             } else {
-                setData(productSectionData[selectedLang]);
+                setData(defaultData[lang]);
             }
         } catch (error) {
-            console.error("Failed to load product section data from localStorage", error);
-            setData(productSectionData[selectedLang]);
+            console.error(`Failed to fetch product section data for ${lang}`, error);
+            setData(defaultData[lang]);
         }
-        setIsLoaded(true);
-    }, [selectedLang]);
+        setIsLoading(false);
+    }, []);
 
-    const persistChanges = (newData: ProductSectionData) => {
-        const localStorageKey = `${LOCAL_STORAGE_KEY_PREFIX}${selectedLang}`;
+    useEffect(() => {
+        fetchData(selectedLang);
+    }, [selectedLang, fetchData]);
+
+    const handleSave = async () => {
+        setIsSaving(true);
         try {
-            localStorage.setItem(localStorageKey, JSON.stringify(newData));
-            setData(newData);
+            const response = await fetch('/api/content', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ lang: selectedLang, section: SECTION_KEY, content: data }),
+            });
+            const result = await response.json();
+            if (result.success) {
+                toast({ title: "Saved!", description: `Changes to the Product section for ${languageNames[selectedLang]} have been saved.`});
+                logAction('Product Update', 'Success', `Saved all changes for ${languageNames[selectedLang]} product section.`);
+            } else {
+                toast({ title: "Save Failed", description: result.error || "Could not save changes.", variant: 'destructive' });
+            }
         } catch (error) {
-            console.error("Failed to save data to localStorage", error);
-            toast({ title: "Save Failed", description: "Could not save changes.", variant: 'destructive' });
+            toast({ title: "Save Failed", description: "An error occurred during save.", variant: 'destructive' });
+        } finally {
+            setIsSaving(false);
         }
-    };
-
-    const handleSave = () => {
-        persistChanges(data);
-        toast({ title: "Saved!", description: `Changes to the Product section for ${languageNames[selectedLang]} have been saved.`});
-        logAction('Product Update', 'Success', `Saved all changes for ${languageNames[selectedLang]} product section.`);
     };
 
     const handleMainChange = (field: 'title' | 'subtitle', value: string) => {
@@ -180,12 +190,15 @@ export default function ProductSectionAdminPage() {
                            <SelectItem value="sk"><LanguageFlag lang="sk" /> {languageNames['sk']}</SelectItem>
                         </SelectContent>
                     </Select>
-                    <Button onClick={handleSave}><Save className="mr-2 h-4 w-4"/> Save Changes</Button>
+                    <Button onClick={handleSave} disabled={isSaving}>
+                        {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4"/>}
+                        Save Changes
+                    </Button>
                 </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
-            {!isLoaded ? (
+            {isLoading ? (
                 <div className="space-y-4 p-4">
                     <Skeleton className="h-10 w-1/3" />
                     <Skeleton className="h-10 w-full" />

@@ -1,19 +1,19 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
-import { roadmapEvents, type RoadmapEvent, type Language } from '@/lib/data';
+import { useState, useEffect, useCallback } from 'react';
+import { roadmapEvents as defaultData, type RoadmapEvent, type Language } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Trash2, PlusCircle, Save } from 'lucide-react';
+import { Trash2, PlusCircle, Save, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { logAction } from '@/lib/logger';
 
-const LOCAL_STORAGE_KEY_PREFIX = 'spekulus-roadmap-events-';
+const SECTION_KEY = 'roadmap';
 
 const LanguageFlag = ({ lang }: { lang: Language }) => {
     const flags: Record<string, string> = {
@@ -33,41 +33,51 @@ const languageNames: Record<Language, string> = {
 export default function RoadmapAdminPage() {
     const { toast } = useToast();
     const [roadmap, setRoadmap] = useState<RoadmapEvent[]>([]);
-    const [isLoaded, setIsLoaded] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
     const [selectedLang, setSelectedLang] = useState<Language>('en');
 
-    useEffect(() => {
-        setIsLoaded(false);
-        const localStorageKey = `${LOCAL_STORAGE_KEY_PREFIX}${selectedLang}`;
+    const fetchData = useCallback(async (lang: Language) => {
+        setIsLoading(true);
         try {
-            const storedRoadmap = localStorage.getItem(localStorageKey);
-            if (storedRoadmap) {
-                setRoadmap(JSON.parse(storedRoadmap));
+            const response = await fetch(`/api/content?lang=${lang}&section=${SECTION_KEY}`);
+            const result = await response.json();
+            if (result.success && result.content) {
+                setRoadmap(result.content);
             } else {
-                setRoadmap(roadmapEvents[selectedLang]);
+                setRoadmap(defaultData[lang]);
             }
         } catch (error) {
-            console.error("Failed to load roadmap from localStorage", error);
-            setRoadmap(roadmapEvents[selectedLang]);
+            console.error(`Failed to fetch roadmap data for ${lang}`, error);
+            setRoadmap(defaultData[lang]);
         }
-        setIsLoaded(true);
-    }, [selectedLang]);
+        setIsLoading(false);
+    }, []);
 
-    const persistChanges = (newRoadmap: RoadmapEvent[]) => {
-        const localStorageKey = `${LOCAL_STORAGE_KEY_PREFIX}${selectedLang}`;
+    useEffect(() => {
+        fetchData(selectedLang);
+    }, [selectedLang, fetchData]);
+
+    const handleSave = async () => {
+        setIsSaving(true);
         try {
-            localStorage.setItem(localStorageKey, JSON.stringify(newRoadmap));
-            setRoadmap(newRoadmap);
+            const response = await fetch('/api/content', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ lang: selectedLang, section: SECTION_KEY, content: roadmap }),
+            });
+            const result = await response.json();
+            if (result.success) {
+                toast({ title: "Saved!", description: `All roadmap changes for ${languageNames[selectedLang]} have been saved.`});
+                logAction('Roadmap Update', 'Success', `Saved all changes for ${languageNames[selectedLang]} roadmap.`);
+            } else {
+                toast({ title: "Save Failed", description: result.error || "Could not save changes.", variant: 'destructive' });
+            }
         } catch (error) {
-            console.error("Failed to save roadmap to localStorage", error);
-            toast({ title: "Save Failed", description: "Could not save changes.", variant: 'destructive' });
+            toast({ title: "Save Failed", description: "An error occurred during save.", variant: 'destructive' });
+        } finally {
+            setIsSaving(false);
         }
-    };
-
-    const handleSave = () => {
-        persistChanges(roadmap);
-        toast({ title: "Saved!", description: `All roadmap changes for ${languageNames[selectedLang]} have been saved.`});
-        logAction('Roadmap Update', 'Success', `Saved all changes for ${languageNames[selectedLang]} roadmap.`);
     };
 
     const handleRoadmapChange = (index: number, field: keyof RoadmapEvent, value: string) => {
@@ -79,17 +89,14 @@ export default function RoadmapAdminPage() {
 
     const handleRoadmapAdd = () => {
         const newEvent: RoadmapEvent = { date: new Date().toISOString().split('T')[0], title: 'New Event', description: 'Description...' };
-        const newRoadmap = [...roadmap, newEvent];
-        persistChanges(newRoadmap);
-        toast({ title: "Roadmap Event Added", description: "A new event has been added and saved." });
-        logAction('Roadmap Update', 'Success', `Added new roadmap event for ${languageNames[selectedLang]}.`);
+        setRoadmap(prev => [...prev, newEvent]);
+        toast({ title: "Roadmap Event Added", description: "A new event has been added. Remember to save." });
     };
     
     const handleRoadmapDelete = (indexToDelete: number) => {
         const eventToDelete = roadmap[indexToDelete];
-        const newRoadmap = roadmap.filter((_, index) => index !== indexToDelete);
-        persistChanges(newRoadmap);
-        toast({ title: "Roadmap Event Deleted", variant: 'destructive'});
+        setRoadmap(prev => prev.filter((_, index) => index !== indexToDelete));
+        toast({ title: "Roadmap Event Deleted", variant: 'destructive', description: "Remember to save changes."});
         logAction('Roadmap Update', 'Success', `Deleted roadmap event "${eventToDelete?.title}" for ${languageNames[selectedLang]}.`);
     };
 
@@ -99,7 +106,7 @@ export default function RoadmapAdminPage() {
             <div className="flex flex-wrap gap-4 justify-between items-center">
                 <div>
                     <CardTitle>Manage Roadmap</CardTitle>
-                    <CardDescription>Update project milestones. Changes are saved to your browser.</CardDescription>
+                    <CardDescription>Update project milestones. Press Save to persist changes.</CardDescription>
                 </div>
                 <div className="flex gap-2">
                     <Select value={selectedLang} onValueChange={(value) => setSelectedLang(value as Language)}>
@@ -118,12 +125,15 @@ export default function RoadmapAdminPage() {
                         </SelectContent>
                     </Select>
                     <Button onClick={handleRoadmapAdd}><PlusCircle className="mr-2 h-4 w-4"/> Add Event</Button>
-                    <Button onClick={handleSave}><Save className="mr-2 h-4 w-4"/> Save Changes</Button>
+                    <Button onClick={handleSave} disabled={isSaving}>
+                        {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4"/>}
+                        Save Changes
+                    </Button>
                 </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
-            {!isLoaded ? (
+            {isLoading ? (
                 <div className="space-y-6">
                     {[...Array(2)].map((_, i) => (
                         <div key={i} className="space-y-2 p-4 border rounded-md">
