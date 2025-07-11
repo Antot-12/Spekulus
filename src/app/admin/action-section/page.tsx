@@ -52,9 +52,10 @@ export default function ActionSectionAdminPage() {
                 setData(result.content);
             } else {
                 setData(defaultData[lang]);
+                console.warn(`No content found for ${lang}/${SECTION_KEY}, using default data.`);
             }
         } catch (error) {
-            console.error(`Failed to fetch action section data for ${lang}`, error);
+            console.error(`Failed to fetch action section data for ${lang}, falling back to default.`, error);
             setData(defaultData[lang]);
         }
         setIsLoading(false);

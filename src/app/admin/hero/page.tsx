@@ -49,10 +49,12 @@ export default function HeroSectionAdminPage() {
             if (result.success && result.content) {
                 setData(result.content);
             } else {
+                // Fallback to default data if fetch fails or content is null
                 setData(defaultData[lang]);
+                console.warn(`No content found for ${lang}/${SECTION_KEY}, using default data.`);
             }
         } catch (error) {
-            console.error(`Failed to fetch hero data for ${lang}`, error);
+            console.error(`Failed to fetch hero data for ${lang}, falling back to default.`, error);
             setData(defaultData[lang]);
         }
         setIsLoading(false);

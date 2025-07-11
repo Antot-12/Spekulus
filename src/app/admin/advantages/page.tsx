@@ -47,9 +47,10 @@ export default function AdvantagesAdminPage() {
                 setAdvantages(result.content);
             } else {
                 setAdvantages(defaultData[lang]);
+                 console.warn(`No content found for ${lang}/${SECTION_KEY}, using default data.`);
             }
         } catch (error) {
-            console.error(`Failed to fetch advantages data for ${lang}`, error);
+            console.error(`Failed to fetch advantages data for ${lang}, falling back to default.`, error);
             setAdvantages(defaultData[lang]);
         }
         setIsLoading(false);
