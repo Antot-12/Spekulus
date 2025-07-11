@@ -15,6 +15,8 @@ import { logAction } from '@/lib/logger';
 
 const SECTION_KEY = 'roadmap';
 
+type AllRoadmapData = Record<Language, RoadmapEvent[]>;
+
 const LanguageFlag = ({ lang }: { lang: Language }) => {
     const flags: Record<string, string> = {
       en: '🇬🇧',
@@ -32,32 +34,47 @@ const languageNames: Record<Language, string> = {
 
 export default function RoadmapAdminPage() {
     const { toast } = useToast();
+    const [allData, setAllData] = useState<AllRoadmapData | null>(null);
     const [roadmap, setRoadmap] = useState<RoadmapEvent[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [selectedLang, setSelectedLang] = useState<Language>('en');
 
-    const fetchData = useCallback(async (lang: Language) => {
-        setIsLoading(true);
+    const fetchData = useCallback(async (lang: Language): Promise<RoadmapEvent[]> => {
         try {
             const response = await fetch(`/api/content?lang=${lang}&section=${SECTION_KEY}`);
             const result = await response.json();
             if (result.success && result.content) {
-                setRoadmap(result.content);
+                return result.content;
             } else {
-                setRoadmap(defaultData[lang]);
                 console.warn(`No content found for ${lang}/${SECTION_KEY}, using default data.`);
+                return defaultData[lang];
             }
         } catch (error) {
             console.error(`Failed to fetch roadmap data for ${lang}, falling back to default.`, error);
-            setRoadmap(defaultData[lang]);
+            return defaultData[lang];
         }
-        setIsLoading(false);
     }, []);
 
     useEffect(() => {
-        fetchData(selectedLang);
-    }, [selectedLang, fetchData]);
+        const loadAllData = async () => {
+            setIsLoading(true);
+            const enData = await fetchData('en');
+            const ukData = await fetchData('uk');
+            const skData = await fetchData('sk');
+            const newAllData = { en: enData, uk: ukData, sk: skData };
+            setAllData(newAllData);
+            setRoadmap(newAllData[selectedLang] || []);
+            setIsLoading(false);
+        };
+        loadAllData();
+    }, [fetchData]);
+
+    useEffect(() => {
+        if (allData) {
+            setRoadmap(allData[selectedLang] || []);
+        }
+    }, [selectedLang, allData]);
 
     const handleSave = async () => {
         setIsSaving(true);
@@ -71,6 +88,10 @@ export default function RoadmapAdminPage() {
             if (result.success) {
                 toast({ title: "Saved!", description: `All roadmap changes for ${languageNames[selectedLang]} have been saved.`});
                 logAction('Roadmap Update', 'Success', `Saved all changes for ${languageNames[selectedLang]} roadmap.`);
+                // Refresh data from server
+                const newContent = await fetchData(selectedLang);
+                setAllData(prev => prev ? ({ ...prev, [selectedLang]: newContent }) : null);
+                setRoadmap(newContent);
             } else {
                 toast({ title: "Save Failed", description: result.error || "Could not save changes.", variant: 'destructive' });
             }
@@ -81,22 +102,29 @@ export default function RoadmapAdminPage() {
         }
     };
 
+    const updateState = (newRoadmap: RoadmapEvent[]) => {
+        setRoadmap(newRoadmap);
+        if (allData) {
+            setAllData({ ...allData, [selectedLang]: newRoadmap });
+        }
+    };
+
     const handleRoadmapChange = (index: number, field: keyof RoadmapEvent, value: string) => {
         const updatedRoadmap = roadmap.map((event, i) =>
             i === index ? { ...event, [field]: value } : event
         );
-        setRoadmap(updatedRoadmap);
+        updateState(updatedRoadmap);
     };
 
     const handleRoadmapAdd = () => {
         const newEvent: RoadmapEvent = { date: new Date().toISOString().split('T')[0], title: 'New Event', description: 'Description...' };
-        setRoadmap(prev => [...prev, newEvent]);
+        updateState([...roadmap, newEvent]);
         toast({ title: "Roadmap Event Added", description: "A new event has been added. Remember to save." });
     };
     
     const handleRoadmapDelete = (indexToDelete: number) => {
         const eventToDelete = roadmap[indexToDelete];
-        setRoadmap(prev => prev.filter((_, index) => index !== indexToDelete));
+        updateState(roadmap.filter((_, index) => index !== indexToDelete));
         toast({ title: "Roadmap Event Deleted", variant: 'destructive', description: "Remember to save changes."});
         logAction('Roadmap Update', 'Success', `Deleted roadmap event "${eventToDelete?.title}" for ${languageNames[selectedLang]}.`);
     };
@@ -134,7 +162,7 @@ export default function RoadmapAdminPage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
-            {isLoading ? (
+            {isLoading || !roadmap ? (
                 <div className="space-y-6">
                     {[...Array(2)].map((_, i) => (
                         <div key={i} className="space-y-2 p-4 border rounded-md">

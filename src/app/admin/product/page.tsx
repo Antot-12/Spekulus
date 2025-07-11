@@ -18,6 +18,8 @@ import { logAction } from '@/lib/logger';
 
 const SECTION_KEY = 'product-section';
 
+type AllProductData = Record<Language, ProductSectionData>;
+
 const LanguageFlag = ({ lang }: { lang: Language }) => {
     const flags: Record<string, string> = {
       en: '🇬🇧',
@@ -35,6 +37,7 @@ const languageNames: Record<Language, string> = {
 
 export default function ProductSectionAdminPage() {
     const { toast } = useToast();
+    const [allData, setAllData] = useState<AllProductData | null>(null);
     const [data, setData] = useState<ProductSectionData>(defaultData.en);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
@@ -43,27 +46,41 @@ export default function ProductSectionAdminPage() {
     const fileInputRefs = useRef<{ [key: number]: HTMLInputElement | null }>({});
 
 
-    const fetchData = useCallback(async (lang: Language) => {
-        setIsLoading(true);
+    const fetchData = useCallback(async (lang: Language): Promise<ProductSectionData> => {
         try {
             const response = await fetch(`/api/content?lang=${lang}&section=${SECTION_KEY}`);
             const result = await response.json();
             if (result.success && result.content) {
-                setData(result.content);
+                return result.content;
             } else {
-                setData(defaultData[lang]);
                 console.warn(`No content found for ${lang}/${SECTION_KEY}, using default data.`);
+                return defaultData[lang];
             }
         } catch (error) {
             console.error(`Failed to fetch product section data for ${lang}, falling back to default.`, error);
-            setData(defaultData[lang]);
+            return defaultData[lang];
         }
-        setIsLoading(false);
     }, []);
 
     useEffect(() => {
-        fetchData(selectedLang);
-    }, [selectedLang, fetchData]);
+        const loadAllData = async () => {
+            setIsLoading(true);
+            const enData = await fetchData('en');
+            const ukData = await fetchData('uk');
+            const skData = await fetchData('sk');
+            const newAllData = { en: enData, uk: ukData, sk: skData };
+            setAllData(newAllData);
+            setData(newAllData[selectedLang]);
+            setIsLoading(false);
+        };
+        loadAllData();
+    }, [fetchData]);
+
+    useEffect(() => {
+        if (allData) {
+            setData(allData[selectedLang]);
+        }
+    }, [selectedLang, allData]);
 
     const handleSave = async () => {
         setIsSaving(true);
@@ -77,6 +94,10 @@ export default function ProductSectionAdminPage() {
             if (result.success) {
                 toast({ title: "Saved!", description: `Changes to the Product section for ${languageNames[selectedLang]} have been saved.`});
                 logAction('Product Update', 'Success', `Saved all changes for ${languageNames[selectedLang]} product section.`);
+                // Refresh data from server
+                const newContent = await fetchData(selectedLang);
+                setAllData(prev => prev ? ({ ...prev, [selectedLang]: newContent }) : null);
+                setData(newContent);
             } else {
                 toast({ title: "Save Failed", description: result.error || "Could not save changes.", variant: 'destructive' });
             }
@@ -87,15 +108,22 @@ export default function ProductSectionAdminPage() {
         }
     };
 
+    const updateState = (newData: ProductSectionData) => {
+        setData(newData);
+        if (allData) {
+            setAllData({ ...allData, [selectedLang]: newData });
+        }
+    };
+
     const handleMainChange = (field: 'title' | 'subtitle', value: string) => {
-        setData(prev => ({ ...prev, [field]: value }));
+        updateState({ ...data, [field]: value });
     };
     
     const handleComponentChange = (id: number, field: keyof ProductComponent, value: string) => {
         const updatedComponents = data.components.map(item =>
             item.id === id ? { ...item, [field]: value } : item
         );
-        setData(prev => ({...prev, components: updatedComponents}));
+        updateState({...data, components: updatedComponents});
     };
     
     const handleImageUpload = async (id: number, event: React.ChangeEvent<HTMLInputElement>) => {
@@ -199,7 +227,7 @@ export default function ProductSectionAdminPage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
-            {isLoading ? (
+            {isLoading || !data ? (
                 <div className="space-y-4 p-4">
                     <Skeleton className="h-10 w-1/3" />
                     <Skeleton className="h-10 w-full" />

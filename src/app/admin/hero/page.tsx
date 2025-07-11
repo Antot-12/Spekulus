@@ -17,6 +17,8 @@ import { logAction } from '@/lib/logger';
 
 const SECTION_KEY = 'hero';
 
+type AllHeroData = Record<Language, HeroSectionData>;
+
 const LanguageFlag = ({ lang }: { lang: Language }) => {
     const flags: Record<string, string> = {
       en: '🇬🇧',
@@ -34,6 +36,7 @@ const languageNames: Record<Language, string> = {
 
 export default function HeroSectionAdminPage() {
     const { toast } = useToast();
+    const [allData, setAllData] = useState<AllHeroData | null>(null);
     const [data, setData] = useState<HeroSectionData>(defaultData.en);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
@@ -41,28 +44,41 @@ export default function HeroSectionAdminPage() {
     const [selectedLang, setSelectedLang] = useState<Language>('en');
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-    const fetchData = useCallback(async (lang: Language) => {
-        setIsLoading(true);
+    const fetchData = useCallback(async (lang: Language): Promise<HeroSectionData> => {
         try {
             const response = await fetch(`/api/content?lang=${lang}&section=${SECTION_KEY}`);
             const result = await response.json();
             if (result.success && result.content) {
-                setData(result.content);
+                return result.content;
             } else {
-                // Fallback to default data if fetch fails or content is null
-                setData(defaultData[lang]);
                 console.warn(`No content found for ${lang}/${SECTION_KEY}, using default data.`);
+                return defaultData[lang];
             }
         } catch (error) {
             console.error(`Failed to fetch hero data for ${lang}, falling back to default.`, error);
-            setData(defaultData[lang]);
+            return defaultData[lang];
         }
-        setIsLoading(false);
     }, []);
 
     useEffect(() => {
-        fetchData(selectedLang);
-    }, [selectedLang, fetchData]);
+        const loadAllData = async () => {
+            setIsLoading(true);
+            const enData = await fetchData('en');
+            const ukData = await fetchData('uk');
+            const skData = await fetchData('sk');
+            const newAllData = { en: enData, uk: ukData, sk: skData };
+            setAllData(newAllData);
+            setData(newAllData[selectedLang]);
+            setIsLoading(false);
+        };
+        loadAllData();
+    }, [fetchData]);
+
+    useEffect(() => {
+        if (allData) {
+            setData(allData[selectedLang]);
+        }
+    }, [selectedLang, allData]);
 
     const handleSave = async () => {
         setIsSaving(true);
@@ -76,6 +92,10 @@ export default function HeroSectionAdminPage() {
             if (result.success) {
                 toast({ title: "Saved!", description: `Changes to the Hero section for ${languageNames[selectedLang]} have been saved.`});
                 logAction('Hero Update', 'Success', `Saved changes for ${languageNames[selectedLang]} hero section.`);
+                // Refresh data from server
+                const newContent = await fetchData(selectedLang);
+                setAllData(prev => prev ? ({ ...prev, [selectedLang]: newContent }) : null);
+                setData(newContent);
             } else {
                 toast({ title: "Save Failed", description: result.error || "Could not save changes.", variant: 'destructive' });
             }
@@ -87,7 +107,11 @@ export default function HeroSectionAdminPage() {
     };
 
     const handleChange = (field: keyof HeroSectionData, value: string | boolean) => {
-        setData(prev => ({ ...prev, [field]: value }));
+        const updatedData = { ...data, [field]: value };
+        setData(updatedData);
+        if (allData) {
+            setAllData({ ...allData, [selectedLang]: updatedData });
+        }
     };
 
     const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -182,7 +206,7 @@ export default function HeroSectionAdminPage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
-            {isLoading ? (
+            {isLoading || !data ? (
                 <div className="space-y-4 p-4">
                     <Skeleton className="h-10 w-1/3" />
                     <Skeleton className="h-10 w-full" />

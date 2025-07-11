@@ -16,6 +16,8 @@ import { logAction } from '@/lib/logger';
 
 const SECTION_KEY = 'advantages';
 
+type AllAdvantagesData = Record<Language, Advantage[]>;
+
 const LanguageFlag = ({ lang }: { lang: Language }) => {
     const flags: Record<string, string> = {
       en: '🇬🇧',
@@ -33,6 +35,7 @@ const languageNames: Record<Language, string> = {
 
 export default function AdvantagesAdminPage() {
     const { toast } = useToast();
+    const [allData, setAllData] = useState<AllAdvantagesData | null>(null);
     const [advantages, setAdvantages] = useState<Advantage[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
@@ -44,21 +47,37 @@ export default function AdvantagesAdminPage() {
             const response = await fetch(`/api/content?lang=${lang}&section=${SECTION_KEY}`);
             const result = await response.json();
             if (result.success && result.content) {
-                setAdvantages(result.content);
+                return result.content;
             } else {
-                setAdvantages(defaultData[lang]);
-                 console.warn(`No content found for ${lang}/${SECTION_KEY}, using default data.`);
+                console.warn(`No content found for ${lang}/${SECTION_KEY}, using default data.`);
+                return defaultData[lang];
             }
         } catch (error) {
             console.error(`Failed to fetch advantages data for ${lang}, falling back to default.`, error);
-            setAdvantages(defaultData[lang]);
+            return defaultData[lang];
+        } finally {
+            setIsLoading(false);
         }
-        setIsLoading(false);
     }, []);
 
     useEffect(() => {
-        fetchData(selectedLang);
-    }, [selectedLang, fetchData]);
+        const loadAllData = async () => {
+            const enData = await fetchData('en');
+            const ukData = await fetchData('uk');
+            const skData = await fetchData('sk');
+            const newAllData = { en: enData, uk: ukData, sk: skData };
+            setAllData(newAllData);
+            setAdvantages(newAllData[selectedLang] || []);
+            setIsLoading(false);
+        }
+        loadAllData();
+    }, [fetchData, selectedLang]);
+
+    useEffect(() => {
+        if (allData) {
+            setAdvantages(allData[selectedLang] || []);
+        }
+    }, [selectedLang, allData]);
 
     const handleSave = async () => {
         setIsSaving(true);
@@ -72,6 +91,10 @@ export default function AdvantagesAdminPage() {
             if (result.success) {
                 toast({ title: "Saved!", description: `All advantage changes for ${languageNames[selectedLang]} have been saved.`});
                 logAction('Advantages Update', 'Success', `Saved all changes for ${languageNames[selectedLang]} advantages.`);
+                 // Refresh data from server
+                const newContent = await fetchData(selectedLang);
+                setAllData(prev => prev ? ({ ...prev, [selectedLang]: newContent }) : null);
+                setAdvantages(newContent);
             } else {
                  toast({ title: "Save Failed", description: result.error || "Could not save changes.", variant: 'destructive' });
             }
@@ -82,11 +105,18 @@ export default function AdvantagesAdminPage() {
         }
     };
 
+    const updateState = (newAdvantages: Advantage[]) => {
+        setAdvantages(newAdvantages);
+        if (allData) {
+            setAllData({ ...allData, [selectedLang]: newAdvantages });
+        }
+    };
+
     const handleAdvantageChange = (id: number, field: keyof Advantage, value: string) => {
         const updatedAdvantages = advantages.map(item =>
             item.id === id ? { ...item, [field]: value } : item
         );
-        setAdvantages(updatedAdvantages);
+        updateState(updatedAdvantages);
     };
 
     const handleAdvantageAdd = () => {
@@ -96,13 +126,13 @@ export default function AdvantagesAdminPage() {
             description: 'A brief description of this new advantage.',
             icon: 'Sparkles'
         };
-        setAdvantages(prev => [...prev, newAdvantage]);
+        updateState([...advantages, newAdvantage]);
         toast({ title: "Advantage Added", description: "A new advantage has been added. Remember to save." });
     };
     
     const handleAdvantageDelete = (id: number) => {
         const itemToDelete = advantages.find(item => item.id === id);
-        setAdvantages(prev => prev.filter(item => item.id !== id));
+        updateState(advantages.filter(item => item.id !== id));
         toast({ title: "Advantage Deleted", variant: 'destructive', description: "Remember to save changes."});
         logAction('Advantages Update', 'Success', `Deleted advantage "${itemToDelete?.title}" for ${languageNames[selectedLang]}.`);
     };
@@ -140,7 +170,7 @@ export default function AdvantagesAdminPage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
-            {isLoading ? (
+            {isLoading || !advantages ? (
                 <div className="space-y-6">
                     {[...Array(3)].map((_, i) => (
                         <div key={i} className="space-y-2 p-4 border rounded-md">
