@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { roadmapEvents as defaultData, type RoadmapEvent, type Language } from '@/lib/data';
+import { type RoadmapEvent, type Language } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -12,8 +12,9 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { logAction } from '@/lib/logger';
+import { getRoadmapEvents, updateRoadmapEvents } from '@/lib/db/actions';
+import { initialData } from '@/lib/data';
 
-const SECTION_KEY = 'roadmap';
 
 type AllRoadmapData = Record<Language, RoadmapEvent[]>;
 
@@ -42,18 +43,18 @@ export default function RoadmapAdminPage() {
 
     const fetchData = useCallback(async (lang: Language): Promise<RoadmapEvent[]> => {
         try {
-            const response = await fetch(`/api/content?lang=${lang}&section=${SECTION_KEY}`);
-            const result = await response.json();
-            if (result.success && result.content) {
-                return result.content;
+            const data = await getRoadmapEvents(lang);
+            if (data && data.length > 0) {
+                return data;
             }
-            console.warn(`No content found for ${lang}/${SECTION_KEY}, using default data.`);
-            return defaultData[lang];
+            console.warn(`No content found for ${lang}/roadmap, using default data.`);
+            return initialData.roadmapEvents[lang];
         } catch (error) {
             console.error(`Failed to fetch roadmap data for ${lang}, falling back to default.`, error);
-            return defaultData[lang];
+            toast({ title: "Fetch Error", description: `Could not load roadmap data for ${languageNames[lang]}.`, variant: "destructive" });
+            return initialData.roadmapEvents[lang];
         }
-    }, []);
+    }, [toast]);
 
     useEffect(() => {
         const loadAllData = async () => {
@@ -79,20 +80,11 @@ export default function RoadmapAdminPage() {
     const handleSave = async () => {
         setIsSaving(true);
         try {
-            const response = await fetch('/api/content', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ lang: selectedLang, section: SECTION_KEY, content: roadmap }),
-            });
-            const result = await response.json();
-            if (result.success) {
-                toast({ title: "Saved!", description: `All roadmap changes for ${languageNames[selectedLang]} have been saved.`});
-                logAction('Roadmap Update', 'Success', `Saved all changes for ${languageNames[selectedLang]} roadmap.`);
-                const updatedAllData = { ...allData, [selectedLang]: roadmap };
-                setAllData(updatedAllData as AllRoadmapData);
-            } else {
-                toast({ title: "Save Failed", description: result.error || "Could not save changes.", variant: 'destructive' });
-            }
+            await updateRoadmapEvents(selectedLang, roadmap);
+            toast({ title: "Saved!", description: `All roadmap changes for ${languageNames[selectedLang]} have been saved.`});
+            logAction('Roadmap Update', 'Success', `Saved all changes for ${languageNames[selectedLang]} roadmap.`);
+            const updatedAllData = { ...allData, [selectedLang]: roadmap };
+            setAllData(updatedAllData as AllRoadmapData);
         } catch (error) {
             toast({ title: "Save Failed", description: "An error occurred during save.", variant: 'destructive' });
         } finally {
@@ -112,7 +104,7 @@ export default function RoadmapAdminPage() {
     };
 
     const handleRoadmapAdd = () => {
-        const newEvent: RoadmapEvent = { date: new Date().toISOString().split('T')[0], title: 'New Event', description: 'Description...' };
+        const newEvent: RoadmapEvent = { date: new Date().toISOString().split('T')[0], title: 'New Event', description: 'Description...', id: Date.now() };
         updateState([...roadmap, newEvent]);
         toast({ title: "Roadmap Event Added", description: "A new event has been added. Remember to save." });
     };

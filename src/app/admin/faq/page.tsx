@@ -12,6 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MarkdownEditor } from '@/components/ui/markdown-editor';
 import { logAction } from '@/lib/logger';
+import { getFaqs, updateFaqs } from '@/lib/db/actions';
 
 const LanguageFlag = ({ lang }: { lang: Language }) => {
     const flags: Record<string, string> = {
@@ -38,14 +39,8 @@ export default function FaqAdminPage() {
     const fetchFaqs = useCallback(async (lang: Language) => {
         setIsLoading(true);
         try {
-            const response = await fetch(`/api/faq?lang=${lang}`);
-            const data = await response.json();
-            if (data.success) {
-                setFaqs(data.faqs || []);
-            } else {
-                toast({ title: "Error", description: `Could not fetch FAQs for ${languageNames[lang]}.`, variant: 'destructive' });
-                setFaqs([]);
-            }
+            const data = await getFaqs(lang);
+            setFaqs(data || []);
         } catch (error) {
             toast({ title: "Network Error", description: "Failed to connect to the server.", variant: 'destructive' });
         }
@@ -59,26 +54,17 @@ export default function FaqAdminPage() {
     const handleSave = async () => {
         setIsSaving(true);
         try {
-            const response = await fetch('/api/faq', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ lang: selectedLang, faqs }),
-            });
-            const result = await response.json();
-            if (result.success) {
-                toast({ title: "Saved!", description: `All FAQ changes for ${languageNames[selectedLang]} have been saved.` });
-                logAction('FAQ Update', 'Success', `Saved all changes for ${languageNames[selectedLang]} FAQs.`);
-            } else {
-                toast({ title: "Save Failed", description: result.error || "Could not save changes.", variant: 'destructive' });
-            }
+            await updateFaqs(selectedLang, faqs);
+            toast({ title: "Saved!", description: `All FAQ changes for ${languageNames[selectedLang]} have been saved.` });
+            logAction('FAQ Update', 'Success', `Saved all changes for ${languageNames[selectedLang]} FAQs.`);
         } catch (error) {
-            toast({ title: "Network Error", description: "Failed to save changes.", variant: 'destructive' });
+            toast({ title: "Save Failed", description: "Could not save changes.", variant: 'destructive' });
         } finally {
             setIsSaving(false);
         }
     };
 
-    const handleFaqChange = (id: string, field: 'question' | 'answer', value: string) => {
+    const handleFaqChange = (id: number, field: 'question' | 'answer', value: string) => {
         const updatedFaqs = faqs.map(faq => 
             faq.id === id ? { ...faq, [field]: value } : faq
         );
@@ -86,12 +72,12 @@ export default function FaqAdminPage() {
     };
 
     const handleFaqAdd = () => {
-        const newFaq: FaqItem = {id: `q${Date.now()}`, question: 'New Question?', answer: 'New Answer.'};
+        const newFaq: FaqItem = {id: Date.now(), question: 'New Question?', answer: 'New Answer.'};
         setFaqs(prev => [...prev, newFaq]);
         toast({ title: "FAQ Added", description: "A new FAQ has been added. Remember to save your changes." });
     };
     
-    const handleFaqDelete = (idToDelete: string) => {
+    const handleFaqDelete = (idToDelete: number) => {
         const faqToDelete = faqs.find(faq => faq.id === idToDelete);
         setFaqs(prev => prev.filter(faq => faq.id !== idToDelete));
         toast({ title: "FAQ Deleted", variant: 'destructive', description: "Remember to save your changes."});

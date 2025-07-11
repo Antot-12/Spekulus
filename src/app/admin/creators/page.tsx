@@ -17,7 +17,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from '@/components/ui/switch';
 import { logAction } from '@/lib/logger';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { creatorsData as staticCreatorsData } from '@/lib/data';
+import { getCreators, updateCreators } from '@/lib/db/actions';
+import { initialData } from '@/lib/data';
 
 const newCreatorBioExample = `### About Me
 
@@ -57,18 +58,15 @@ export default function CreatorsAdminPage() {
     const fetchCreators = useCallback(async (lang: Language) => {
         setIsLoading(true);
         try {
-            const response = await fetch(`/api/creators?lang=${lang}`);
-            const data = await response.json();
-            if (data.success) {
-                // If no creators are returned, initialize with static data for that language
-                setCreators(data.creators.length > 0 ? data.creators : staticCreatorsData[lang]);
+            const data = await getCreators(lang);
+             if (data.length > 0) {
+                setCreators(data);
             } else {
-                toast({ title: "Error", description: `Could not fetch creators for ${languageNames[lang]}.`, variant: 'destructive' });
-                setCreators(staticCreatorsData[lang]);
+                setCreators(initialData.creatorsData[lang]);
             }
         } catch (error) {
             toast({ title: "Network Error", description: "Failed to connect to the server.", variant: 'destructive' });
-            setCreators(staticCreatorsData[lang]);
+            setCreators(initialData.creatorsData[lang]);
         }
         setIsLoading(false);
     }, [toast]);
@@ -80,21 +78,12 @@ export default function CreatorsAdminPage() {
     const handleSave = async () => {
         setIsSaving(true);
         try {
-            const response = await fetch('/api/creators', {
-                method: 'POST', // Using POST to create/update the whole set
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ lang: selectedLang, creators }),
-            });
-            const result = await response.json();
-            if (result.success) {
-                toast({ title: "Saved!", description: `All creator changes for ${languageNames[selectedLang]} have been saved.` });
-                logAction('Creators Update', 'Success', `Saved all changes for ${languageNames[selectedLang]} creators.`);
-                fetchCreators(selectedLang);
-            } else {
-                toast({ title: "Save Failed", description: result.error || "Could not save changes.", variant: 'destructive' });
-            }
+            await updateCreators(selectedLang, creators);
+            toast({ title: "Saved!", description: `All creator changes for ${languageNames[selectedLang]} have been saved.` });
+            logAction('Creators Update', 'Success', `Saved all changes for ${languageNames[selectedLang]} creators.`);
+            fetchCreators(selectedLang);
         } catch (error) {
-            toast({ title: "Network Error", description: "Failed to save changes.", variant: 'destructive' });
+            toast({ title: "Save Failed", description: "Could not save changes.", variant: 'destructive' });
         } finally {
             setIsSaving(false);
         }
