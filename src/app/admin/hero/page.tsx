@@ -45,6 +45,7 @@ export default function HeroSectionAdminPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [selectedLang, setSelectedLang] = useState<Language>('en');
+    const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
     const data = allData?.[selectedLang] ?? null;
@@ -66,6 +67,14 @@ export default function HeroSectionAdminPage() {
         };
         loadAllData();
     }, []);
+
+    useEffect(() => {
+        if (data?.imageId) {
+            setPreviewImageUrl(`/api/images/${data.imageId}`);
+        } else {
+            setPreviewImageUrl(null);
+        }
+    }, [data]);
 
     const handleSave = async () => {
         if (!data) return;
@@ -110,6 +119,7 @@ export default function HeroSectionAdminPage() {
 
             if (result.success) {
                 handleChange('imageId', result.id);
+                setPreviewImageUrl(`/api/images/${result.id}`);
                 toast({ title: "Image Uploaded", description: "Image has been updated. Remember to save your changes." });
                 logAction('File Upload', 'Success', `Uploaded new hero image ID: ${result.id}`);
             } else {
@@ -180,9 +190,9 @@ export default function HeroSectionAdminPage() {
                         <Label>Background Image</Label>
                         <Card>
                             <CardContent className="p-4 flex flex-col items-center gap-4">
-                                {data.imageId ? (
+                                {previewImageUrl ? (
                                     <div className="relative w-full aspect-video rounded-md overflow-hidden">
-                                        <NextImage src={`/api/images/${data.imageId}`} alt="Hero background" layout="fill" objectFit='cover' />
+                                        <NextImage src={previewImageUrl} alt="Hero background" layout="fill" objectFit='cover' key={previewImageUrl}/>
                                     </div>
                                 ) : (
                                     <div className="w-full aspect-video rounded-md bg-muted flex items-center justify-center">
@@ -210,5 +220,3 @@ export default function HeroSectionAdminPage() {
         </Card>
     );
 }
-
-    
