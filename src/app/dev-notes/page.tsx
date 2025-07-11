@@ -8,7 +8,7 @@ import type { DevNote } from '@/lib/data';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, ImageIcon, Calendar, User, Clock, Tag, X } from 'lucide-react';
+import { ArrowRight, ImageIcon, Calendar, User, Clock, Tag, X, Search } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
