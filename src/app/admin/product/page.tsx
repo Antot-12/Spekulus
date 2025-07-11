@@ -52,10 +52,9 @@ export default function ProductSectionAdminPage() {
             const result = await response.json();
             if (result.success && result.content) {
                 return result.content;
-            } else {
-                console.warn(`No content found for ${lang}/${SECTION_KEY}, using default data.`);
-                return defaultData[lang];
             }
+            console.warn(`No content found for ${lang}/${SECTION_KEY}, using default data.`);
+            return defaultData[lang];
         } catch (error) {
             console.error(`Failed to fetch product section data for ${lang}, falling back to default.`, error);
             return defaultData[lang];
@@ -74,7 +73,8 @@ export default function ProductSectionAdminPage() {
             setIsLoading(false);
         };
         loadAllData();
-    }, [fetchData]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     useEffect(() => {
         if (allData) {
@@ -94,7 +94,6 @@ export default function ProductSectionAdminPage() {
             if (result.success) {
                 toast({ title: "Saved!", description: `Changes to the Product section for ${languageNames[selectedLang]} have been saved.`});
                 logAction('Product Update', 'Success', `Saved all changes for ${languageNames[selectedLang]} product section.`);
-                // Refresh data from server
                 const newContent = await fetchData(selectedLang);
                 setAllData(prev => prev ? ({ ...prev, [selectedLang]: newContent }) : null);
                 setData(newContent);

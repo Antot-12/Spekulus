@@ -47,16 +47,14 @@ export default function ActionSectionAdminPage() {
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
     const fetchData = useCallback(async (lang: Language) => {
-        setIsLoading(true);
         try {
             const response = await fetch(`/api/content?lang=${lang}&section=${SECTION_KEY}`);
             const result = await response.json();
             if (result.success && result.content) {
                 return result.content;
-            } else {
-                console.warn(`No content found for ${lang}/${SECTION_KEY}, using default data.`);
-                return defaultData[lang];
             }
+            console.warn(`No content found for ${lang}/${SECTION_KEY}, using default data.`);
+            return defaultData[lang];
         } catch (error) {
             console.error(`Failed to fetch action section data for ${lang}, falling back to default.`, error);
             return defaultData[lang];
@@ -65,6 +63,7 @@ export default function ActionSectionAdminPage() {
 
     useEffect(() => {
         const loadAllData = async () => {
+            setIsLoading(true);
             const enData = await fetchData('en');
             const ukData = await fetchData('uk');
             const skData = await fetchData('sk');
@@ -74,7 +73,8 @@ export default function ActionSectionAdminPage() {
             setIsLoading(false);
         }
         loadAllData();
-    }, [fetchData, selectedLang]);
+         // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
     
     useEffect(() => {
         if (allData) {
@@ -94,7 +94,6 @@ export default function ActionSectionAdminPage() {
             if (result.success) {
                 toast({ title: "Saved!", description: `Changes to the "In Action" section for ${languageNames[selectedLang]} have been saved.`});
                 logAction('Action Section Update', 'Success', `Saved all changes for ${languageNames[selectedLang]} 'In Action' section.`);
-                // Refresh data from server
                  const newContent = await fetchData(selectedLang);
                  setAllData(prev => prev ? ({ ...prev, [selectedLang]: newContent }) : null);
                  setData(newContent);

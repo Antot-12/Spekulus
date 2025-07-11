@@ -50,10 +50,9 @@ export default function HeroSectionAdminPage() {
             const result = await response.json();
             if (result.success && result.content) {
                 return result.content;
-            } else {
-                console.warn(`No content found for ${lang}/${SECTION_KEY}, using default data.`);
-                return defaultData[lang];
             }
+            console.warn(`No content found for ${lang}/${SECTION_KEY}, using default data.`);
+            return defaultData[lang];
         } catch (error) {
             console.error(`Failed to fetch hero data for ${lang}, falling back to default.`, error);
             return defaultData[lang];
@@ -72,7 +71,8 @@ export default function HeroSectionAdminPage() {
             setIsLoading(false);
         };
         loadAllData();
-    }, [fetchData]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     useEffect(() => {
         if (allData) {
@@ -92,7 +92,6 @@ export default function HeroSectionAdminPage() {
             if (result.success) {
                 toast({ title: "Saved!", description: `Changes to the Hero section for ${languageNames[selectedLang]} have been saved.`});
                 logAction('Hero Update', 'Success', `Saved changes for ${languageNames[selectedLang]} hero section.`);
-                // Refresh data from server
                 const newContent = await fetchData(selectedLang);
                 setAllData(prev => prev ? ({ ...prev, [selectedLang]: newContent }) : null);
                 setData(newContent);
