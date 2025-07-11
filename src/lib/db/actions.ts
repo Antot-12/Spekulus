@@ -38,9 +38,9 @@ export async function getProductData(lang: Language) {
 
 export async function updateProductComponents(lang: Language, components: (typeof schema.productComponents.$inferInsert)[]) {
     const promises = components.map(component => 
-        db.update(schema.productComponents)
-          .set(component)
-          .where(eq(schema.productComponents.id, component.id!))
+        db.insert(schema.productComponents)
+          .values({ ...component, lang })
+          .onConflictDoUpdate({ target: schema.productComponents.id, set: component })
     );
     return Promise.all(promises);
 }
@@ -153,5 +153,3 @@ export async function uploadImage(fileBuffer: Buffer, filename: string, mimeType
     }).returning({ id: schema.images.id });
     return inserted;
 }
-
-    
