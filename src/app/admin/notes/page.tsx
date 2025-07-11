@@ -93,11 +93,17 @@ export default function NotesAdminPage() {
         const isExistingNote = notes.some(note => note.id === activeNote.id);
         setIsSaving(true);
         
+        // Ensure date is a valid Date object before saving
+        const noteToSave = {
+            ...activeNote,
+            date: new Date(activeNote.date),
+        };
+
         try {
             if (isExistingNote) {
-                await updateDevNote(activeNote.id, activeNote);
+                await updateDevNote(noteToSave.id, noteToSave);
             } else {
-                await createDevNote(activeNote as any); // Type assertion as new note won't have all fields yet
+                await createDevNote(noteToSave as any); // Type assertion as new note won't have all fields yet
             }
             toast({ title: "Note Saved", description: `"${activeNote.title}" has been saved.` });
             logAction('Notes Update', 'Success', `Saved changes for note '${activeNote.title}'.`);
@@ -323,5 +329,3 @@ export default function NotesAdminPage() {
         </div>
     );
 }
-
-    
