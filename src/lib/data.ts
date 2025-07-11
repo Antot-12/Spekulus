@@ -119,6 +119,7 @@ export type Advantage = {
 // ACTION SECTION
 // ==================================
 export type ActionSectionData = {
+  id: number;
   title: string;
   subtitle: string;
   description: string;
@@ -133,6 +134,7 @@ export type ActionSectionData = {
 // HERO SECTION
 // ==================================
 export type HeroSectionData = {
+  id: number;
   title: string;
   subtitle: string;
   imageId?: number | null;
@@ -410,7 +412,7 @@ const rawAdvantagesData: Record<Language, PartialBy<Advantage, 'id'>[]> = {
   ]
 };
 
-const rawActionSectionData: Record<Language, ActionSectionData> = {
+const rawActionSectionData: Record<Language, Omit<ActionSectionData, 'id'>> = {
   en: {
     title: 'See Spekulus in Action',
     subtitle: 'A glimpse of how our smart mirror fits into your everyday life.',
@@ -440,7 +442,7 @@ const rawActionSectionData: Record<Language, ActionSectionData> = {
   }
 };
 
-const rawHeroSectionData: Record<Language, HeroSectionData> = {
+const rawHeroSectionData: Record<Language, Omit<HeroSectionData, 'id'>> = {
   en: {
     title: 'Spekulus: Reflect Smarter, Live Better.',
     subtitle: 'The world\'s most advanced smart mirror, designed to be the center of your wellness and daily routine.',
@@ -490,20 +492,20 @@ const rawProductSectionData: Record<Language, Partial<ProductSectionData>> = {
     title: 'Анатомія розумного дзеркала',
     subtitle: 'Чотири основні компоненти, що працюють в гармонії для неперевершеного досвіду.',
     components: [
-        { id: 1, title: 'Тіло: Дисплей', description: 'Вражаючий, кришталево чистий 4K-дисплей, який плавно перетворюється з ідеального дзеркала на яскравий інформаційний центр.' },
-        { id: 2, title: 'Мозок: Обчислювальний модуль', description: 'Працює на Raspberry Pi 5 з 8 ГБ оперативної пам\'яті, забезпечуючи швидку та чутливу продуктивність для всіх ваших додатків та аналізів.' },
-        { id: 3, title: 'Очі: Камера', description: 'Масив камер високої роздільної здатності для точного розпізнавання обличчя та поглибленого аналізу шкіри, з фізичною шторкою для конфіденційності.' },
-        { id: 4, title: 'Серце: ШІ', description: 'Наше власне програмне забезпечення ШІ, яке навчається та адаптується до вас, надаючи персоналізовані поради та рекомендації щодо здоров\'я.' },
+        { id: 1, icon: 'ScanEye', title: 'Тіло: Дисплей', description: 'Вражаючий, кришталево чистий 4K-дисплей, який плавно перетворюється з ідеального дзеркала на яскравий інформаційний центр.' },
+        { id: 2, icon: 'Cpu', title: 'Мозок: Обчислювальний модуль', description: 'Працює на Raspberry Pi 5 з 8 ГБ оперативної пам\'яті, забезпечуючи швидку та чутливу продуктивність для всіх ваших додатків та аналізів.' },
+        { id: 3, icon: 'BrainCircuit', title: 'Очі: Камера', description: 'Масив камер високої роздільної здатності для точного розпізнавання обличчя та поглибленого аналізу шкіри, з фізичною шторкою для конфіденційності.' },
+        { id: 4, icon: 'HeartPulse', title: 'Серце: ШІ', description: 'Наше власне програмне забезпечення ШІ, яке навчається та адаптується до вас, надаючи персоналізовані поради та рекомендації щодо здоров\'я.' },
     ]
   },
   sk: {
     title: 'Anatómia inteligentného zrkadla',
     subtitle: 'Štyri základné komponenty, ktoré pracujú v harmónii pre neprekonateľný zážitok.',
     components: [
-        { id: 1, title: 'Telo: Displej', description: 'Ohromujúci, krištáľovo čistý 4K displej, ktorý sa plynule mení z dokonalého zrkadla na živé informačné centrum.' },
-        { id: 2, title: 'Mozog: Výpočtový modul', description: 'Poháňaný Raspberry Pi 5 s 8 GB RAM, čo zaručuje rýchly a citlivý výkon pre všetky vaše aplikácie a analýzy.' },
-        { id: 3, title: 'Oči: Kamera', description: 'Sústava kamier s vysokým rozlíšením pre presné rozpoznávanie tváre a hĺbkovú analýzu pleti, s fyzickým krytom pre súkromie.' },
-        { id: 4, title: 'Srdce: AI', description: 'Náš vlastný softvér s umelou inteligenciou, ktorý sa učí a prispôsobuje vám, poskytujúc personalizované poznatky a wellness odporúčania.' },
+        { id: 1, icon: 'ScanEye', title: 'Telo: Displej', description: 'Ohromujúci, krištáľovo čistý 4K displej, ktorý sa plynule mení z dokonalého zrkadla na živé informačné centrum.' },
+        { id: 2, icon: 'Cpu', title: 'Mozog: Výpočtový modul', description: 'Poháňaný Raspberry Pi 5 s 8 GB RAM, čo zaručuje rýchly a citlivý výkon pre všetky vaše aplikácie a analýzy.' },
+        { id: 3, icon: 'BrainCircuit', title: 'Oči: Kamera', description: 'Sústava kamier s vysokým rozlíšením pre presné rozpoznávanie tváre a hĺbkovú analýzu pleti, s fyzickým krytom pre súkromie.' },
+        { id: 4, icon: 'HeartPulse', title: 'Srdce: AI', description: 'Náš vlastný softvér s umelou inteligenciou, ktorý sa učí a prispôsobuje vám, poskytujúc personalizované poznatky a wellness odporúčania.' },
     ]
   }
 };
@@ -553,14 +555,14 @@ const mergeCreators = (base: RawCreator, lang: Partial<RawCreator>): Creator => 
 }
 
 const creatorsData: Record<Language, Creator[]> = {
-  en: rawCreatorsData.en as Creator[],
-  uk: rawCreatorsData.en.map(baseCreator => {
+  en: rawCreatorsData.en.map((c, i) => ({...c, id: i + 1})),
+  uk: rawCreatorsData.en.map((baseCreator, i) => {
     const langCreator = rawCreatorsData.uk.find(c => c.slug === baseCreator.slug);
-    return mergeCreators(baseCreator, langCreator || {});
+    return { ...mergeCreators(baseCreator, langCreator || {}), id: i + 1 };
   }),
-  sk: rawCreatorsData.en.map(baseCreator => {
+  sk: rawCreatorsData.en.map((baseCreator, i) => {
     const langCreator = rawCreatorsData.sk.find(c => c.slug === baseCreator.slug);
-    return mergeCreators(baseCreator, langCreator || {});
+    return { ...mergeCreators(baseCreator, langCreator || {}), id: i + 1 };
   }),
 }
 
@@ -570,13 +572,13 @@ const advantagesData: Record<Language, PartialBy<Advantage, 'id'>[]> = {
   sk: mergeData(rawAdvantagesData.en, rawAdvantagesData.sk, 'title'),
 };
 
-const actionSectionData: Record<Language, ActionSectionData> = {
+const actionSectionData: Record<Language, Omit<ActionSectionData, 'id'>> = {
     en: rawActionSectionData.en,
     uk: { ...rawActionSectionData.en, ...rawActionSectionData.uk },
     sk: { ...rawActionSectionData.en, ...rawActionSectionData.sk },
 }
 
-const heroSectionData: Record<Language, HeroSectionData> = {
+const heroSectionData: Record<Language, Omit<HeroSectionData, 'id'>> = {
     en: rawHeroSectionData.en,
     uk: { ...rawHeroSectionData.en, ...rawHeroSectionData.uk },
     sk: { ...rawHeroSectionData.en, ...rawHeroSectionData.sk },
@@ -611,3 +613,5 @@ export const initialData = {
     heroSectionData,
     productSectionData,
 };
+
+    

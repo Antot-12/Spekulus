@@ -48,7 +48,7 @@ export default function ProductSectionAdminPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [selectedLang, setSelectedLang] = useState<Language>('en');
-    const fileInputRefs = useRef<{ [key: number]: HTMLInputElement | null }>({});
+    const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
     
     const data = allData?.[selectedLang] ?? null;
 
@@ -106,7 +106,7 @@ export default function ProductSectionAdminPage() {
         updateState({ ...data, [field]: value });
     };
     
-    const handleComponentChange = (id: number, field: keyof ProductComponent, value: string | number | null) => {
+    const handleComponentChange = (id: number, field: keyof Omit<ProductComponent, 'id'>, value: string | number | null) => {
         if (!data) return;
         const updatedComponents = data.components.map(item =>
             item.id === id ? { ...item, [field]: value } : item
@@ -264,3 +264,5 @@ export default function ProductSectionAdminPage() {
         </Card>
     );
 }
+
+    

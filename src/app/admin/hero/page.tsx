@@ -34,6 +34,7 @@ const languageNames: Record<Language, string> = {
 };
 
 const createDefaultHeroData = (lang: Language): HeroSectionData => ({
+    id: 0, // Placeholder ID
     title: `Title for ${languageNames[lang]}`,
     subtitle: `Subtitle for ${languageNames[lang]}`,
 });
@@ -80,7 +81,7 @@ export default function HeroSectionAdminPage() {
         }
     };
 
-    const handleChange = (field: keyof HeroSectionData, value: string | number | null) => {
+    const handleChange = (field: keyof Omit<HeroSectionData, 'id'>, value: string | number | null) => {
         setAllData(prev => {
             if (!prev) return null;
             return {
@@ -209,3 +210,5 @@ export default function HeroSectionAdminPage() {
         </Card>
     );
 }
+
+    

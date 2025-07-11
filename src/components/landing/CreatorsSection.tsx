@@ -10,6 +10,7 @@ import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/ca
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
+import { getCreators } from '@/lib/db/actions';
 
 export function CreatorsSection() {
   const { language, translations } = useLanguage();
@@ -19,15 +20,9 @@ export function CreatorsSection() {
   const loadCreators = useCallback(async () => {
     setIsLoaded(false);
     try {
-      const response = await fetch(`/api/creators?lang=${language}`);
-      const data = await response.json();
-      if (data.success) {
-        const visibleCreators = data.creators.filter((c: Creator) => c && c.slug && c.isVisible !== false);
-        setCreators(visibleCreators.slice(0, 5));
-      } else {
-        console.error("API error fetching creators:", data.error);
-        setCreators([]);
-      }
+      const data = await getCreators(language);
+      const visibleCreators = data.filter((c: Creator) => c && c.slug && c.isVisible !== false);
+      setCreators(visibleCreators.slice(0, 5));
     } catch (error) {
       console.error("Failed to load creators", error);
       setCreators([]);
@@ -103,3 +98,5 @@ export function CreatorsSection() {
     </section>
   );
 }
+
+    

@@ -9,6 +9,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Github, Twitter, Linkedin } from 'lucide-react';
+import { getCreators } from '@/lib/db/actions';
 
 export default function CreatorsPage() {
   const { language, translations } = useLanguage();
@@ -18,14 +19,8 @@ export default function CreatorsPage() {
   const loadCreators = useCallback(async () => {
     setIsLoaded(false);
     try {
-      const response = await fetch(`/api/creators?lang=${language}`);
-      const data = await response.json();
-      if (data.success) {
-        setCreators(data.creators.filter((c: Creator) => c && c.slug && c.isVisible !== false));
-      } else {
-        console.error("API error fetching creators:", data.error);
-        setCreators([]);
-      }
+      const data = await getCreators(language);
+      setCreators(data.filter((c: Creator) => c && c.slug && c.isVisible !== false));
     } catch (error) {
       console.error("Failed to load creators", error);
       setCreators([]);
@@ -94,3 +89,5 @@ export default function CreatorsPage() {
     </div>
   );
 }
+
+    

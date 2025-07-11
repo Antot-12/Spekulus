@@ -36,6 +36,7 @@ const languageNames: Record<Language, string> = {
 };
 
 const createDefaultActionSectionData = (lang: Language): ActionSectionData => ({
+    id: 0, // Placeholder ID
     title: `Title for ${languageNames[lang]}`,
     subtitle: `Subtitle for ${languageNames[lang]}`,
     description: '',
@@ -88,7 +89,7 @@ export default function ActionSectionAdminPage() {
         }
     };
 
-    const handleChange = (field: keyof ActionSectionData, value: string | boolean | number | null) => {
+    const handleChange = (field: keyof Omit<ActionSectionData, 'id'>, value: string | boolean | number | null) => {
         setAllData(prev => {
             if (!prev) return null;
             return {

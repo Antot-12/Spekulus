@@ -5,7 +5,7 @@ import 'server-only';
 import { neon } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
 import * as schema from './schema';
-import type { Language } from '../data';
+import type { Language, HeroSectionData, ActionSectionData, ProductComponent, Creator } from '../data';
 import { eq, and } from 'drizzle-orm';
 import "dotenv/config";
 
@@ -17,14 +17,16 @@ export async function getHeroData(lang: Language) {
   return await db.query.heroSections.findFirst({ where: eq(schema.heroSections.lang, lang) });
 }
 
-export async function updateHeroData(lang: Language, data: Omit<typeof schema.heroSections.$inferInsert, 'lang' | 'id'>) {
+export async function updateHeroData(lang: Language, data: Omit<HeroSectionData, 'id'>) {
     const { title, subtitle, imageId } = data;
-    await db.insert(schema.heroSections)
-    .values({ lang, title, subtitle, imageId })
-    .onConflictDoUpdate({ 
-        target: [schema.heroSections.lang], 
-        set: { title, subtitle, imageId: data.imageId }
-    });
+    const existing = await getHeroData(lang);
+    if (existing) {
+        await db.update(schema.heroSections)
+            .set({ title, subtitle, imageId })
+            .where(eq(schema.heroSections.lang, lang));
+    } else {
+        await db.insert(schema.heroSections).values({ lang, title, subtitle, imageId });
+    }
 }
 
 // Product Section Actions
@@ -40,18 +42,12 @@ export async function getProductData(lang: Language) {
     };
 }
 
-export async function updateProductComponents(lang: Language, components: (typeof schema.productComponents.$inferInsert)[]) {
-    const promises = components.map(component => {
-        const { id, ...dataToUpdate } = component;
-        return db.insert(schema.productComponents)
-          .values({ ...component, lang })
-          .onConflictDoUpdate({ 
-              target: [schema.productComponents.id, schema.productComponents.lang], 
-              set: { ...dataToUpdate }
-            })
-        }
-    );
-    await Promise.all(promises);
+export async function updateProductComponents(lang: Language, components: ProductComponent[]) {
+    await db.delete(schema.productComponents).where(eq(schema.productComponents.lang, lang));
+    if (components.length > 0) {
+        const componentsToInsert = components.map(({ id, ...rest }) => ({ ...rest, lang }));
+        await db.insert(schema.productComponents).values(componentsToInsert);
+    }
 }
 
 // Advantages Section Actions
@@ -79,10 +75,15 @@ export async function getActionSectionData(lang: Language) {
     return await db.query.actionSections.findFirst({ where: eq(schema.actionSections.lang, lang) });
 }
 
-export async function updateActionSectionData(lang: Language, data: Omit<typeof schema.actionSections.$inferInsert, 'lang' | 'id'>) {
-    await db.insert(schema.actionSections)
-      .values({ ...data, lang })
-      .onConflictDoUpdate({ target: [schema.actionSections.lang], set: data });
+export async function updateActionSectionData(lang: Language, data: Omit<ActionSectionData, 'id'>) {
+    const existing = await getActionSectionData(lang);
+    if (existing) {
+        await db.update(schema.actionSections)
+            .set(data)
+            .where(eq(schema.actionSections.lang, lang));
+    } else {
+        await db.insert(schema.actionSections).values({ ...data, lang });
+    }
 }
 
 // Roadmap Actions
@@ -138,12 +139,12 @@ export async function getCreatorBySlug(lang: Language, slug: string) {
     return await db.query.creators.findFirst({ where: and(eq(schema.creators.slug, slug), eq(schema.creators.lang, lang)) });
 }
 
-export async function createCreator(lang: Language, creatorData: Omit<typeof schema.creators.$inferInsert, 'id' | 'lang'>) {
+export async function createCreator(lang: Language, creatorData: Omit<Creator, 'id'>) {
     const [newCreator] = await db.insert(schema.creators).values({ ...creatorData, lang }).returning();
     return newCreator;
 }
 
-export async function updateCreators(lang: Language, creatorsData: (typeof schema.creators.$inferInsert)[]) {
+export async function updateCreators(lang: Language, creatorsData: Creator[]) {
     await db.delete(schema.creators).where(eq(schema.creators.lang, lang));
     if (creatorsData.length > 0) {
       const creatorsToInsert = creatorsData.map(({ id, ...rest }) => ({ ...rest, lang }));
@@ -165,7 +166,7 @@ export async function createDevNote(note: Omit<typeof schema.devNotes.$inferInse
     return newNote;
 }
 
-export async function updateDevNote(id: number, note: Partial<typeof schema.devNotes.$inferInsert>) {
+export async function updateDevNote(id: number, note: Partial<Omit<typeof schema.devNotes.$inferInsert, 'id'>>) {
     await db.update(schema.devNotes).set(note).where(eq(schema.devNotes.id, id));
 }
 
@@ -187,3 +188,5 @@ export async function uploadImage(fileBuffer: Buffer, filename: string, mimeType
     }).returning({ id: schema.images.id });
     return inserted;
 }
+
+    
