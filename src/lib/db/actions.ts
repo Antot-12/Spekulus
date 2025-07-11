@@ -23,7 +23,7 @@ export async function updateHeroData(lang: Language, data: Omit<typeof schema.he
     .values({ lang, title, subtitle, imageId })
     .onConflictDoUpdate({ 
         target: [schema.heroSections.lang], 
-        set: { title, subtitle, imageId } 
+        set: { title, subtitle, imageId: data.imageId }
     });
 }
 
