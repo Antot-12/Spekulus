@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { roadmapEvents as staticRoadmapEvents } from '@/lib/data';
+import { roadmapEvents as defaultData } from '@/lib/data';
 import { Calendar, Lightbulb, FlaskConical, Rocket, Store, Wand2, PackageCheck, Globe, Flag } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -34,11 +34,11 @@ export function RoadmapSection() {
         if (result.success && result.content) {
             setRoadmapEvents(result.content);
         } else {
-            setRoadmapEvents(staticRoadmapEvents[lang]);
+            setRoadmapEvents(defaultData[lang]);
         }
     } catch (error) {
         console.error("Failed to load roadmap data, using default.", error);
-        setRoadmapEvents(staticRoadmapEvents[lang]);
+        setRoadmapEvents(defaultData[lang]);
     }
     setIsLoading(false);
   }, []);
