@@ -84,9 +84,8 @@ export default function HeroSectionAdminPage() {
         }
     };
 
-    const handleChange = (field: keyof HeroSectionData, value: string) => {
-        const newData = { ...data, [field]: value };
-        setData(newData);
+    const handleChange = (field: keyof HeroSectionData, value: string | boolean) => {
+        setData(prev => ({ ...prev, [field]: value }));
     };
 
     const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
