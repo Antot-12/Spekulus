@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { actionSectionData as defaultData, type ActionSectionData, type Language } from '@/lib/data';
+import type { ActionSectionData, Language } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -16,8 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from '@/components/ui/separator';
 import { logAction } from '@/lib/logger';
 import NextImage from 'next/image';
-
-const SECTION_KEY = 'action-section';
+import { getActionSectionData, updateActionSectionData } from '@/lib/db/actions';
 
 type AllActionSectionData = Record<Language, ActionSectionData>;
 
@@ -36,78 +35,67 @@ const languageNames: Record<Language, string> = {
     sk: 'Slovak'
 };
 
+const createDefaultActionSectionData = (lang: Language): ActionSectionData => ({
+    title: `Title for ${languageNames[lang]}`,
+    subtitle: `Subtitle for ${languageNames[lang]}`,
+    description: '',
+    visible: true,
+    buttonText: 'Learn More',
+    buttonUrl: '#',
+    buttonVisible: true,
+});
+
 export default function ActionSectionAdminPage() {
     const { toast } = useToast();
     const [allData, setAllData] = useState<AllActionSectionData | null>(null);
-    const [data, setData] = useState<ActionSectionData>(defaultData.en);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [selectedLang, setSelectedLang] = useState<Language>('en');
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-    const fetchData = useCallback(async (lang: Language) => {
-        try {
-            const response = await fetch(`/api/content?lang=${lang}&section=${SECTION_KEY}`);
-            const result = await response.json();
-            if (result.success && result.content) {
-                return result.content;
-            }
-            console.warn(`No content found for ${lang}/${SECTION_KEY}, using default data.`);
-            return defaultData[lang];
-        } catch (error) {
-            console.error(`Failed to fetch action section data for ${lang}, falling back to default.`, error);
-            return defaultData[lang];
-        }
-    }, []);
+    const data = allData?.[selectedLang] ?? null;
 
     useEffect(() => {
         const loadAllData = async () => {
             setIsLoading(true);
-            const enData = await fetchData('en');
-            const ukData = await fetchData('uk');
-            const skData = await fetchData('sk');
-            const newAllData = { en: enData, uk: ukData, sk: skData };
+            const languages: Language[] = ['en', 'uk', 'sk'];
+            const promises = languages.map(lang => getActionSectionData(lang));
+            const results = await Promise.all(promises);
+
+            const newAllData = languages.reduce((acc, lang, index) => {
+                acc[lang] = results[index] || createDefaultActionSectionData(lang);
+                return acc;
+            }, {} as AllActionSectionData);
+
             setAllData(newAllData);
-            setData(newAllData[selectedLang]);
             setIsLoading(false);
-        }
+        };
         loadAllData();
-         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
-    
-    useEffect(() => {
-        if (allData) {
-            setData(allData[selectedLang]);
-        }
-    }, [selectedLang, allData]);
 
     const handleSave = async () => {
+        if (!data) return;
         setIsSaving(true);
         try {
-            const response = await fetch('/api/content', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ lang: selectedLang, section: SECTION_KEY, content: data }),
-            });
-            const result = await response.json();
-            if (result.success) {
-                toast({ title: "Saved!", description: `Changes to the "In Action" section for ${languageNames[selectedLang]} have been saved.`});
-                logAction('Action Section Update', 'Success', `Saved all changes for ${languageNames[selectedLang]} 'In Action' section.`);
-                 const updatedAllData = { ...allData, [selectedLang]: data };
-                 setAllData(updatedAllData as AllActionSectionData);
-            } else {
-                toast({ title: "Save Failed", description: result.error || "Could not save changes.", variant: 'destructive' });
-            }
+            await updateActionSectionData(selectedLang, data);
+            toast({ title: "Saved!", description: `Changes to the "In Action" section for ${languageNames[selectedLang]} have been saved.`});
+            logAction('Action Section Update', 'Success', `Saved all changes for ${languageNames[selectedLang]} 'In Action' section.`);
         } catch (error) {
             toast({ title: "Save Failed", description: "An error occurred during save.", variant: 'destructive' });
+            logAction('Action Section Update', 'Failure', `Failed to save changes for ${languageNames[selectedLang]} 'In Action' section.`);
         } finally {
             setIsSaving(false);
         }
     };
 
     const handleChange = (field: keyof ActionSectionData, value: string | boolean | number | null) => {
-        const updatedData = { ...data, [field]: value };
-        setData(updatedData);
+        setAllData(prev => {
+            if (!prev) return null;
+            return {
+                ...prev,
+                [selectedLang]: { ...prev[selectedLang], [field]: value }
+            }
+        });
     };
 
     const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -274,3 +262,5 @@ export default function ActionSectionAdminPage() {
         </Card>
     );
 }
+
+    

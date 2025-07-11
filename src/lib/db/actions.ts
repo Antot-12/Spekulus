@@ -67,7 +67,7 @@ export async function getActionSectionData(lang: Language) {
     return await db.query.actionSections.findFirst({ where: eq(schema.actionSections.lang, lang) });
 }
 
-export async function updateActionSectionData(lang: Language, data: Omit<typeof schema.actionSections.$inferInsert, 'lang'>) {
+export async function updateActionSectionData(lang: Language, data: Omit<typeof schema.actionSections.$inferInsert, 'lang' | 'id'>) {
     return await db.insert(schema.actionSections)
       .values({ ...data, lang })
       .onConflictDoUpdate({ target: schema.actionSections.lang, set: data });
@@ -153,3 +153,5 @@ export async function uploadImage(fileBuffer: Buffer, filename: string, mimeType
     }).returning({ id: schema.images.id });
     return inserted;
 }
+
+    
