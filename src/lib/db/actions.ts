@@ -18,9 +18,9 @@ export async function getHeroData(lang: Language) {
 }
 
 export async function updateHeroData(lang: Language, data: Omit<typeof schema.heroSections.$inferInsert, 'lang'>) {
-  return await db.insert(schema.heroSections)
+    await db.insert(schema.heroSections)
     .values({ ...data, lang })
-    .onConflictDoUpdate({ target: schema.heroSections.lang, set: data });
+    .onConflictDoUpdate({ target: [schema.heroSections.lang], set: data });
 }
 
 // Product Section Actions
@@ -50,7 +50,7 @@ export async function updateProductComponents(lang: Language, components: (typeo
                 } 
             })
     );
-    return Promise.all(promises);
+    await Promise.all(promises);
 }
 
 // Advantages Section Actions
@@ -70,7 +70,7 @@ export async function updateAdvantagesData(lang: Language, advantages: (typeof s
     await db.delete(schema.advantages).where(eq(schema.advantages.lang, lang));
     if (advantages.length > 0) {
         const insertData = advantages.map(({ id, ...rest }) => ({ ...rest, lang }));
-        return db.insert(schema.advantages).values(insertData);
+        await db.insert(schema.advantages).values(insertData);
     }
 }
 
@@ -80,7 +80,7 @@ export async function getActionSectionData(lang: Language) {
 }
 
 export async function updateActionSectionData(lang: Language, data: Omit<typeof schema.actionSections.$inferInsert, 'lang' | 'id'>) {
-    return await db.insert(schema.actionSections)
+    await db.insert(schema.actionSections)
       .values({ ...data, lang })
       .onConflictDoUpdate({ target: schema.actionSections.lang, set: data });
 }
@@ -102,14 +102,17 @@ export async function updateRoadmapEvents(lang: Language, events: (typeof schema
     await db.delete(schema.roadmapEvents).where(eq(schema.roadmapEvents.lang, lang));
     if (events.length > 0) {
         const insertData = events.map(({ id, ...rest }) => ({ ...rest, lang }));
-        return await db.insert(schema.roadmapEvents).values(insertData);
+        await db.insert(schema.roadmapEvents).values(insertData);
     }
 }
 
 
 // FAQ Actions
 export async function getFaqs(lang: Language) {
-    return await db.query.faqItems.findMany({ where: eq(schema.faqItems.lang, lang) });
+    return await db.query.faqItems.findMany({ 
+      where: eq(schema.faqItems.lang, lang),
+      orderBy: (faqItems, { asc }) => [asc(faqItems.id)],
+    });
 }
 
 export async function createFaq(lang: Language, faq: Omit<typeof schema.faqItems.$inferInsert, 'lang' | 'id'>) {
@@ -120,13 +123,16 @@ export async function createFaq(lang: Language, faq: Omit<typeof schema.faqItems
 export async function updateFaqs(lang: Language, faqs: (Omit<typeof schema.faqItems.$inferInsert, 'id' | 'lang'>)[]) {
     await db.delete(schema.faqItems).where(eq(schema.faqItems.lang, lang));
     if (faqs.length > 0) {
-        return await db.insert(schema.faqItems).values(faqs.map(f => ({...f, lang})));
+        await db.insert(schema.faqItems).values(faqs.map(f => ({...f, lang})));
     }
 }
 
 // Creator Actions
 export async function getCreators(lang: Language) {
-    return await db.query.creators.findMany({ where: eq(schema.creators.lang, lang) });
+    return await db.query.creators.findMany({ 
+      where: eq(schema.creators.lang, lang),
+      orderBy: (creators, { asc }) => [asc(creators.id)],
+    });
 }
 
 export async function getCreatorBySlug(lang: Language, slug: string) {
@@ -141,8 +147,8 @@ export async function createCreator(lang: Language, creatorData: Omit<typeof sch
 export async function updateCreators(lang: Language, creatorsData: (typeof schema.creators.$inferInsert)[]) {
     await db.delete(schema.creators).where(eq(schema.creators.lang, lang));
     if (creatorsData.length > 0) {
-      const creatorsToInsert = creatorsData.map(c => ({ ...c, lang }));
-      return await db.insert(schema.creators).values(creatorsToInsert);
+      const creatorsToInsert = creatorsData.map(({ id, ...rest }) => ({ ...rest, lang }));
+      await db.insert(schema.creators).values(creatorsToInsert);
     }
 }
 
@@ -161,11 +167,12 @@ export async function createDevNote(note: Omit<typeof schema.devNotes.$inferInse
 }
 
 export async function updateDevNote(id: number, note: Partial<typeof schema.devNotes.$inferInsert>) {
-    return await db.update(schema.devNotes).set(note).where(eq(schema.devNotes.id, id));
+    const [updatedNote] = await db.update(schema.devNotes).set(note).where(eq(schema.devNotes.id, id)).returning();
+    return updatedNote;
 }
 
 export async function deleteDevNote(id: number) {
-    return await db.delete(schema.devNotes).where(eq(schema.devNotes.id, id));
+    await db.delete(schema.devNotes).where(eq(schema.devNotes.id, id));
 }
 
 // Image Actions
