@@ -61,6 +61,11 @@ export async function getAdvantagesData(lang: Language) {
      });
 }
 
+export async function createAdvantage(lang: Language, advantage: Omit<typeof schema.advantages.$inferInsert, 'lang' | 'id'>) {
+    const [newAdvantage] = await db.insert(schema.advantages).values({ ...advantage, lang }).returning();
+    return newAdvantage;
+}
+
 export async function updateAdvantagesData(lang: Language, advantages: (typeof schema.advantages.$inferInsert)[]) {
     await db.delete(schema.advantages).where(eq(schema.advantages.lang, lang));
     if (advantages.length > 0) {
@@ -88,10 +93,16 @@ export async function getRoadmapEvents(lang: Language) {
     });
 }
 
+export async function createRoadmapEvent(lang: Language, event: Omit<typeof schema.roadmapEvents.$inferInsert, 'lang' | 'id'>) {
+    const [newEvent] = await db.insert(schema.roadmapEvents).values({ ...event, lang }).returning();
+    return newEvent;
+}
+
 export async function updateRoadmapEvents(lang: Language, events: (typeof schema.roadmapEvents.$inferInsert)[]) {
     await db.delete(schema.roadmapEvents).where(eq(schema.roadmapEvents.lang, lang));
     if (events.length > 0) {
-        return await db.insert(schema.roadmapEvents).values(events.map(e => ({...e, lang})));
+        const insertData = events.map(({ id, ...rest }) => ({ ...rest, lang }));
+        return await db.insert(schema.roadmapEvents).values(insertData);
     }
 }
 
@@ -99,6 +110,11 @@ export async function updateRoadmapEvents(lang: Language, events: (typeof schema
 // FAQ Actions
 export async function getFaqs(lang: Language) {
     return await db.query.faqItems.findMany({ where: eq(schema.faqItems.lang, lang) });
+}
+
+export async function createFaq(lang: Language, faq: Omit<typeof schema.faqItems.$inferInsert, 'lang' | 'id'>) {
+    const [newFaq] = await db.insert(schema.faqItems).values({ ...faq, lang }).returning();
+    return newFaq;
 }
 
 export async function updateFaqs(lang: Language, faqs: (Omit<typeof schema.faqItems.$inferInsert, 'id' | 'lang'>)[]) {
@@ -134,8 +150,9 @@ export async function getDevNoteBySlug(slug: string) {
     return await db.query.devNotes.findFirst({ where: eq(schema.devNotes.slug, slug) });
 }
 
-export async function createDevNote(note: typeof schema.devNotes.$inferInsert) {
-    return await db.insert(schema.devNotes).values(note).onConflictDoNothing();
+export async function createDevNote(note: Omit<typeof schema.devNotes.$inferInsert, 'id'>) {
+    const [newNote] = await db.insert(schema.devNotes).values(note).returning();
+    return newNote;
 }
 
 export async function updateDevNote(id: number, note: Partial<typeof schema.devNotes.$inferInsert>) {
@@ -160,5 +177,3 @@ export async function uploadImage(fileBuffer: Buffer, filename: string, mimeType
     }).returning({ id: schema.images.id });
     return inserted;
 }
-
-    

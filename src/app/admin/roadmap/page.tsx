@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { logAction } from '@/lib/logger';
-import { getRoadmapEvents, updateRoadmapEvents } from '@/lib/db/actions';
+import { getRoadmapEvents, updateRoadmapEvents, createRoadmapEvent } from '@/lib/db/actions';
 import { initialData } from '@/lib/data';
 
 
@@ -103,10 +103,19 @@ export default function RoadmapAdminPage() {
         updateState(updatedRoadmap);
     };
 
-    const handleRoadmapAdd = () => {
-        const newEvent: RoadmapEvent = { date: new Date().toISOString().split('T')[0], title: 'New Event', description: 'Description...', id: Date.now() };
-        updateState([...roadmap, newEvent]);
-        toast({ title: "Roadmap Event Added", description: "A new event has been added. Remember to save." });
+    const handleRoadmapAdd = async () => {
+        const newEventData = { date: new Date().toISOString().split('T')[0], title: 'New Event', description: 'Description...' };
+        try {
+            const newEvent = await createRoadmapEvent(selectedLang, newEventData);
+            if (newEvent) {
+                updateState([...roadmap, newEvent]);
+                toast({ title: "Roadmap Event Added", description: "A new event has been added. Remember to save." });
+            } else {
+                 toast({ title: "Add Failed", description: "Could not add event.", variant: 'destructive' });
+            }
+        } catch (error) {
+            toast({ title: "Add Failed", description: "Could not add event.", variant: 'destructive' });
+        }
     };
     
     const handleRoadmapDelete = (indexToDelete: number) => {
@@ -164,7 +173,7 @@ export default function RoadmapAdminPage() {
                 </div>
             ) : (
                 roadmap.map((event, index) => (
-                  <div key={index} className="space-y-2 p-4 border rounded-md">
+                  <div key={event.id} className="space-y-2 p-4 border rounded-md">
                     <div className="flex items-center gap-4">
                       <Input 
                         type="text" 

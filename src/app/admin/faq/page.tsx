@@ -12,7 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MarkdownEditor } from '@/components/ui/markdown-editor';
 import { logAction } from '@/lib/logger';
-import { getFaqs, updateFaqs } from '@/lib/db/actions';
+import { getFaqs, updateFaqs, createFaq } from '@/lib/db/actions';
 
 const LanguageFlag = ({ lang }: { lang: Language }) => {
     const flags: Record<string, string> = {
@@ -71,10 +71,19 @@ export default function FaqAdminPage() {
         setFaqs(updatedFaqs);
     };
 
-    const handleFaqAdd = () => {
-        const newFaq: FaqItem = {id: Date.now(), question: 'New Question?', answer: 'New Answer.'};
-        setFaqs(prev => [...prev, newFaq]);
-        toast({ title: "FAQ Added", description: "A new FAQ has been added. Remember to save your changes." });
+    const handleFaqAdd = async () => {
+        const newFaqData = {question: 'New Question?', answer: 'New Answer.'};
+        try {
+            const newFaq = await createFaq(selectedLang, newFaqData);
+            if(newFaq){
+                setFaqs(prev => [...prev, newFaq]);
+                toast({ title: "FAQ Added", description: "A new FAQ has been added. Remember to save your changes." });
+            } else {
+                toast({ title: "Add Failed", description: "Could not add FAQ.", variant: 'destructive' });
+            }
+        } catch (error) {
+            toast({ title: "Add Failed", description: "Could not add FAQ.", variant: 'destructive' });
+        }
     };
     
     const handleFaqDelete = (idToDelete: number) => {

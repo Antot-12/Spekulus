@@ -13,7 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { AdvantageIcon } from '@/components/AdvantageIcon';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { logAction } from '@/lib/logger';
-import { getAdvantagesData, updateAdvantagesData } from '@/lib/db/actions';
+import { getAdvantagesData, updateAdvantagesData, createAdvantage } from '@/lib/db/actions';
 import { initialData } from '@/lib/data';
 
 type AllAdvantagesData = Record<Language, Advantage[]>;
@@ -91,15 +91,23 @@ export default function AdvantagesAdminPage() {
         updateState(updatedAdvantages);
     };
 
-    const handleAdvantageAdd = () => {
-        const newAdvantage: Advantage = { 
-            id: Date.now(), 
+    const handleAdvantageAdd = async () => {
+        const newAdvantageData = { 
             title: 'New Advantage', 
             description: 'A brief description of this new advantage.',
             icon: 'Sparkles'
         };
-        updateState([...advantages, newAdvantage]);
-        toast({ title: "Advantage Added", description: "A new advantage has been added. Remember to save." });
+        try {
+            const newAdvantage = await createAdvantage(selectedLang, newAdvantageData);
+            if (newAdvantage) {
+                updateState([...advantages, newAdvantage]);
+                toast({ title: "Advantage Added", description: "A new advantage has been added. Remember to save." });
+            } else {
+                 toast({ title: "Add Failed", description: "Could not add advantage.", variant: 'destructive' });
+            }
+        } catch (error) {
+            toast({ title: "Add Failed", description: "Could not add advantage.", variant: 'destructive' });
+        }
     };
     
     const handleAdvantageDelete = (id: number) => {
