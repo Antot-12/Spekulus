@@ -21,6 +21,154 @@ export type DevNote = {
   reactionCounts?: Record<string, number>;
 };
 
+// ==================================
+// ROADMAP
+// ==================================
+export type RoadmapEvent = {
+    date: string;
+    title: string;
+    description: string;
+};
+
+// ==================================
+// FAQ
+// ==================================
+export type FaqItem = {
+    id: string;
+    question: string;
+    answer: string;
+};
+
+// ==================================
+// CREATORS
+// ==================================
+export type FeaturedProject = {
+  title: string;
+  description: string;
+  url: string;
+  imageUrl?: string;
+  imageHint?: string;
+};
+
+export type Education = {
+  institution: string;
+  degree: string;
+  year: string;
+};
+
+export type Certification = {
+  name: string;
+  authority: string;
+  year: string;
+};
+
+export type GalleryImage = {
+  imageUrl: string;
+  description: string;
+  imageHint: string;
+};
+
+export type Achievement = {
+  icon: string;
+  name: string;
+  description: string;
+};
+
+export type Creator = {
+  id: number;
+  slug: string;
+  name: string;
+  role: string;
+  bio: string;
+  imageUrl: string;
+  imageHint: string;
+  location?: string;
+  languages?: string[];
+  contributions?: string[];
+  skills?: string[];
+  education?: Education[];
+  certifications?: Certification[];
+  hobbies?: string[];
+  gallery?: GalleryImage[];
+  achievements?: Achievement[];
+  cvUrl?: string;
+  quote?: string;
+  quoteAuthor?: string;
+  music?: {
+    spotify?: string;
+    appleMusic?: string;
+    youtubeMusic?: string;
+  },
+  socials: {
+    twitter?: string;
+    github?: string;
+    linkedin?: string;
+  };
+  featuredProject?: FeaturedProject;
+  isVisible?: boolean;
+};
+
+// ==================================
+// ADVANTAGES
+// ==================================
+export type Advantage = {
+  id: number;
+  icon: string;
+  title: string;
+  description: string;
+};
+
+// ==================================
+// ACTION SECTION
+// ==================================
+export type ActionSectionData = {
+  title: string;
+  subtitle: string;
+  description: string;
+  imageUrl: string;
+  imageHint: string;
+  visible: boolean;
+  buttonText: string;
+  buttonUrl: string;
+  buttonVisible: boolean;
+};
+
+// ==================================
+// HERO SECTION
+// ==================================
+export type HeroSectionData = {
+  title: string;
+  subtitle: string;
+  imageUrl: string;
+  imageHint: string;
+};
+
+// ==================================
+// PRODUCT SECTION
+// ==================================
+export type ProductComponent = {
+  id: number;
+  icon: string;
+  title: string;
+  description: string;
+  imageUrl: string;
+  imageHint: string;
+};
+
+export type ProductSectionData = {
+  title: string;
+  subtitle: string;
+  components: ProductComponent[];
+};
+
+
+// ==================================
+// INITIAL DATA FOR SEEDING
+// ==================================
+
+// This object contains all the initial data that will be used to seed the database.
+// It is kept separate to clearly distinguish between the data types and the data itself.
+
 const rawDevNotes: Record<Language, PartialBy<DevNote, 'slug' | 'date' | 'imageUrl' | 'imageHint' | 'isVisible' | 'reactionCounts'>[]> = {
   en: [
     { 
@@ -150,29 +298,6 @@ const rawDevNotes: Record<Language, PartialBy<DevNote, 'slug' | 'date' | 'imageU
   ]
 };
 
-const mergeData = <T extends { id: number }>(baseData: T[], langData: PartialBy<T, keyof T>[]) => {
-  return baseData.map(baseItem => {
-    const langItem = langData.find(item => item.id === baseItem.id);
-    return { ...baseItem, ...langItem };
-  }) as T[];
-};
-
-export const devNotes: Record<Language, DevNote[]> = {
-  en: rawDevNotes.en as DevNote[],
-  uk: mergeData(rawDevNotes.en as DevNote[], rawDevNotes.uk),
-  sk: mergeData(rawDevNotes.en as DevNote[], rawDevNotes.sk),
-};
-
-
-// ==================================
-// ROADMAP
-// ==================================
-export type RoadmapEvent = {
-    date: string;
-    title: string;
-    description: string;
-};
-
 const rawRoadmapEvents: Record<Language, PartialBy<RoadmapEvent, 'date'>[]> = {
   en: [
     { date: "2024-04-28", title: "Idea Creation", description: "The birth of Spekulus Vision. Initial concept and mission defined." },
@@ -203,22 +328,6 @@ const rawRoadmapEvents: Record<Language, PartialBy<RoadmapEvent, 'date'>[]> = {
   ]
 };
 
-// All roadmap fields are translated, but this structure makes it consistent
-export const roadmapEvents: Record<Language, RoadmapEvent[]> = {
-    en: rawRoadmapEvents.en as RoadmapEvent[],
-    uk: rawRoadmapEvents.en.map((base, i) => ({...base, ...rawRoadmapEvents.uk[i]})) as RoadmapEvent[],
-    sk: rawRoadmapEvents.en.map((base, i) => ({...base, ...rawRoadmapEvents.sk[i]})) as RoadmapEvent[],
-}
-
-// ==================================
-// FAQ
-// ==================================
-export type FaqItem = {
-    id: string;
-    question: string;
-    answer: string;
-};
-
 const rawFaqData: Record<Language, FaqItem[]> = {
   en: [
     { id: 'faq-what', question: 'What is Spekulus?', answer: 'Spekulus is an innovative smart mirror developed by us. It combines health monitoring, weather awareness, and smart home integration into a single, elegant device. With built-in AI and a camera, it delivers personalized insights to help you live smarter and healthier.' },
@@ -243,82 +352,6 @@ const rawFaqData: Record<Language, FaqItem[]> = {
   ]
 };
 
-export const faqData: Record<Language, FaqItem[]> = {
-    en: rawFaqData.en,
-    uk: rawFaqData.uk,
-    sk: rawFaqData.sk
-};
-
-
-// ==================================
-// CREATORS
-// ==================================
-export type FeaturedProject = {
-  title: string;
-  description: string;
-  url: string;
-  imageUrl?: string;
-  imageHint?: string;
-};
-
-export type Education = {
-  institution: string;
-  degree: string;
-  year: string;
-};
-
-export type Certification = {
-  name: string;
-  authority: string;
-  year: string;
-};
-
-export type GalleryImage = {
-  imageUrl: string;
-  description: string;
-  imageHint: string;
-};
-
-export type Achievement = {
-  icon: string;
-  name: string;
-  description: string;
-};
-
-export type Creator = {
-  id: number;
-  slug: string;
-  name: string;
-  role: string;
-  bio: string;
-  imageUrl: string;
-  imageHint: string;
-  location?: string;
-  languages?: string[];
-  contributions?: string[];
-  skills?: string[];
-  education?: Education[];
-  certifications?: Certification[];
-  hobbies?: string[];
-  gallery?: GalleryImage[];
-  achievements?: Achievement[];
-  cvUrl?: string;
-  quote?: string;
-  quoteAuthor?: string;
-  music?: {
-    spotify?: string;
-    appleMusic?: string;
-    youtubeMusic?: string;
-  },
-  socials: {
-    twitter?: string;
-    github?: string;
-    linkedin?: string;
-  };
-  featuredProject?: FeaturedProject;
-  isVisible?: boolean;
-};
-
 type RawCreator = PartialBy<Creator, 'name' | 'role' | 'bio' | 'location' | 'languages' | 'contributions' | 'education' | 'certifications' | 'hobbies' | 'achievements' | 'quote' | 'quoteAuthor' | 'featuredProject' | 'gallery'>;
 
 const rawCreatorsData: Record<Language, RawCreator[]> = {
@@ -329,7 +362,7 @@ const rawCreatorsData: Record<Language, RawCreator[]> = {
       name: 'Anton Shyrko',
       role: 'CEO & Team Lead',
       bio: "Anton is the visionary behind Spekulus, guiding the team with a steady hand and a passion for innovative technology. He coordinates the overall project strategy, leads decision-making, and ensures the team's alignment with our ambitious goals. He believes in transparent development and building products that genuinely improve people's daily lives.\n\n### Core Philosophies\n\n- **User-Centric Design**: Every feature must solve a real user problem.\n- **Open Collaboration**: The best ideas can come from anywhere.\n- **Sustainable Growth**: Building a lasting company that values its people.",
-      imageUrl: '/uploads/creators/anton-shyrko/1721834241199-man_portrait_ceo.png',
+      imageUrl: 'https://res.cloudinary.com/dmytrzu4t/image/upload/v1722026850/spekulus/creators/anton-shyrko/man_portrait_ceo.png',
       imageHint: 'man portrait ceo',
       location: "Kyiv, Ukraine",
       languages: ["Ukrainian", "English", "Slovak"],
@@ -383,7 +416,7 @@ const rawCreatorsData: Record<Language, RawCreator[]> = {
       name: 'Oleksandr Sokil',
       role: 'CTO',
       bio: "As CTO, Oleksandr is the technical architect of Spekulus. He is responsible for system architecture, hardware integration, and technical oversight of all the mirror’s components, ensuring a robust and scalable platform.",
-      imageUrl: '/uploads/creators/oleksandr-sokil/1721834241199-man_portrait_cto.png',
+      imageUrl: 'https://res.cloudinary.com/dmytrzu4t/image/upload/v1722026850/spekulus/creators/oleksandr-sokil/man_portrait_cto.png',
       imageHint: 'man portrait cto',
       location: "Lviv, Ukraine",
       languages: ["Ukrainian", "English"],
@@ -416,7 +449,7 @@ const rawCreatorsData: Record<Language, RawCreator[]> = {
       name: 'Andrii Kubai',
       role: 'Web Developer',
       bio: "Andrii is the craftsman behind the Spekulus web presence. He builds and maintains the responsive frontend for the website and the powerful admin interface, with a keen eye for user experience and multilingual support.",
-      imageUrl: '/uploads/creators/andrii-kubai/1721834241200-man_portrait_web_developer.png',
+      imageUrl: 'https://res.cloudinary.com/dmytrzu4t/image/upload/v1722026849/spekulus/creators/andrii-kubai/man_portrait_web_developer.png',
       imageHint: 'man portrait web developer',
       location: "Ivano-Frankivsk, Ukraine",
       languages: ["Ukrainian", "English"],
@@ -448,7 +481,7 @@ const rawCreatorsData: Record<Language, RawCreator[]> = {
       name: 'Anton Makhniuk',
       role: 'Software Developer',
       bio: "Anton focuses on the core application logic that brings Spekulus to life. He connects the mirror’s complex functions with the backend services and plays a vital role in testing and ensuring software stability.",
-      imageUrl: '/uploads/creators/anton-makhniuk/1721834241200-man_portrait_software_developer.png',
+      imageUrl: 'https://res.cloudinary.com/dmytrzu4t/image/upload/v1722026849/spekulus/creators/anton-makhniuk/man_portrait_software_developer.png',
       imageHint: 'man portrait software developer',
       location: "Warsaw, Poland",
       languages: ["Ukrainian", "Polish", "English"],
@@ -475,7 +508,7 @@ const rawCreatorsData: Record<Language, RawCreator[]> = {
       name: 'Maksym Stetsenko',
       role: 'AI Engineer',
       bio: "Maksym is the intelligence behind Spekulus's smartest features. He develops and trains the AI models for facial recognition, skin analysis, and stress detection, optimizing them for high performance on embedded hardware.",
-      imageUrl: '/uploads/creators/maksym-stetsenko/1721834241201-man_portrait_ai_engineer.png',
+      imageUrl: 'https://res.cloudinary.com/dmytrzu4t/image/upload/v1722026850/spekulus/creators/maksym-stetsenko/man_portrait_ai_engineer.png',
       imageHint: 'man portrait ai engineer',
       location: "Remote",
       languages: ["Ukrainian", "English"],
@@ -524,14 +557,14 @@ const rawCreatorsData: Record<Language, RawCreator[]> = {
       ],
       hobbies: ["Походи в Карпатах", "Спортивні шахи", "Читання наукової фантастики"],
       gallery: [
-          { description: "Презентація на технічній конференції" },
-          { description: "Командний мозковий штурм" },
-          { description: "Робота над початковим прототипом" }
+          { imageUrl: 'https://placehold.co/600x400.png', description: "Презентація на технічній конференції", imageHint: "man presentation" },
+          { imageUrl: 'https://placehold.co/600x400.png', description: "Командний мозковий штурм", imageHint: "team meeting" },
+          { imageUrl: 'https://placehold.co/600x400.png', description: "Робота над початковим прототипом", imageHint: "man coding" }
       ],
       achievements: [
-        { name: 'Піонер', description: 'Один з перших 10 членів, що приєдналися до проєкту.' },
-        { name: 'Перший коміт', description: 'Зробив внесок у початкову кодову базу проєкту.' },
-        { name: 'Візіонер', description: 'Визначив основну місію та стратегію Spekulus.' },
+        { icon: 'Rocket', name: 'Піонер', description: 'Один з перших членів, що приєдналися до проєкту.' },
+        { icon: 'GitMerge', name: 'Перший коміт', description: 'Зробив внесок у початкову кодову базу проєкту.' },
+        { icon: 'Lightbulb', name: 'Візіонер', description: 'Визначив основну місію та стратегію Spekulus.' },
       ],
       quote: "Найкращий спосіб передбачити майбутнє — це винайти його.",
       quoteAuthor: "Алан Кей",
@@ -539,6 +572,8 @@ const rawCreatorsData: Record<Language, RawCreator[]> = {
           title: "Початковий прототип Spekulus",
           description: "Перший доказ концепції для Spekulus, створений на Raspberry Pi 3 з базовим скриптом на Python для тестування основної функціональності розумного дзеркала.",
           url: "#",
+          imageUrl: 'https://placehold.co/1200x600.png',
+          imageHint: "prototype circuit"
       },
     },
     {
@@ -559,8 +594,8 @@ const rawCreatorsData: Record<Language, RawCreator[]> = {
       ],
       hobbies: ["Створення власних дронів", "3D-друк"],
       achievements: [
-        { name: 'Піонер', description: 'Один з перших членів, що приєдналися до проєкту.' },
-        { name: 'Топ-контриб\'ютор', description: 'Має найбільше комітів у головному репозиторії.' },
+        { icon: 'Rocket', name: 'Піонер', description: 'Один з перших членів, що приєдналися до проєкту.' },
+        { icon: 'Star', name: 'Топ-контриб\'ютор', description: 'Має найбільше комітів у головному репозиторії.' },
       ],
       quote: "Простота — це найвища витонченість.",
       quoteAuthor: "Леонардо да Вінчі",
@@ -583,7 +618,7 @@ const rawCreatorsData: Record<Language, RawCreator[]> = {
       ],
       hobbies: ["Гірський велосипед", "Гра на гітарі"],
        achievements: [
-        { name: 'Помічник спільноти', description: 'Активно допомагає новим учасникам та відповідає на запитання.' },
+        { icon: 'Users', name: 'Помічник спільноти', description: 'Активно допомагає новим учасникам та відповідає на запитання.' },
       ],
       quote: "Спочатку вирішіть проблему. Потім напишіть код.",
       quoteAuthor: "Джон Джонсон",
@@ -623,7 +658,7 @@ const rawCreatorsData: Record<Language, RawCreator[]> = {
       ],
       hobbies: ["Гра в Го", "Внесок у відкриті проєкти ШІ"],
       achievements: [
-         { name: 'Інноватор', description: 'Розробив новий підхід до оптимізації моделей.' },
+         { icon: 'Lightbulb', name: 'Інноватор', description: 'Розробив новий підхід до оптимізації моделей.' },
       ],
       quote: "Питання про те, чи може комп'ютер думати, не цікавіше, ніж питання про те, чи може підводний човен плавати.",
       quoteAuthor: "Едсгер В. Дейкстра",
@@ -651,14 +686,14 @@ const rawCreatorsData: Record<Language, RawCreator[]> = {
       ],
       hobbies: ["Turistika v Karpatoch", "Súťažný šach", "Čítanie sci-fi románov"],
       gallery: [
-          { description: "Prezentácia na technickej konferencii" },
-          { description: "Tímový brainstorming" },
-          { description: "Práca na počiatočnom prototype" }
+          { imageUrl: 'https://placehold.co/600x400.png', description: "Prezentácia na technickej konferencii", imageHint: "man presentation" },
+          { imageUrl: 'https://placehold.co/600x400.png', description: "Tímový brainstorming", imageHint: "team meeting" },
+          { imageUrl: 'https://placehold.co/600x400.png', description: "Práca na počiatočnom prototype", imageHint: "man coding" }
       ],
       achievements: [
-        { name: 'Pionier', description: 'Jeden z prvých 10 členov, ktorí sa pripojili k projektu.' },
-        { name: 'Prvý commit', description: 'Prispel k počiatočnej kódovej základni projektu.' },
-        { name: 'Vizionár', description: 'Definoval základnú misiu a stratégiu Spekulus.' },
+        { icon: 'Rocket', name: 'Pionier', description: 'Jeden z prvých členov, ktorí sa pripojili k projektu.' },
+        { icon: 'GitMerge', name: 'Prvý commit', description: 'Prispel k počiatočnej kódovej základni projektu.' },
+        { icon: 'Lightbulb', name: 'Vizionár', description: 'Definoval základnú misiu a stratégiu Spekulus.' },
       ],
       quote: "Najlepší spôsob, ako predpovedať budúcnosť, je vynájsť ju.",
       quoteAuthor: "Alan Kay",
@@ -666,6 +701,8 @@ const rawCreatorsData: Record<Language, RawCreator[]> = {
           title: "Počiatočný prototyp Spekulus",
           description: "Úplne prvý proof-of-concept pre Spekulus, postavený na Raspberry Pi 3 a základnom Python skripte na otestovanie základnej funkcionality inteligentného zrkadla.",
           url: "#",
+          imageUrl: 'https://placehold.co/1200x600.png',
+          imageHint: "prototype circuit"
       },
     },
     {
@@ -686,8 +723,8 @@ const rawCreatorsData: Record<Language, RawCreator[]> = {
       ],
       hobbies: ["Stavba vlastných dronov", "3D tlač"],
       achievements: [
-        { name: 'Pionier', description: 'Jeden z prvých členov, ktorí sa pripojili k projektu.' },
-        { name: 'Top prispievateľ', description: 'Má najviac commitov v hlavnom repozitári.' },
+        { icon: 'Rocket', name: 'Pionier', description: 'Jeden z prvých členov, ktorí sa pripojili k projektu.' },
+        { icon: 'Star', name: 'Top prispievateľ', description: 'Má najviac commitov v hlavnom repozitári.' },
       ],
       quote: "Jednoduchosť je najvyššia forma sofistikovanosti.",
       quoteAuthor: "Leonardo da Vinci",
@@ -710,7 +747,7 @@ const rawCreatorsData: Record<Language, RawCreator[]> = {
       ],
       hobbies: ["Horská cyklistika", "Hra na gitare"],
        achievements: [
-        { name: 'Pomocník komunity', description: 'Aktívne pomáha novým členom a odpovedá na otázky.' },
+        { icon: 'Users', name: 'Pomocník komunity', description: 'Aktívne pomáha novým členom a odpovedá na otázky.' },
       ],
       quote: "Najprv vyrieš problém. Potom napíš kód.",
       quoteAuthor: "John Johnson",
@@ -750,51 +787,12 @@ const rawCreatorsData: Record<Language, RawCreator[]> = {
       ],
       hobbies: ["Hra Go", "Prispievanie do open-source AI projektov"],
       achievements: [
-         { name: 'Inovátor', description: 'Vyvinul nový prístup k optimalizácii modelov.' },
+         { icon: 'Lightbulb', name: 'Inovátor', description: 'Vyvinul nový prístup k optimalizácii modelov.' },
       ],
       quote: "Otázka, či počítač dokáže myslieť, nie je o nič zaujímavejšia ako otázka, či ponorka dokáže plávať.",
       quoteAuthor: "Edsger W. Dijkstra",
     },
   ]
-};
-
-const mergeCreators = (base: RawCreator, lang: RawCreator): Creator => {
-  const merged = { ...base, ...lang } as Creator;
-  if (lang.featuredProject || base.featuredProject) {
-    merged.featuredProject = {
-      ...(base.featuredProject || { title: '', url: '', description: '', imageUrl: '', imageHint: ''}),
-      ...(lang.featuredProject || {}),
-    } as FeaturedProject
-  }
-  if (lang.gallery || base.gallery) {
-    merged.gallery = (base.gallery || []).map((baseImg, i) => ({
-      ...baseImg,
-      ...(lang.gallery?.[i] || {}),
-    }))
-  }
-  return merged;
-}
-
-export const creatorsData: Record<Language, Creator[]> = {
-  en: rawCreatorsData.en as Creator[],
-  uk: rawCreatorsData.en.map(baseCreator => {
-    const langCreator = rawCreatorsData.uk.find(c => c.id === baseCreator.id);
-    return mergeCreators(baseCreator, langCreator || { id: baseCreator.id });
-  }),
-  sk: rawCreatorsData.en.map(baseCreator => {
-    const langCreator = rawCreatorsData.sk.find(c => c.id === baseCreator.id);
-    return mergeCreators(baseCreator, langCreator || { id: baseCreator.id });
-  }),
-}
-
-// ==================================
-// ADVANTAGES
-// ==================================
-export type Advantage = {
-  id: number;
-  icon: string;
-  title: string;
-  description: string;
 };
 
 const rawAdvantagesData: Record<Language, PartialBy<Advantage, 'icon'>[]> = {
@@ -902,33 +900,12 @@ const rawAdvantagesData: Record<Language, PartialBy<Advantage, 'icon'>[]> = {
   ]
 };
 
-export const advantagesData: Record<Language, Advantage[]> = {
-  en: rawAdvantagesData.en as Advantage[],
-  uk: mergeData(rawAdvantagesData.en as Advantage[], rawAdvantagesData.uk),
-  sk: mergeData(rawAdvantagesData.en as Advantage[], rawAdvantagesData.sk),
-};
-
-// ==================================
-// ACTION SECTION
-// ==================================
-export type ActionSectionData = {
-  title: string;
-  subtitle: string;
-  description: string;
-  imageUrl: string;
-  imageHint: string;
-  visible: boolean;
-  buttonText: string;
-  buttonUrl: string;
-  buttonVisible: boolean;
-};
-
 const rawActionSectionData: Record<Language, Partial<ActionSectionData>> = {
   en: {
     title: 'See Spekulus in Action',
     subtitle: 'A glimpse of how our smart mirror fits into your everyday life.',
     description: 'Our smart mirror seamlessly integrates into any modern living space. With its edge-to-edge display and minimalist design, Spekulus is both a functional centerpiece and a work of art, providing essential information without disrupting your home\'s aesthetic.',
-    imageUrl: '/uploads/action-section/1721834241201-smart_mirror_lifestyle.png',
+    imageUrl: 'https://res.cloudinary.com/dmytrzu4t/image/upload/v1722026848/spekulus/action-section/smart_mirror_lifestyle.png',
     imageHint: 'smart mirror lifestyle',
     visible: true,
     buttonText: 'Learn More',
@@ -949,27 +926,11 @@ const rawActionSectionData: Record<Language, Partial<ActionSectionData>> = {
   }
 };
 
-export const actionSectionData: Record<Language, ActionSectionData> = {
-    en: rawActionSectionData.en as ActionSectionData,
-    uk: { ...rawActionSectionData.en, ...rawActionSectionData.uk } as ActionSectionData,
-    sk: { ...rawActionSectionData.en, ...rawActionSectionData.sk } as ActionSectionData,
-}
-
-// ==================================
-// HERO SECTION
-// ==================================
-export type HeroSectionData = {
-  title: string;
-  subtitle: string;
-  imageUrl: string;
-  imageHint: string;
-};
-
 const rawHeroSectionData: Record<Language, Partial<HeroSectionData>> = {
   en: {
     title: 'Spekulus: Reflect Smarter, Live Better.',
     subtitle: 'The world\'s most advanced smart mirror, designed to be the center of your wellness and daily routine.',
-    imageUrl: '/uploads/hero/1721834241202-smart_mirror.png',
+    imageUrl: 'https://res.cloudinary.com/dmytrzu4t/image/upload/v1722026850/spekulus/hero/smart_mirror.png',
     imageHint: 'smart mirror',
   },
   uk: {
@@ -982,31 +943,6 @@ const rawHeroSectionData: Record<Language, Partial<HeroSectionData>> = {
   }
 };
 
-export const heroSectionData: Record<Language, HeroSectionData> = {
-    en: rawHeroSectionData.en as HeroSectionData,
-    uk: { ...rawHeroSectionData.en, ...rawHeroSectionData.uk } as HeroSectionData,
-    sk: { ...rawHeroSectionData.en, ...rawHeroSectionData.sk } as HeroSectionData,
-};
-
-
-// ==================================
-// PRODUCT SECTION
-// ==================================
-export type ProductComponent = {
-  id: number;
-  icon: string;
-  title: string;
-  description: string;
-  imageUrl: string;
-  imageHint: string;
-};
-
-export type ProductSectionData = {
-  title: string;
-  subtitle: string;
-  components: ProductComponent[];
-};
-
 const rawProductSectionData: Record<Language, Partial<ProductSectionData>> = {
   en: {
     title: 'The Anatomy of a Smart Mirror',
@@ -1017,7 +953,7 @@ const rawProductSectionData: Record<Language, Partial<ProductSectionData>> = {
         icon: 'ScanEye',
         title: 'Body: The Display',
         description: 'A stunning, crystal-clear 4K display that transforms from a perfect mirror to a vibrant information hub seamlessly.',
-        imageUrl: '/uploads/product/body-the-display/1721834241202-mirror_display.png',
+        imageUrl: 'https://res.cloudinary.com/dmytrzu4t/image/upload/v1722026850/spekulus/product/body-the-display/mirror_display.png',
         imageHint: 'mirror display'
       },
       {
@@ -1025,7 +961,7 @@ const rawProductSectionData: Record<Language, Partial<ProductSectionData>> = {
         icon: 'Cpu',
         title: 'Brains: The Compute',
         description: 'Powered by a Raspberry Pi 5 with 8GB of RAM, ensuring swift, responsive performance for all your apps and analyses.',
-        imageUrl: '/uploads/product/brains-the-compute/1721834241203-raspberry_pi.png',
+        imageUrl: 'https://res.cloudinary.com/dmytrzu4t/image/upload/v1722026851/spekulus/product/brains-the-compute/raspberry_pi.png',
         imageHint: 'raspberry pi'
       },
       {
@@ -1033,7 +969,7 @@ const rawProductSectionData: Record<Language, Partial<ProductSectionData>> = {
         icon: 'BrainCircuit',
         title: 'Eyes: The Camera',
         description: 'A high-resolution camera array for precise facial recognition and in-depth skin analysis, with a physical privacy shutter.',
-        imageUrl: '/uploads/product/eyes-the-camera/1721834241203-camera_lens.png',
+        imageUrl: 'https://res.cloudinary.com/dmytrzu4t/image/upload/v1722026849/spekulus/product/eyes-the-camera/camera_lens.png',
         imageHint: 'camera lens'
       },
       {
@@ -1041,7 +977,7 @@ const rawProductSectionData: Record<Language, Partial<ProductSectionData>> = {
         icon: 'HeartPulse',
         title: 'Heart: The AI',
         description: 'Our proprietary AI software that learns and adapts to you, providing personalized insights and wellness recommendations.',
-        imageUrl: '/uploads/product/heart-the-ai/1721834241204-software_code.png',
+        imageUrl: 'https://res.cloudinary.com/dmytrzu4t/image/upload/v1722026850/spekulus/product/heart-the-ai/software_code.png',
         imageHint: 'software code'
       },
     ]
@@ -1068,6 +1004,79 @@ const rawProductSectionData: Record<Language, Partial<ProductSectionData>> = {
   }
 };
 
+
+const mergeData = <T extends { id: number }>(baseData: T[], langData: PartialBy<T, keyof T>[]) => {
+  return baseData.map(baseItem => {
+    const langItem = langData.find(item => item.id === baseItem.id);
+    return { ...baseItem, ...langItem };
+  }) as T[];
+};
+
+const devNotes: Record<Language, DevNote[]> = {
+  en: rawDevNotes.en as DevNote[],
+  uk: mergeData(rawDevNotes.en as DevNote[], rawDevNotes.uk),
+  sk: mergeData(rawDevNotes.en as DevNote[], rawDevNotes.sk),
+};
+
+const roadmapEvents: Record<Language, RoadmapEvent[]> = {
+    en: rawRoadmapEvents.en as RoadmapEvent[],
+    uk: rawRoadmapEvents.en.map((base, i) => ({...base, ...rawRoadmapEvents.uk[i]})) as RoadmapEvent[],
+    sk: rawRoadmapEvents.en.map((base, i) => ({...base, ...rawRoadmapEvents.sk[i]})) as RoadmapEvent[],
+}
+
+const faqData: Record<Language, FaqItem[]> = {
+    en: rawFaqData.en,
+    uk: rawFaqData.uk,
+    sk: rawFaqData.sk
+};
+
+const mergeCreators = (base: RawCreator, lang: RawCreator): Creator => {
+  const merged = { ...base, ...lang } as Creator;
+  if (lang.featuredProject || base.featuredProject) {
+    merged.featuredProject = {
+      ...(base.featuredProject || { title: '', url: '', description: '', imageUrl: '', imageHint: ''}),
+      ...(lang.featuredProject || {}),
+    } as FeaturedProject
+  }
+  if (lang.gallery || base.gallery) {
+    merged.gallery = (base.gallery || []).map((baseImg, i) => ({
+      ...baseImg,
+      ...(lang.gallery?.[i] || {}),
+    }))
+  }
+  return merged;
+}
+
+const creatorsData: Record<Language, Creator[]> = {
+  en: rawCreatorsData.en as Creator[],
+  uk: rawCreatorsData.en.map(baseCreator => {
+    const langCreator = rawCreatorsData.uk.find(c => c.id === baseCreator.id);
+    return mergeCreators(baseCreator, langCreator || { id: baseCreator.id, socials: {} });
+  }),
+  sk: rawCreatorsData.en.map(baseCreator => {
+    const langCreator = rawCreatorsData.sk.find(c => c.id === baseCreator.id);
+    return mergeCreators(baseCreator, langCreator || { id: baseCreator.id, socials: {} });
+  }),
+}
+
+const advantagesData: Record<Language, Advantage[]> = {
+  en: rawAdvantagesData.en as Advantage[],
+  uk: mergeData(rawAdvantagesData.en as Advantage[], rawAdvantagesData.uk),
+  sk: mergeData(rawAdvantagesData.en as Advantage[], rawAdvantagesData.sk),
+};
+
+const actionSectionData: Record<Language, ActionSectionData> = {
+    en: rawActionSectionData.en as ActionSectionData,
+    uk: { ...rawActionSectionData.en, ...rawActionSectionData.uk } as ActionSectionData,
+    sk: { ...rawActionSectionData.en, ...rawActionSectionData.sk } as ActionSectionData,
+}
+
+const heroSectionData: Record<Language, HeroSectionData> = {
+    en: rawHeroSectionData.en as HeroSectionData,
+    uk: { ...rawHeroSectionData.en, ...rawHeroSectionData.uk } as HeroSectionData,
+    sk: { ...rawHeroSectionData.en, ...rawHeroSectionData.sk } as HeroSectionData,
+};
+
 const mergeProductData = (lang: Language): ProductSectionData => {
     const baseData = rawProductSectionData.en as ProductSectionData;
     const langData = rawProductSectionData[lang];
@@ -1081,8 +1090,19 @@ const mergeProductData = (lang: Language): ProductSectionData => {
     }
 }
 
-export const productSectionData: Record<Language, ProductSectionData> = {
+const productSectionData: Record<Language, ProductSectionData> = {
     en: rawProductSectionData.en as ProductSectionData,
     uk: mergeProductData('uk'),
     sk: mergeProductData('sk'),
+};
+
+export const initialData = {
+    devNotes,
+    roadmapEvents,
+    faqData,
+    creatorsData,
+    advantagesData,
+    actionSectionData,
+    heroSectionData,
+    productSectionData,
 };

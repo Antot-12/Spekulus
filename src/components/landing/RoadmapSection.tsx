@@ -1,13 +1,11 @@
 
-"use client";
+"use server";
 
-import { useState, useEffect, useCallback } from 'react';
-import { roadmapEvents as defaultData } from '@/lib/data';
 import { Calendar, Lightbulb, FlaskConical, Rocket, Store, Wand2, PackageCheck, Globe, Flag } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { Skeleton } from '@/components/ui/skeleton';
-import type { RoadmapEvent, Language } from '@/lib/data';
+import { getLanguage } from '@/lib/getLanguage';
+import { translations } from '@/lib/translations';
+import type { RoadmapEvent } from '@/lib/data';
 
 const getRoadmapIcon = (title: string) => {
     const lowerTitle = title.toLowerCase();
@@ -21,63 +19,22 @@ const getRoadmapIcon = (title: string) => {
     return <Flag className="mx-auto text-primary-foreground h-4 w-4" />;
 };
 
-export function RoadmapSection() {
-  const { language, translations } = useLanguage();
-  const [roadmapEvents, setRoadmapEvents] = useState<RoadmapEvent[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const fetchData = useCallback(async (lang: Language) => {
-    setIsLoading(true);
-    try {
-        const response = await fetch(`/api/content?lang=${lang}&section=roadmap`);
-        const result = await response.json();
-        if (result.success && result.content) {
-            setRoadmapEvents(result.content);
-        } else {
-            setRoadmapEvents(defaultData[lang]);
-        }
-    } catch (error) {
-        console.error("Failed to load roadmap data, using default.", error);
-        setRoadmapEvents(defaultData[lang]);
-    }
-    setIsLoading(false);
-  }, []);
-
-  useEffect(() => {
-    fetchData(language);
-  }, [language, fetchData]);
+export function RoadmapSection({ data }: { data: RoadmapEvent[] }) {
+  const language = getLanguage();
+  const t = translations[language].roadmap;
 
   return (
     <section id="roadmap" className="py-16 md:py-24 bg-background/50">
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold font-headline">{translations.roadmap.title}</h2>
-          <p className="text-lg text-foreground/70 mt-2">{translations.roadmap.subtitle}</p>
+          <h2 className="text-3xl md:text-4xl font-bold font-headline">{t.title}</h2>
+          <p className="text-lg text-foreground/70 mt-2">{t.subtitle}</p>
         </div>
 
         <div className="relative wrap overflow-hidden p-2 md:p-10 h-full">
           <div className="absolute h-full border border-dashed border-border/40 left-5 md:left-1/2 -translate-x-1/2"></div>
           
-          {isLoading ? (
-            [...Array(4)].map((_, i) => (
-                <div key={i} className={`mb-8 flex justify-between items-center w-full ${i % 2 === 0 ? 'flex-row-reverse' : ''}`}>
-                    <div className="order-1 w-5/12"></div>
-                    <div className="z-20 flex items-center order-1 bg-muted shadow-xl w-8 h-8 rounded-full"></div>
-                    <div className="order-1 w-5/12 px-1 py-4">
-                        <Card className="border-border/50">
-                            <CardHeader>
-                                <Skeleton className="h-5 w-28 mb-2" />
-                                <Skeleton className="h-7 w-48" />
-                            </CardHeader>
-                            <CardContent>
-                                <Skeleton className="h-10 w-full" />
-                            </CardContent>
-                        </Card>
-                    </div>
-                </div>
-            ))
-          ) : (
-            roadmapEvents.map((event, index) => {
+            {data.map((event, index) => {
               const isRight = index % 2 === 0;
               const dt = new Date(event.date);
               const formattedDate = !isNaN(dt.getTime()) ? dt.toLocaleDateString(language, { year: 'numeric', month: 'short', day: 'numeric' }) : event.date;
@@ -112,8 +69,7 @@ export function RoadmapSection() {
                   </div>
                 </div>
               );
-            })
-          )}
+            })}
         </div>
       </div>
     </section>

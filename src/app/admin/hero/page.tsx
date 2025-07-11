@@ -2,7 +2,8 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { heroSectionData as defaultData, type HeroSectionData, type Language } from '@/lib/data';
+import { useLanguage } from '@/contexts/LanguageContext';
+import type { HeroSectionData, Language } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -14,8 +15,7 @@ import { Label } from '@/components/ui/label';
 import { generateImage } from '@/ai/flows/generate-image-flow';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { logAction } from '@/lib/logger';
-
-const SECTION_KEY = 'hero';
+import { getHeroData, updateHeroData } from '@/lib/db/actions';
 
 type AllHeroData = Record<Language, HeroSectionData>;
 
@@ -34,70 +34,49 @@ const languageNames: Record<Language, string> = {
     sk: 'Slovak'
 };
 
+const createDefaultHeroData = (lang: Language): HeroSectionData => ({
+    title: `Title for ${languageNames[lang]}`,
+    subtitle: `Subtitle for ${languageNames[lang]}`,
+    imageUrl: 'https://placehold.co/1920x1080.png',
+    imageHint: 'placeholder',
+});
+
 export default function HeroSectionAdminPage() {
     const { toast } = useToast();
     const [allData, setAllData] = useState<AllHeroData | null>(null);
-    const [data, setData] = useState<HeroSectionData>(defaultData.en);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
     const [selectedLang, setSelectedLang] = useState<Language>('en');
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-    const fetchData = useCallback(async (lang: Language): Promise<HeroSectionData> => {
-        try {
-            const response = await fetch(`/api/content?lang=${lang}&section=${SECTION_KEY}`);
-            const result = await response.json();
-            if (result.success && result.content) {
-                return result.content;
-            }
-            console.warn(`No content found for ${lang}/${SECTION_KEY}, using default data.`);
-            return defaultData[lang];
-        } catch (error) {
-            console.error(`Failed to fetch hero data for ${lang}, falling back to default.`, error);
-            return defaultData[lang];
-        }
-    }, []);
+    const data = allData?.[selectedLang] ?? null;
 
     useEffect(() => {
         const loadAllData = async () => {
             setIsLoading(true);
-            const enData = await fetchData('en');
-            const ukData = await fetchData('uk');
-            const skData = await fetchData('sk');
-            const newAllData = { en: enData, uk: ukData, sk: skData };
+            const languages: Language[] = ['en', 'uk', 'sk'];
+            const promises = languages.map(lang => getHeroData(lang));
+            const results = await Promise.all(promises);
+            
+            const newAllData = languages.reduce((acc, lang, index) => {
+                acc[lang] = results[index] || createDefaultHeroData(lang);
+                return acc;
+            }, {} as AllHeroData);
+
             setAllData(newAllData);
-            setData(newAllData[selectedLang]);
             setIsLoading(false);
         };
         loadAllData();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    useEffect(() => {
-        if (allData) {
-            setData(allData[selectedLang]);
-        }
-    }, [selectedLang, allData]);
-
     const handleSave = async () => {
+        if (!data) return;
         setIsSaving(true);
         try {
-            const response = await fetch('/api/content', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ lang: selectedLang, section: SECTION_KEY, content: data }),
-            });
-            const result = await response.json();
-            if (result.success) {
-                toast({ title: "Saved!", description: `Changes to the Hero section for ${languageNames[selectedLang]} have been saved.`});
-                logAction('Hero Update', 'Success', `Saved changes for ${languageNames[selectedLang]} hero section.`);
-                // Update the master state with the data that was just saved
-                const updatedAllData = { ...allData, [selectedLang]: data };
-                setAllData(updatedAllData as AllHeroData);
-            } else {
-                toast({ title: "Save Failed", description: result.error || "Could not save changes.", variant: 'destructive' });
-            }
+            await updateHeroData(selectedLang, data);
+            toast({ title: "Saved!", description: `Changes to the Hero section for ${languageNames[selectedLang]} have been saved.`});
+            logAction('Hero Update', 'Success', `Saved changes for ${languageNames[selectedLang]} hero section.`);
         } catch (error) {
             toast({ title: "Save Failed", description: "An error occurred during save.", variant: 'destructive' });
         } finally {
@@ -106,8 +85,13 @@ export default function HeroSectionAdminPage() {
     };
 
     const handleChange = (field: keyof HeroSectionData, value: string | boolean) => {
-        const updatedData = { ...data, [field]: value };
-        setData(updatedData);
+        setAllData(prev => {
+            if (!prev) return null;
+            return {
+                ...prev,
+                [selectedLang]: { ...prev[selectedLang], [field]: value }
+            }
+        });
     };
 
     const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -148,7 +132,7 @@ export default function HeroSectionAdminPage() {
     };
 
     const handleImageGenerate = async () => {
-        if (!data.imageHint) {
+        if (!data?.imageHint) {
             toast({ title: "Hint required", description: "Please provide an AI hint to generate an image.", variant: 'destructive' });
             return;
         }

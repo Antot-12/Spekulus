@@ -1,57 +1,15 @@
 
-"use client";
+"use server";
 
-import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { actionSectionData as defaultData } from '@/lib/data';
-import type { ActionSectionData, Language } from '@/lib/data';
-import { Skeleton } from '@/components/ui/skeleton';
+import type { ActionSectionData } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 
-export function ActionSection() {
-  const { language } = useLanguage();
-  const [data, setData] = useState<ActionSectionData>(defaultData.en);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const fetchData = useCallback(async (lang: Language) => {
-    setIsLoading(true);
-    try {
-        const response = await fetch(`/api/content?lang=${lang}&section=action-section`);
-        const result = await response.json();
-        if (result.success && result.content) {
-            setData(result.content);
-        } else {
-            setData(defaultData[lang]);
-        }
-    } catch (error) {
-        console.error("Failed to load action section data, using default.", error);
-        setData(defaultData[lang]);
-    }
-    setIsLoading(false);
-  }, []);
-
-  useEffect(() => {
-    fetchData(language);
-  }, [language, fetchData]);
-
-  if (isLoading) {
-    return (
-        <section className="py-16 md:py-24">
-            <div className="container mx-auto px-4 text-center">
-                 <Skeleton className="h-10 w-3/4 mx-auto mb-4" />
-                 <Skeleton className="h-6 w-1/2 mx-auto mb-12" />
-                 <Skeleton className="aspect-video w-full max-w-5xl mx-auto rounded-lg mb-8" />
-                 <Skeleton className="h-5 w-4/5 mx-auto" />
-                 <Skeleton className="h-5 w-2/3 mx-auto mt-2" />
-            </div>
-        </section>
-    );
-  }
+export function ActionSection({ data }: { data: ActionSectionData | null }) {
   
-  if (!data.visible) {
+  if (!data || !data.visible) {
     return null;
   }
 

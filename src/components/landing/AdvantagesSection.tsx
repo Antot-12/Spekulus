@@ -1,65 +1,25 @@
 
-"use client";
+"use server";
 
-import { useState, useEffect, useCallback } from 'react';
-import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { advantagesData as defaultData, type Advantage, type Language } from '@/lib/data';
-import { Skeleton } from '@/components/ui/skeleton';
+import type { Advantage } from '@/lib/data';
 import { AdvantageIcon } from '@/components/AdvantageIcon';
+import { translations } from '@/lib/translations';
+import { getLanguage } from '@/lib/getLanguage';
 
-export function AdvantagesSection() {
-  const { language, translations } = useLanguage();
-  const [advantages, setAdvantages] = useState<Advantage[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const fetchData = useCallback(async (lang: Language) => {
-    setIsLoading(true);
-    try {
-        const response = await fetch(`/api/content?lang=${lang}&section=advantages`);
-        const result = await response.json();
-        if (result.success && result.content) {
-            setAdvantages(result.content);
-        } else {
-            setAdvantages(defaultData[lang]);
-        }
-    } catch (error) {
-        console.error("Failed to load advantages data, using default.", error);
-        setAdvantages(defaultData[lang]);
-    }
-    setIsLoading(false);
-  }, []);
-
-  useEffect(() => {
-    fetchData(language);
-  }, [language, fetchData]);
-
+export function AdvantagesSection({ data }: { data: Advantage[] }) {
+  const lang = getLanguage();
+  const t = translations[lang].advantages;
 
   return (
     <section id="advantages" className="py-16 md:py-24 bg-background/50">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold font-headline">{translations.advantages.title}</h2>
-          <p className="text-lg text-foreground/70 mt-2">{translations.advantages.subtitle}</p>
+          <h2 className="text-3xl md:text-4xl font-bold font-headline">{t.title}</h2>
+          <p className="text-lg text-foreground/70 mt-2">{t.subtitle}</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {isLoading ? (
-             [...Array(6)].map((_, index) => (
-                <Card key={index} className="bg-card border-border/50 h-full p-6">
-                  <div className="mb-4">
-                    <Skeleton className="h-10 w-10 rounded-lg" />
-                  </div>
-                  <CardHeader className="p-0">
-                    <Skeleton className="h-6 w-3/4" />
-                  </CardHeader>
-                  <CardContent className="p-0 mt-2">
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-5/6 mt-2" />
-                  </CardContent>
-                </Card>
-             ))
-          ) : (
-            advantages.map((advantage, index) => (
+            {data.map((advantage, index) => (
               <div
                 key={advantage.id}
                 className="opacity-0 animate-fade-in-up transform transition-transform duration-300 hover:-translate-y-2"
@@ -77,8 +37,7 @@ export function AdvantagesSection() {
                   </CardContent>
                 </Card>
               </div>
-            ))
-          )}
+            ))}
         </div>
       </div>
     </section>
