@@ -89,9 +89,8 @@ export default function AdvantagesAdminPage() {
             if (result.success) {
                 toast({ title: "Saved!", description: `All advantage changes for ${languageNames[selectedLang]} have been saved.`});
                 logAction('Advantages Update', 'Success', `Saved all changes for ${languageNames[selectedLang]} advantages.`);
-                const newContent = await fetchData(selectedLang);
-                setAllData(prev => prev ? ({ ...prev, [selectedLang]: newContent }) : null);
-                setAdvantages(newContent);
+                const updatedAllData = { ...allData, [selectedLang]: advantages };
+                setAllData(updatedAllData as AllAdvantagesData);
             } else {
                  toast({ title: "Save Failed", description: result.error || "Could not save changes.", variant: 'destructive' });
             }
@@ -104,9 +103,6 @@ export default function AdvantagesAdminPage() {
 
     const updateState = (newAdvantages: Advantage[]) => {
         setAdvantages(newAdvantages);
-        if (allData) {
-            setAllData({ ...allData, [selectedLang]: newAdvantages });
-        }
     };
 
     const handleAdvantageChange = (id: number, field: keyof Advantage, value: string) => {

@@ -88,9 +88,8 @@ export default function RoadmapAdminPage() {
             if (result.success) {
                 toast({ title: "Saved!", description: `All roadmap changes for ${languageNames[selectedLang]} have been saved.`});
                 logAction('Roadmap Update', 'Success', `Saved all changes for ${languageNames[selectedLang]} roadmap.`);
-                const newContent = await fetchData(selectedLang);
-                setAllData(prev => prev ? ({ ...prev, [selectedLang]: newContent }) : null);
-                setRoadmap(newContent);
+                const updatedAllData = { ...allData, [selectedLang]: roadmap };
+                setAllData(updatedAllData as AllRoadmapData);
             } else {
                 toast({ title: "Save Failed", description: result.error || "Could not save changes.", variant: 'destructive' });
             }
@@ -103,9 +102,6 @@ export default function RoadmapAdminPage() {
 
     const updateState = (newRoadmap: RoadmapEvent[]) => {
         setRoadmap(newRoadmap);
-        if (allData) {
-            setAllData({ ...allData, [selectedLang]: newRoadmap });
-        }
     };
 
     const handleRoadmapChange = (index: number, field: keyof RoadmapEvent, value: string) => {

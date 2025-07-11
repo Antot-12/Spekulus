@@ -92,9 +92,9 @@ export default function HeroSectionAdminPage() {
             if (result.success) {
                 toast({ title: "Saved!", description: `Changes to the Hero section for ${languageNames[selectedLang]} have been saved.`});
                 logAction('Hero Update', 'Success', `Saved changes for ${languageNames[selectedLang]} hero section.`);
-                const newContent = await fetchData(selectedLang);
-                setAllData(prev => prev ? ({ ...prev, [selectedLang]: newContent }) : null);
-                setData(newContent);
+                // Update the master state with the data that was just saved
+                const updatedAllData = { ...allData, [selectedLang]: data };
+                setAllData(updatedAllData as AllHeroData);
             } else {
                 toast({ title: "Save Failed", description: result.error || "Could not save changes.", variant: 'destructive' });
             }
@@ -108,9 +108,6 @@ export default function HeroSectionAdminPage() {
     const handleChange = (field: keyof HeroSectionData, value: string | boolean) => {
         const updatedData = { ...data, [field]: value };
         setData(updatedData);
-        if (allData) {
-            setAllData({ ...allData, [selectedLang]: updatedData });
-        }
     };
 
     const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {

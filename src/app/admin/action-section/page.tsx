@@ -94,9 +94,8 @@ export default function ActionSectionAdminPage() {
             if (result.success) {
                 toast({ title: "Saved!", description: `Changes to the "In Action" section for ${languageNames[selectedLang]} have been saved.`});
                 logAction('Action Section Update', 'Success', `Saved all changes for ${languageNames[selectedLang]} 'In Action' section.`);
-                 const newContent = await fetchData(selectedLang);
-                 setAllData(prev => prev ? ({ ...prev, [selectedLang]: newContent }) : null);
-                 setData(newContent);
+                 const updatedAllData = { ...allData, [selectedLang]: data };
+                 setAllData(updatedAllData as AllActionSectionData);
             } else {
                 toast({ title: "Save Failed", description: result.error || "Could not save changes.", variant: 'destructive' });
             }
@@ -110,9 +109,6 @@ export default function ActionSectionAdminPage() {
     const handleChange = (field: keyof ActionSectionData, value: string | boolean) => {
         const updatedData = { ...data, [field]: value };
         setData(updatedData);
-        if (allData) {
-            setAllData({ ...allData, [selectedLang]: updatedData });
-        }
     };
 
     const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {

@@ -94,9 +94,8 @@ export default function ProductSectionAdminPage() {
             if (result.success) {
                 toast({ title: "Saved!", description: `Changes to the Product section for ${languageNames[selectedLang]} have been saved.`});
                 logAction('Product Update', 'Success', `Saved all changes for ${languageNames[selectedLang]} product section.`);
-                const newContent = await fetchData(selectedLang);
-                setAllData(prev => prev ? ({ ...prev, [selectedLang]: newContent }) : null);
-                setData(newContent);
+                const updatedAllData = { ...allData, [selectedLang]: data };
+                setAllData(updatedAllData as AllProductData);
             } else {
                 toast({ title: "Save Failed", description: result.error || "Could not save changes.", variant: 'destructive' });
             }
@@ -109,9 +108,6 @@ export default function ProductSectionAdminPage() {
 
     const updateState = (newData: ProductSectionData) => {
         setData(newData);
-        if (allData) {
-            setAllData({ ...allData, [selectedLang]: newData });
-        }
     };
 
     const handleMainChange = (field: 'title' | 'subtitle', value: string) => {
