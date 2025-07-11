@@ -25,7 +25,7 @@ const getCloudinaryConfig = () => {
     };
 };
 
-const NOTES_FOLDER = 'spekulus/dev-notes';
+const NOTES_FOLDER = 'spekulus/dev_notes';
 
 // Helper to fetch and parse a JSON file from Cloudinary
 async function getNoteFromCloudinary(public_id: string): Promise<DevNote | null> {
@@ -71,19 +71,17 @@ export async function GET(request: NextRequest) {
             
             const notePublicIds = results.resources
                 .filter((res: { public_id: string }) => {
-                    // Correctly filter for files like `.../dev-notes/[slug]/[slug].json`
                     const parts = res.public_id.split('/');
-                    if (parts.length < 4) return false; // Must be at least spekulus/dev-notes/slug/file.json
-                    const slug = parts[parts.length - 2];
+                    if (parts.length < 4) return false;
+                    const slugPart = parts[parts.length - 2];
                     const filename = parts[parts.length - 1];
-                    return filename === `${slug}.json`;
+                    return filename === `${slugPart}.json`;
                 })
                 .map((res: { public_id: string; }) => res.public_id);
 
             const notes = (await Promise.all(
                 notePublicIds.map((public_id: string) => getNoteFromCloudinary(public_id))
             )).filter((note): note is DevNote => note !== null);
-
 
             return NextResponse.json({ success: true, notes });
         }
@@ -99,7 +97,6 @@ export async function POST(request: NextRequest) {
         const config = getCloudinaryConfig();
         const note: DevNote = await request.json();
 
-        // Basic validation
         if (!note.slug || !note.title) {
             return NextResponse.json({ success: false, error: 'Slug and title are required.' }, { status: 400 });
         }
@@ -111,7 +108,7 @@ export async function POST(request: NextRequest) {
                 {
                     ...config,
                     public_id: public_id,
-                    folder: `${NOTES_FOLDER}/${note.slug}`, // Ensure folder is created
+                    folder: `${NOTES_FOLDER}/${note.slug}`,
                     resource_type: 'raw',
                     invalidate: true,
                 },
@@ -144,7 +141,6 @@ export async function PUT(request: NextRequest) {
 
         const public_id = `${NOTES_FOLDER}/${note.slug}/${note.slug}.json`;
         
-        // Overwrite the existing file
         const response: UploadApiResponse = await new Promise((resolve, reject) => {
             const uploadStream = cloudinary.uploader.upload_stream(
                 {
@@ -182,28 +178,22 @@ export async function DELETE(request: NextRequest) {
             return NextResponse.json({ success: false, error: 'Slug is required for deletion.' }, { status: 400 });
         }
         
-        // Delete the entire folder for the note, including its contents
         const folderPath = `${NOTES_FOLDER}/${slug}`;
         
-        // 1. Delete all resources within the folder.
-        // It's safer to delete by prefix and then delete the folder.
         await cloudinary.api.delete_resources_by_prefix(folderPath, { ...config, resource_type: 'raw' });
         await cloudinary.api.delete_resources_by_prefix(folderPath, { ...config, resource_type: 'image' });
         await cloudinary.api.delete_resources_by_prefix(folderPath, { ...config, resource_type: 'video' });
 
-        // 2. Delete the folder itself.
         const result = await cloudinary.api.delete_folder(folderPath, config);
         
         if (result.deleted && result.deleted[folderPath] === 'deleted') {
             return NextResponse.json({ success: true, message: `Note folder '${slug}' and its contents deleted.` });
         }
         
-        // Fallback for cases where folder might be empty or already gone
         return NextResponse.json({ success: true, message: `Note folder '${slug}' and its contents deleted.` });
 
 
     } catch (error: any) {
-        // If the folder doesn't exist, it's not a server error, it's a success from the user's POV.
         if ((error as any).http_code === 404) {
             return NextResponse.json({ success: true, message: `Note folder '${slug}' already deleted.` });
         }

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Trash2, PlusCircle, Upload, Wand2, Loader2, Eye, EyeOff, RotateCcw, Save } from 'lucide-react';
+import { Trash2, PlusCircle, Upload, Wand2, Loader2, Eye, EyeOff, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MarkdownEditor } from '@/components/ui/markdown-editor';
@@ -58,7 +58,6 @@ export default function NotesAdminPage() {
                 const sortedNotes = data.notes.sort((a: DevNote, b: DevNote) => new Date(b.date).getTime() - new Date(a.date).getTime());
                 setNotes(sortedNotes);
                 if (activeNote) {
-                    // Refresh the active note with the latest data from the server
                     const updatedActiveNote = sortedNotes.find(n => n.id === activeNote.id) || null;
                     setActiveNote(updatedActiveNote);
                 }
@@ -82,7 +81,6 @@ export default function NotesAdminPage() {
         setActiveNote(prev => {
             if (!prev) return null;
             const newActiveNote = { ...prev, [field]: value };
-            // If the title changes, update the slug automatically
             if (field === 'title') {
                 newActiveNote.slug = generateSlug(value);
             }
@@ -98,7 +96,6 @@ export default function NotesAdminPage() {
     const handleSaveNote = async () => {
         if (!activeNote) return;
 
-        // Check if a note with the same ID already exists in the list
         const isExistingNote = notes.some(note => note.id === activeNote.id);
         const method = isExistingNote ? 'PUT' : 'POST';
 
@@ -113,7 +110,6 @@ export default function NotesAdminPage() {
             if (result.success) {
                 toast({ title: "Note Saved", description: `"${activeNote.title}" has been saved.` });
                 logAction('Notes Update', 'Success', `Saved changes for note '${activeNote.title}'.`);
-                // **CRITICAL FIX**: Refresh the list from the server after saving
                 await fetchNotes(); 
             } else {
                 toast({ title: "Save Failed", description: result.error || "Could not save changes.", variant: 'destructive' });
@@ -129,7 +125,7 @@ export default function NotesAdminPage() {
         const newNote: DevNote = {
             id: Date.now(),
             title: 'New Note Title',
-            slug: 'new-note-title', // Initial slug, will be updated as title changes
+            slug: 'new-note-title',
             date: new Date().toISOString().split('T')[0],
             summary: 'A brief summary of the new note.',
             content: newNoteContentExample,
@@ -140,7 +136,6 @@ export default function NotesAdminPage() {
             isVisible: false,
             reactionCounts: {},
         };
-        // Add to local state to be edited, but don't save to server yet
         setActiveNote(newNote); 
     };
 
@@ -171,7 +166,7 @@ export default function NotesAdminPage() {
 
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('subdirectory', `spekulus/dev-notes/${note.slug}`);
+        formData.append('subdirectory', `spekulus/dev_notes/${note.slug}`);
         
         toast({ title: "Uploading...", description: "Please wait while the header image is uploaded." });
 
@@ -361,7 +356,7 @@ export default function NotesAdminPage() {
                                     value={activeNote.content}
                                     onChange={(value) => handleFieldChange('content', value)}
                                     rows={12}
-                                    uploadSubdirectory={`spekulus/dev-notes/${activeNote.slug}`}
+                                    uploadSubdirectory={`spekulus/dev_notes/${activeNote.slug}`}
                                 />
                             </div>
 
@@ -379,5 +374,3 @@ export default function NotesAdminPage() {
         </div>
     );
 }
-
-    

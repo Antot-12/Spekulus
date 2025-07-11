@@ -152,7 +152,7 @@ export default function CreatorsAdminPage() {
         toast({ title: "Uploading...", description: "Please wait while the image is uploaded." });
         const formData = new FormData();
         formData.append('file', file);
-        const subdirectory = `spekulus/creators/${selectedLang}/${creator.slug}`;
+        const subdirectory = `spekulus/creators/${creator.slug}`;
         formData.append('subdirectory', subdirectory);
         
         try {
@@ -390,7 +390,7 @@ export default function CreatorsAdminPage() {
 
                             <Card><CardHeader><CardTitle className="font-headline flex items-center gap-2"><FileText className="w-6 h-6"/>Bio</CardTitle></CardHeader>
                                 <CardContent>
-                                    <MarkdownEditor value={creator.bio ?? ''} onChange={(value) => handleFieldChange(creator.id, 'bio', value)} rows={10} uploadSubdirectory={`spekulus/creators/${selectedLang}/${creator.slug}`} />
+                                    <MarkdownEditor value={creator.bio ?? ''} onChange={(value) => handleFieldChange(creator.id, 'bio', value)} rows={10} uploadSubdirectory={`spekulus/creators/${creator.slug}`} />
                                 </CardContent>
                             </Card>
                             

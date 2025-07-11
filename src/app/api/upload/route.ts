@@ -49,11 +49,12 @@ export async function POST(request: NextRequest) {
                 ...config,
                 // The `folder` option automatically creates non-existent folders.
                 folder: subdirectory || 'spekulus/uploads',
-                // Use original filename but make it unique to avoid overwrites
+                // Use original filename and DO NOT make it unique.
                 use_filename: true,
-                unique_filename: true,
-                overwrite: false,
+                unique_filename: false,
+                overwrite: true,
                 resource_type: 'auto',
+                invalidate: true,
             },
             (error, result) => {
                 if (error) {

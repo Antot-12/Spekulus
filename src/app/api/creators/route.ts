@@ -98,19 +98,15 @@ export async function POST(request: NextRequest) {
 
         const langFolder = `${CREATORS_FOLDER}/${lang}`;
 
-        // Get existing creator slugs from Cloudinary
-        const { resources } = await cloudinary.api.resources({ ...config, type: 'upload', prefix: `${langFolder}/`, max_results: 500 });
-        const existingSlugs = new Set(resources.map((r: any) => {
-            const parts = r.public_id.split('/');
-            // Expected path: spekulus/creators/[lang]/[slug]/...
-            return parts.length > 3 ? parts[3] : null;
-        }).filter(Boolean));
-
+        // Get existing creator slugs from Cloudinary by listing sub-folders
+        const { folders } = await cloudinary.api.sub_folders(langFolder, config);
+        const existingSlugs = new Set(folders.map((f: { name: string }) => f.name));
         const newSlugs = new Set(creators.map(c => c.slug));
 
         // Determine which creator folders to delete
         const slugsToDelete = [...existingSlugs].filter(slug => !newSlugs.has(slug));
         if (slugsToDelete.length > 0) {
+            console.log(`Deleting creator folders: ${slugsToDelete.join(', ')}`);
             await Promise.all(slugsToDelete.map(slug => {
                 const folderPath = `${langFolder}/${slug}`;
                 // Use delete_folder which deletes the folder and all its contents
