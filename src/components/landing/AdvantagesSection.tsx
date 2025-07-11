@@ -1,6 +1,4 @@
 
-"use server";
-
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import type { Advantage } from '@/lib/data';
 import { AdvantageIcon } from '@/components/AdvantageIcon';

@@ -1,6 +1,3 @@
-
-"use server";
-
 import { Calendar, Lightbulb, FlaskConical, Rocket, Store, Wand2, PackageCheck, Globe, Flag } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getLanguage } from '@/lib/getLanguage';
