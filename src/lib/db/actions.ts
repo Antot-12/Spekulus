@@ -6,7 +6,7 @@ import { neon } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
 import * as schema from './schema';
 import type { Language } from '../data';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import "dotenv/config";
 
 const sql = neon(process.env.DATABASE_URL!);
@@ -18,9 +18,13 @@ export async function getHeroData(lang: Language) {
 }
 
 export async function updateHeroData(lang: Language, data: Omit<typeof schema.heroSections.$inferInsert, 'lang' | 'id'>) {
+    const { title, subtitle, imageId } = data;
     await db.insert(schema.heroSections)
-    .values({ ...data, lang })
-    .onConflictDoUpdate({ target: [schema.heroSections.lang], set: data });
+    .values({ lang, title, subtitle, imageId })
+    .onConflictDoUpdate({ 
+        target: [schema.heroSections.lang], 
+        set: { title, subtitle, imageId } 
+    });
 }
 
 // Product Section Actions
@@ -37,18 +41,15 @@ export async function getProductData(lang: Language) {
 }
 
 export async function updateProductComponents(lang: Language, components: (typeof schema.productComponents.$inferInsert)[]) {
-    const promises = components.map(component => 
-        db.insert(schema.productComponents)
+    const promises = components.map(component => {
+        const { id, ...dataToUpdate } = component;
+        return db.insert(schema.productComponents)
           .values({ ...component, lang })
           .onConflictDoUpdate({ 
               target: [schema.productComponents.id, schema.productComponents.lang], 
-              set: { 
-                  icon: component.icon, 
-                  title: component.title, 
-                  description: component.description, 
-                  imageId: component.imageId 
-                } 
+              set: { ...dataToUpdate }
             })
+        }
     );
     await Promise.all(promises);
 }
@@ -81,7 +82,7 @@ export async function getActionSectionData(lang: Language) {
 export async function updateActionSectionData(lang: Language, data: Omit<typeof schema.actionSections.$inferInsert, 'lang' | 'id'>) {
     await db.insert(schema.actionSections)
       .values({ ...data, lang })
-      .onConflictDoUpdate({ target: schema.actionSections.lang, set: data });
+      .onConflictDoUpdate({ target: [schema.actionSections.lang], set: data });
 }
 
 // Roadmap Actions
@@ -134,7 +135,7 @@ export async function getCreators(lang: Language) {
 }
 
 export async function getCreatorBySlug(lang: Language, slug: string) {
-    return await db.query.creators.findFirst({ where: eq(schema.creators.slug, slug) && eq(schema.creators.lang, lang) });
+    return await db.query.creators.findFirst({ where: and(eq(schema.creators.slug, slug), eq(schema.creators.lang, lang)) });
 }
 
 export async function createCreator(lang: Language, creatorData: Omit<typeof schema.creators.$inferInsert, 'id' | 'lang'>) {
@@ -165,8 +166,7 @@ export async function createDevNote(note: Omit<typeof schema.devNotes.$inferInse
 }
 
 export async function updateDevNote(id: number, note: Partial<typeof schema.devNotes.$inferInsert>) {
-    const [updatedNote] = await db.update(schema.devNotes).set(note).where(eq(schema.devNotes.id, id)).returning();
-    return updatedNote;
+    await db.update(schema.devNotes).set(note).where(eq(schema.devNotes.id, id));
 }
 
 export async function deleteDevNote(id: number) {
