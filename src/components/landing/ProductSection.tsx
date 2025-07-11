@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Image from 'next/image';
 import type { ProductSectionData, ProductComponent } from '@/lib/data';
@@ -25,7 +26,9 @@ export function ProductSection({ data }: { data: ProductSectionData }) {
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="relative h-48 w-full">
-                      <Image src={component.imageUrl} alt={component.title} layout="fill" objectFit="cover" data-ai-hint={component.imageHint} />
+                      {component.imageId && (
+                         <Image src={`/api/images/${component.imageId}`} alt={component.title} layout="fill" objectFit="cover" />
+                      )}
                   </div>
                   <p className="p-4 text-foreground/80">{component.description}</p>
                 </CardContent>

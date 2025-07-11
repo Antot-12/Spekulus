@@ -1,21 +1,20 @@
 
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useLanguage } from '@/contexts/LanguageContext';
+import { useState, useEffect, useRef } from 'react';
 import type { HeroSectionData, Language } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Save, Upload, Wand2, Loader2 } from 'lucide-react';
+import { Save, Upload, Loader2, Image as ImageIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from '@/components/ui/label';
-import { generateImage } from '@/ai/flows/generate-image-flow';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { logAction } from '@/lib/logger';
 import { getHeroData, updateHeroData } from '@/lib/db/actions';
+import NextImage from 'next/image';
 
 type AllHeroData = Record<Language, HeroSectionData>;
 
@@ -37,8 +36,6 @@ const languageNames: Record<Language, string> = {
 const createDefaultHeroData = (lang: Language): HeroSectionData => ({
     title: `Title for ${languageNames[lang]}`,
     subtitle: `Subtitle for ${languageNames[lang]}`,
-    imageUrl: 'https://placehold.co/1920x1080.png',
-    imageHint: 'placeholder',
 });
 
 export default function HeroSectionAdminPage() {
@@ -46,7 +43,6 @@ export default function HeroSectionAdminPage() {
     const [allData, setAllData] = useState<AllHeroData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
-    const [isGenerating, setIsGenerating] = useState(false);
     const [selectedLang, setSelectedLang] = useState<Language>('en');
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -84,7 +80,7 @@ export default function HeroSectionAdminPage() {
         }
     };
 
-    const handleChange = (field: keyof HeroSectionData, value: string | boolean) => {
+    const handleChange = (field: keyof HeroSectionData, value: string | number | null) => {
         setAllData(prev => {
             if (!prev) return null;
             return {
@@ -100,7 +96,6 @@ export default function HeroSectionAdminPage() {
 
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('subdirectory', 'hero');
         
         toast({ title: "Uploading...", description: "Please wait while the image is uploaded." });
 
@@ -113,9 +108,9 @@ export default function HeroSectionAdminPage() {
             const result = await response.json();
 
             if (result.success) {
-                handleChange('imageUrl', result.url);
+                handleChange('imageId', result.id);
                 toast({ title: "Image Uploaded", description: "Image has been updated. Remember to save your changes." });
-                logAction('File Upload', 'Success', `Uploaded new hero image: ${result.url}`);
+                logAction('File Upload', 'Success', `Uploaded new hero image ID: ${result.id}`);
             } else {
                 toast({ title: "Upload Failed", description: result.error || "Could not upload image.", variant: 'destructive' });
                 logAction('File Upload', 'Failure', `Failed to upload hero image.`);
@@ -128,29 +123,6 @@ export default function HeroSectionAdminPage() {
              if (event.target) {
                 event.target.value = '';
             }
-        }
-    };
-
-    const handleImageGenerate = async () => {
-        if (!data?.imageHint) {
-            toast({ title: "Hint required", description: "Please provide an AI hint to generate an image.", variant: 'destructive' });
-            return;
-        }
-
-        setIsGenerating(true);
-        toast({ title: "Generating Image...", description: "The AI is creating an image based on your hint. This may take a moment." });
-
-        try {
-            const imageUrl = await generateImage(data.imageHint);
-            handleChange('imageUrl', imageUrl);
-            toast({ title: "Image Generated!", description: "The new image has been set. Remember to save changes." });
-            logAction('File Upload', 'Success', `Generated hero image with hint: "${data.imageHint}"`);
-        } catch (error: any) {
-            console.error("Image generation error:", error);
-            toast({ title: "Generation Failed", description: "The AI could not generate an image. Please try a different hint.", variant: 'destructive' });
-            logAction('File Upload', 'Failure', `Failed to generate hero image with hint: "${data.imageHint}". Reason: ${error.message}`);
-        } finally {
-            setIsGenerating(false);
         }
     };
 
@@ -191,7 +163,7 @@ export default function HeroSectionAdminPage() {
                     <Skeleton className="h-10 w-1/3" />
                     <Skeleton className="h-10 w-full" />
                     <Skeleton className="h-24 w-full" />
-                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-48 w-full" />
                 </div>
             ) : (
                 <>
@@ -204,35 +176,31 @@ export default function HeroSectionAdminPage() {
                         <Textarea id="subtitle" value={data.subtitle} onChange={(e) => handleChange('subtitle', e.target.value)} rows={3}/>
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="imageUrl">Background Image URL</Label>
-                        <div className="flex gap-2">
-                            <Input id="imageUrl" value={data.imageUrl} onChange={(e) => handleChange('imageUrl', e.target.value)} />
-                            <Button variant="outline" size="icon" onClick={() => fileInputRef.current?.click()} aria-label="Upload image">
-                                <Upload className="h-4 w-4" />
-                            </Button>
-                            <input
-                                type="file"
-                                ref={fileInputRef}
-                                onChange={handleImageUpload}
-                                accept="image/*"
-                                className="hidden"
-                            />
-                        </div>
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="imageHint">Background Image AI Hint</Label>
-                        <div className="flex gap-2">
-                            <Input id="imageHint" value={data.imageHint} onChange={(e) => handleChange('imageHint', e.target.value)} />
-                            <Button
-                                variant="outline"
-                                size="icon"
-                                onClick={handleImageGenerate}
-                                disabled={isGenerating}
-                                aria-label="Generate image with AI"
-                            >
-                                {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
-                            </Button>
-                        </div>
+                        <Label>Background Image</Label>
+                        <Card>
+                            <CardContent className="p-4 flex flex-col items-center gap-4">
+                                {data.imageId ? (
+                                    <div className="relative w-full aspect-video rounded-md overflow-hidden">
+                                        <NextImage src={`/api/images/${data.imageId}`} alt="Hero background" layout="fill" objectFit='cover' />
+                                    </div>
+                                ) : (
+                                    <div className="w-full aspect-video rounded-md bg-muted flex items-center justify-center">
+                                        <ImageIcon className="w-16 h-16 text-muted-foreground" />
+                                    </div>
+                                )}
+                                <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="w-full">
+                                    <Upload className="mr-2 h-4 w-4" />
+                                    Upload New Image
+                                </Button>
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    onChange={handleImageUpload}
+                                    accept="image/*"
+                                    className="hidden"
+                                />
+                            </CardContent>
+                        </Card>
                     </div>
                     <p className="text-sm text-muted-foreground pt-4">Note: The four features and the call-to-action button text are managed in the site's translation files (`src/lib/translations.ts`).</p>
                 </>

@@ -68,14 +68,15 @@ export function CreatorsSection() {
                     style={{ animationDelay: `${index * 150}ms` }}
                   >
                     <div className="relative h-40 w-40">
-                      <Image 
-                        src={creator.imageUrl} 
-                        alt={creator.name} 
-                        data-ai-hint={creator.imageHint} 
-                        layout="fill" 
-                        objectFit="cover" 
-                        className="rounded-full group-hover:scale-105 transition-transform duration-300 shadow-lg"
-                      />
+                      {creator.imageId && (
+                        <Image 
+                            src={`/api/images/${creator.imageId}`} 
+                            alt={creator.name} 
+                            layout="fill" 
+                            objectFit="cover" 
+                            className="rounded-full group-hover:scale-105 transition-transform duration-300 shadow-lg"
+                        />
+                      )}
                     </div>
                     <CardHeader className="p-4">
                       <CardTitle className="font-headline text-xl group-hover:text-primary transition-colors">{creator.name}</CardTitle>

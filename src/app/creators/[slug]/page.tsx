@@ -127,15 +127,15 @@ const CreatorAIWidget = ({ creator, style }: { creator: Creator, style?: CSSProp
   )
 }
 
-const FeaturedProjectSection = ({ project, style }: { project?: FeaturedProject, style?: CSSProperties }) => {
+const FeaturedProjectSection = ({ project, imageId, style }: { project?: FeaturedProject, imageId?: number | null, style?: CSSProperties }) => {
     if (!project || !project.title) return null;
 
     return (
         <ProfileSection icon={<Briefcase className="w-6 h-6" />} title="Featured Project" style={style}>
              <Card className="bg-muted/30 overflow-hidden border-border/20">
-                {project.imageUrl && (
+                {imageId && (
                     <div className="relative aspect-video">
-                        <Image src={project.imageUrl} alt={project.title} layout="fill" objectFit="cover" data-ai-hint={project.imageHint}/>
+                        <Image src={`/api/images/${imageId}`} alt={project.title} layout="fill" objectFit="cover" />
                     </div>
                 )}
                 <CardContent className="p-6">
@@ -368,7 +368,7 @@ const GallerySection = ({ gallery, style }: { gallery?: GalleryImage[], style?: 
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {gallery.map((image, index) => (
                     <div key={index} className="group relative aspect-square overflow-hidden rounded-lg">
-                        <Image src={image.imageUrl} alt={image.description} data-ai-hint={image.imageHint} layout="fill" objectFit="cover" className="group-hover:scale-105 transition-transform duration-300" />
+                        <Image src={`/api/images/${image.imageId}`} alt={image.description} layout="fill" objectFit="cover" className="group-hover:scale-105 transition-transform duration-300" />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                         <p className="absolute bottom-2 left-2 text-white text-xs drop-shadow-md">{image.description}</p>
                     </div>
@@ -447,7 +447,9 @@ export default function CreatorDetailPage() {
           <aside className="lg:col-span-1 space-y-8 self-start">
              <Card className="p-6 text-center shadow-lg border-border/50 opacity-0 animate-fade-in-up" style={{ animationDelay: '150ms' }}>
                 <div className="relative h-40 w-40 mx-auto group">
-                    <Image src={creator.imageUrl} alt={creator.name} data-ai-hint={creator.imageHint} layout="fill" objectFit="cover" className="rounded-full shadow-lg transition-transform duration-300 group-hover:scale-105 group-hover:shadow-[0_0_25px_hsl(var(--primary))]" priority />
+                    {creator.imageId && (
+                        <Image src={`/api/images/${creator.imageId}`} alt={creator.name} layout="fill" objectFit="cover" className="rounded-full shadow-lg transition-transform duration-300 group-hover:scale-105 group-hover:shadow-[0_0_25px_hsl(var(--primary))]" priority />
+                    )}
                 </div>
                 <h1 className="text-3xl font-bold font-headline mt-4">{creator.name}</h1>
                 <p className="text-xl text-primary font-semibold">{creator.role}</p>
@@ -480,7 +482,7 @@ export default function CreatorDetailPage() {
                     </ReactMarkdown>
                 </div>
             </ProfileSection>
-            <FeaturedProjectSection project={creator.featuredProject} style={{ animationDelay: '500ms' }} />
+            <FeaturedProjectSection project={creator.featuredProject} imageId={creator.featuredProjectImageId} style={{ animationDelay: '500ms' }} />
             <ContributionsSection contributions={creator.contributions} style={{ animationDelay: '600ms' }} />
             <SkillsSection skills={creator.skills} style={{ animationDelay: '700ms' }} />
             <MusicSection music={creator.music} style={{ animationDelay: '800ms' }} />

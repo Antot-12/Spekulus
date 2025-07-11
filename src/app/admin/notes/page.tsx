@@ -7,12 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Trash2, PlusCircle, Upload, Wand2, Loader2, Eye, EyeOff, Save } from 'lucide-react';
+import { Trash2, PlusCircle, Upload, Loader2, Eye, EyeOff, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MarkdownEditor } from '@/components/ui/markdown-editor';
 import { Textarea } from '@/components/ui/textarea';
-import { generateImage } from '@/ai/flows/generate-image-flow';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { logAction } from '@/lib/logger';
@@ -46,7 +45,6 @@ export default function NotesAdminPage() {
     const [activeNote, setActiveNote] = useState<DevNote | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
-    const [generatingImages, setGeneratingImages] = useState<Record<number, boolean>>({});
     const fileInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
 
     const fetchNotes = useCallback(async () => {
@@ -129,8 +127,6 @@ export default function NotesAdminPage() {
             date: new Date().toISOString().split('T')[0],
             summary: 'A brief summary of the new note.',
             content: newNoteContentExample,
-            imageUrl: 'https://placehold.co/1200x600.png',
-            imageHint: 'placeholder image',
             author: 'Spekulus Team',
             tags: ['Update'],
             isVisible: false,
@@ -166,7 +162,6 @@ export default function NotesAdminPage() {
 
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('subdirectory', `spekulus/dev_notes/${note.slug}`);
         
         toast({ title: "Uploading...", description: "Please wait while the header image is uploaded." });
 
@@ -177,9 +172,9 @@ export default function NotesAdminPage() {
             });
             const result = await response.json();
             if (result.success) {
-                handleFieldChange('imageUrl', result.url);
+                handleFieldChange('imageId', result.id);
                 toast({ title: "Image Uploaded", description: "Header image has been updated. Save the note to persist this change." });
-                logAction('File Upload', 'Success', `Uploaded image for note '${note.title}': ${result.url}`);
+                logAction('File Upload', 'Success', `Uploaded image for note '${note.title}': ID ${result.id}`);
             } else {
                 toast({ title: "Upload Failed", description: result.error || "Could not upload image.", variant: 'destructive' });
                 logAction('File Upload', 'Failure', `Failed to upload image for note '${note.title}'. Reason: ${result.error}`);
@@ -190,28 +185,6 @@ export default function NotesAdminPage() {
             logAction('File Upload', 'Failure', `Failed to upload image for note '${note.title}'. Reason: ${error.message}`);
         } finally {
              if (event.target) event.target.value = '';
-        }
-    };
-
-    const handleHeaderImageGenerate = async (note: DevNote, hint: string) => {
-        if (!hint) {
-            toast({ title: "Hint required", description: "Please provide an AI hint to generate an image.", variant: 'destructive' });
-            return;
-        }
-
-        setGeneratingImages(prev => ({ ...prev, [note.id]: true }));
-        toast({ title: "Generating Image...", description: "The AI is creating an image..." });
-
-        try {
-            const imageUrl = await generateImage(hint);
-            handleFieldChange('imageUrl', imageUrl);
-            toast({ title: "Image Generated!", description: "The new header image has been set. Save the note to persist this change." });
-            logAction('File Upload', 'Success', `Generated image for note '${note.title}' with hint: "${hint}"`);
-        } catch (error: any) {
-            toast({ title: "Generation Failed", description: "The AI could not generate an image. Please try a different hint.", variant: 'destructive' });
-            logAction('File Upload', 'Failure', `Failed to generate image for note '${note.title}' with hint: "${hint}". Reason: ${error.message}`);
-        } finally {
-            setGeneratingImages(prev => ({ ...prev, [note.id]: false }));
         }
     };
 
@@ -292,7 +265,7 @@ export default function NotesAdminPage() {
                                 </Label>
                                 <Switch
                                     id="visible"
-                                    checked={activeNote.isVisible}
+                                    checked={!!activeNote.isVisible}
                                     onCheckedChange={(checked) => handleFieldChange('isVisible', checked)}
                                     aria-label="Toggle note visibility"
                                 />
@@ -317,7 +290,7 @@ export default function NotesAdminPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="author">Author</Label>
-                                    <Input id="author" value={activeNote.author} onChange={(e) => handleFieldChange('author', e.target.value)} />
+                                    <Input id="author" value={activeNote.author || ''} onChange={(e) => handleFieldChange('author', e.target.value)} />
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="tags">Tags (comma-separated)</Label>
@@ -328,21 +301,14 @@ export default function NotesAdminPage() {
                             <Separator />
 
                             <div className="space-y-2">
-                                <Label htmlFor="imageUrl">Header Image URL</Label>
+                                <Label htmlFor="imageUrl">Header Image</Label>
                                 <div className="flex gap-2">
-                                    <Input id="imageUrl" value={activeNote.imageUrl} onChange={(e) => handleFieldChange('imageUrl', e.target.value)} />
+                                    <Input id="imageId" value={activeNote.imageId || ''} disabled placeholder="Upload an image to see its ID"/>
                                     <Button variant="outline" size="icon" onClick={() => fileInputRefs.current[activeNote.id]?.click()}><Upload className="h-4 w-4" /></Button>
                                     <input type="file" ref={(el) => (fileInputRefs.current[activeNote.id] = el)} onChange={(e) => handleHeaderImageUpload(activeNote, e)} accept="image/*" className="hidden" />
                                 </div>
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="imageHint">Header Image AI Hint</Label>
-                                <div className="flex gap-2">
-                                    <Input id="imageHint" value={activeNote.imageHint} onChange={(e) => handleFieldChange('imageHint', e.target.value)} />
-                                    <Button variant="outline" size="icon" onClick={() => handleHeaderImageGenerate(activeNote, activeNote.imageHint)} disabled={generatingImages[activeNote.id]}><Wand2 className="h-4 w-4" /></Button>
-                                </div>
-                            </div>
-
+                            
                             <Separator />
                             
                             <div className="space-y-2">
@@ -356,7 +322,6 @@ export default function NotesAdminPage() {
                                     value={activeNote.content}
                                     onChange={(value) => handleFieldChange('content', value)}
                                     rows={12}
-                                    uploadSubdirectory={`spekulus/dev_notes/${activeNote.slug}`}
                                 />
                             </div>
 

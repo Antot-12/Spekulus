@@ -5,9 +5,7 @@ import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import Link from 'next/link';
 import { CheckCircle } from 'lucide-react';
-import { useLanguage } from '@/contexts/LanguageContext'; // This will be removed, but keep for translations
 import type { HeroSectionData } from '@/lib/data';
-import { Skeleton } from '../ui/skeleton';
 import { translations } from '@/lib/translations';
 import { getLanguage } from '@/lib/getLanguage';
 
@@ -26,14 +24,17 @@ export async function HeroSection({ data }: { data: HeroSectionData | null }) {
   return (
     <section className="relative w-full min-h-[80vh] flex items-center justify-center text-center overflow-hidden">
       <div className="absolute inset-0 z-0">
-          <Image
-            src={data.imageUrl}
-            alt={data.title}
-            data-ai-hint={data.imageHint}
-            fill
-            className="object-cover"
-            priority
-          />
+          {data.imageId ? (
+            <Image
+                src={`/api/images/${data.imageId}`}
+                alt={data.title}
+                fill
+                className="object-cover"
+                priority
+            />
+          ) : (
+            <div className="w-full h-full bg-muted" />
+          )}
         <div className="absolute inset-0 bg-black/60" />
       </div>
 

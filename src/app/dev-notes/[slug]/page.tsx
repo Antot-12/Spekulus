@@ -87,8 +87,8 @@ export default function DevNotePage() {
         </div>
 
         <div className="relative h-64 md:h-96 w-full opacity-0 animate-fade-in-up" style={{ animationDelay: '150ms' }}>
-            {note.imageUrl ? (
-                <Image src={note.imageUrl} alt={note.title} data-ai-hint={note.imageHint} layout="fill" objectFit="cover" priority />
+            {note.imageId ? (
+                <Image src={`/api/images/${note.imageId}`} alt={note.title} layout="fill" objectFit="cover" priority />
             ) : (
                 <div className="w-full h-full flex items-center justify-center bg-muted">
                     <ImageIcon className="w-24 h-24 text-muted-foreground" />

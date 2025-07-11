@@ -1,8 +1,18 @@
-import { pgTable, text, integer, boolean, varchar, timestamp, jsonb, serial } from 'drizzle-orm/pg-core';
+import { pgTable, text, integer, boolean, varchar, timestamp, jsonb, serial, customType } from 'drizzle-orm/pg-core';
 
 export const languages = pgTable('languages', {
     code: varchar('code', { length: 2 }).primaryKey(),
     name: text('name').notNull(),
+});
+
+const bytea = customType<{ data: Buffer }>('bytea');
+
+export const images = pgTable('images', {
+    id: serial('id').primaryKey(),
+    filename: text('filename'),
+    mimeType: text('mime_type'),
+    data: bytea('data').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
 export const heroSections = pgTable('hero_sections', {
@@ -10,8 +20,7 @@ export const heroSections = pgTable('hero_sections', {
     lang: varchar('lang', { length: 2 }).notNull().references(() => languages.code),
     title: text('title').notNull(),
     subtitle: text('subtitle').notNull(),
-    imageUrl: text('image_url').notNull(),
-    imageHint: text('image_hint').notNull(),
+    imageId: integer('image_id').references(() => images.id, { onDelete: 'set null' }),
 });
 
 export const productComponents = pgTable('product_components', {
@@ -20,8 +29,7 @@ export const productComponents = pgTable('product_components', {
     icon: text('icon').notNull(),
     title: text('title').notNull(),
     description: text('description').notNull(),
-    imageUrl: text('image_url').notNull(),
-    imageHint: text('image_hint').notNull(),
+    imageId: integer('image_id').references(() => images.id, { onDelete: 'set null' }),
 });
 
 export const advantages = pgTable('advantages', {
@@ -38,12 +46,11 @@ export const actionSections = pgTable('action_sections', {
     title: text('title').notNull(),
     subtitle: text('subtitle').notNull(),
     description: text('description').notNull(),
-    imageUrl: text('image_url').notNull(),
-    imageHint: text('image_hint').notNull(),
     visible: boolean('visible').default(true).notNull(),
     buttonText: text('button_text').notNull(),
     buttonUrl: text('button_url').notNull(),
     buttonVisible: boolean('button_visible').default(true).notNull(),
+    imageId: integer('image_id').references(() => images.id, { onDelete: 'set null' }),
 });
 
 export const roadmapEvents = pgTable('roadmap_events', {
@@ -68,12 +75,11 @@ export const devNotes = pgTable('dev_notes', {
     title: text('title').notNull(),
     summary: text('summary').notNull(),
     content: text('content').notNull(),
-    imageUrl: text('image_url'),
-    imageHint: text('image_hint'),
     author: text('author'),
     tags: jsonb('tags').$type<string[]>(),
     isVisible: boolean('is_visible').default(true).notNull(),
     reactionCounts: jsonb('reaction_counts').$type<Record<string, number>>(),
+    imageId: integer('image_id').references(() => images.id, { onDelete: 'set null' }),
 });
 
 export const creators = pgTable('creators', {
@@ -83,8 +89,6 @@ export const creators = pgTable('creators', {
     name: text('name').notNull(),
     role: text('role').notNull(),
     bio: text('bio').notNull(),
-    imageUrl: text('image_url'),
-    imageHint: text('image_hint'),
     location: text('location'),
     languages: jsonb('languages').$type<string[]>(),
     contributions: jsonb('contributions').$type<string[]>(),
@@ -98,7 +102,9 @@ export const creators = pgTable('creators', {
     music: jsonb('music').$type<{ spotify?: string, appleMusic?: string, youtubeMusic?: string }>(),
     education: jsonb('education').$type<{ institution: string, degree: string, year: string }[]>(),
     certifications: jsonb('certifications').$type<{ name: string, authority: string, year: string }[]>(),
-    gallery: jsonb('gallery').$type<{ imageUrl: string, description: string, imageHint: string }[]>(),
+    gallery: jsonb('gallery').$type<{ imageId: number, description: string }>(),
     achievements: jsonb('achievements').$type<{ icon: string, name: string, description: string }[]>(),
-    featuredProject: jsonb('featured_project').$type<{ title: string, description: string, url: string, imageUrl?: string, imageHint?: string }>(),
+    imageId: integer('image_id').references(() => images.id, { onDelete: 'set null' }),
+    featuredProjectImageId: integer('featured_project_image_id').references(() => images.id, { onDelete: 'set null' }),
+    featuredProject: jsonb('featured_project').$type<{ title: string, description: string, url: string }>(),
 });

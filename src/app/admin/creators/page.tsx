@@ -116,16 +116,15 @@ export default function CreatorsAdminPage() {
 
     const handleProjectChange = (id: number, field: keyof FeaturedProject, value: string) => {
         const creator = creators.find(c => c.id === id);
-        const updatedProject = { ...(creator?.featuredProject || { title: '', url: '', description: '', imageUrl: '', imageHint: ''}), [field]: value };
+        const updatedProject = { ...(creator?.featuredProject || { title: '', url: '', description: ''}), [field]: value };
         handleFieldChange(id, 'featuredProject', updatedProject);
     };
 
     const handleCreatorAdd = () => {
         const newCreator: Creator = {
             id: Date.now(), name: 'New Creator', slug: `new-creator-${Date.now()}`, role: 'Team Member',
-            bio: newCreatorBioExample, imageUrl: 'https://placehold.co/800x800.png', imageHint: 'person portrait',
-            quote: '', quoteAuthor: '', music: { spotify: '' }, socials: { github: '', twitter: '', linkedin: '' },
-            skills: [], gallery: [], featuredProject: { title: '', url: '', description: '', imageUrl: '', imageHint: '' },
+            bio: newCreatorBioExample, quote: '', quoteAuthor: '', music: { spotify: '' }, socials: { github: '', twitter: '', linkedin: '' },
+            skills: [], gallery: [], featuredProject: { title: '', url: '', description: '' },
             isVisible: false,
         };
         setCreators([...creators, newCreator]);
@@ -138,37 +137,32 @@ export default function CreatorsAdminPage() {
         toast({ title: "Creator Removed", description: `"${creatorToDelete?.name}" has been removed. Press 'Save Changes' to confirm the deletion.`, variant: 'destructive' });
     };
 
-    const handleImageUpload = async (creatorId: number, field: string, event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleImageUpload = async (creatorId: number, field: 'imageId' | 'featuredProjectImageId' | `gallery.${number}`, event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
 
         const creator = creators.find(c => c.id === creatorId);
-        if (!creator || !creator.slug) {
-            toast({ title: "Creator or slug not found", description: "Please ensure the creator has a valid slug before uploading.", variant: "destructive" });
-            return;
-        }
+        if (!creator) return;
 
         toast({ title: "Uploading...", description: "Please wait while the image is uploaded." });
         const formData = new FormData();
         formData.append('file', file);
-        const subdirectory = `spekulus/creators/${creator.slug}`;
-        formData.append('subdirectory', subdirectory);
         
         try {
             const response = await fetch('/api/upload', { method: 'POST', body: formData });
             const result = await response.json();
 
             if (result.success) {
-                if (field === 'featuredProject') {
-                    handleProjectChange(creatorId, 'imageUrl', result.url);
+                if (field === 'featuredProjectImageId') {
+                    handleFieldChange(creatorId, 'featuredProjectImageId', result.id);
                 } else if (field.startsWith('gallery.')) {
                     const index = parseInt(field.split('.')[1], 10);
-                    handleGalleryChange(creatorId, index, 'imageUrl', result.url);
+                    handleGalleryChange(creatorId, index, 'imageId', result.id);
                 } else {
-                    handleFieldChange(creatorId, field as keyof Creator, result.url);
+                    handleFieldChange(creatorId, 'imageId', result.id);
                 }
                 toast({ title: "Image Uploaded", description: "Image has been updated. Remember to save." });
-                logAction('File Upload', 'Success', `Uploaded image for creator '${creator.name}' to ${result.url}`);
+                logAction('File Upload', 'Success', `Uploaded image for creator '${creator.name}'.`);
             } else {
                 toast({ title: "Upload Failed", description: result.error, variant: 'destructive' });
                 logAction('File Upload', 'Failure', `Failed to upload for creator '${creator.name}'. Reason: ${result.error}`);
@@ -180,42 +174,12 @@ export default function CreatorsAdminPage() {
             if (event.target) event.target.value = '';
         }
     };
-    
-    const handleImageGenerate = async (creatorId: number, field: string, hint: string, galleryIndex?: number) => {
-        if (!hint) {
-            toast({ title: "Hint required", description: "Please provide an AI hint.", variant: 'destructive' });
-            return;
-        }
-        
-        const creatorName = creators.find(c => c.id === creatorId)?.name || 'Unknown';
-        const uniqueId = galleryIndex !== undefined ? `${creatorId}-gallery.${galleryIndex}` : `${creatorId}-${field}`;
-        setGeneratingImages(prev => ({ ...prev, [uniqueId]: true }));
-        toast({ title: "Generating Image...", description: "The AI is creating an image. This may take a moment." });
-    
-        try {
-            const imageUrl = await generateImage(hint);
-            if (field === 'featuredProject') {
-                handleProjectChange(creatorId, 'imageUrl', imageUrl);
-            } else if (field.startsWith('gallery') && galleryIndex !== undefined) {
-                handleGalleryChange(creatorId, galleryIndex, 'imageUrl', imageUrl);
-            } else {
-                handleFieldChange(creatorId, field as keyof Creator, imageUrl);
-            }
-            toast({ title: "Image Generated!", description: "The new image has been set. Remember to save." });
-            logAction('File Upload', 'Success', `Generated image for creator '${creatorName}' with hint: "${hint}"`);
-        } catch (error: any) {
-            toast({ title: "Generation Failed", description: "The AI could not generate an image.", variant: 'destructive' });
-            logAction('File Upload', 'Failure', `Failed to generate image for creator '${creatorName}'. Reason: ${error.message}`);
-        } finally {
-            setGeneratingImages(prev => ({ ...prev, [uniqueId]: false }));
-        }
-    };
 
     const handleArrayChange = (id: number, field: keyof Creator, value: string) => {
         handleFieldChange(id, field, value.split(',').map(s => s.trim()).filter(Boolean));
     };
 
-    const handleGalleryChange = (creatorId: number, index: number, field: keyof GalleryImage, value: string) => {
+    const handleGalleryChange = (creatorId: number, index: number, field: keyof GalleryImage, value: any) => {
         const creator = creators.find(c => c.id === creatorId);
         if (!creator) return;
         const newGallery = [...(creator.gallery || [])];
@@ -224,7 +188,7 @@ export default function CreatorsAdminPage() {
     };
 
     const handleGalleryAdd = (creatorId: number) => {
-        const newImage: GalleryImage = { imageUrl: 'https://placehold.co/600x400.png', description: 'New Image', imageHint: 'placeholder' };
+        const newImage: GalleryImage = { imageId: 0, description: 'New Image' };
         const creator = creators.find(c => c.id === creatorId);
         if (!creator) return;
         handleFieldChange(creatorId, 'gallery', [...(creator.gallery || []), newImage]);
@@ -292,19 +256,11 @@ export default function CreatorsAdminPage() {
 
                             <Card><CardHeader><CardTitle className="font-headline flex items-center gap-2"><ImageIcon className="w-6 h-6"/>Profile Image</CardTitle></CardHeader>
                                 <CardContent className="space-y-4">
-                                    <div className="space-y-2"><Label htmlFor={`imageUrl-${creator.id}`}>Image URL</Label>
+                                    <div className="space-y-2"><Label>Image</Label>
                                         <div className="flex gap-2">
-                                            <Input id={`imageUrl-${creator.id}`} value={creator.imageUrl ?? ''} onChange={(e) => handleFieldChange(creator.id, 'imageUrl', e.target.value)} />
+                                            <Input id={`imageId-${creator.id}`} value={creator.imageId ?? ''} disabled placeholder="Upload an image to get an ID"/>
                                             <Button variant="outline" size="icon" onClick={() => fileInputRefs.current[`creator-${creator.id}`]?.click()}><Upload className="h-4 w-4" /></Button>
-                                            <input type="file" ref={(el) => (fileInputRefs.current[`creator-${creator.id}`] = el)} onChange={(e) => handleImageUpload(creator.id, 'imageUrl', e)} accept="image/*" className="hidden" />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2"><Label htmlFor={`imageHint-${creator.id}`}>Image AI Hint</Label>
-                                        <div className="flex gap-2">
-                                            <Input id={`imageHint-${creator.id}`} value={creator.imageHint ?? ''} onChange={(e) => handleFieldChange(creator.id, 'imageHint', e.target.value)} />
-                                            <Button variant="outline" size="icon" onClick={() => handleImageGenerate(creator.id, 'imageUrl', creator.imageHint || '')} disabled={generatingImages[`${creator.id}-imageUrl`]}>
-                                                {generatingImages[`${creator.id}-imageUrl`] ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
-                                            </Button>
+                                            <input type="file" ref={(el) => (fileInputRefs.current[`creator-${creator.id}`] = el)} onChange={(e) => handleImageUpload(creator.id, 'imageId', e)} accept="image/*" className="hidden" />
                                         </div>
                                     </div>
                                 </CardContent>
@@ -342,19 +298,11 @@ export default function CreatorsAdminPage() {
                                     <div className="space-y-2"><Label htmlFor={`project-title-${creator.id}`}>Project Title</Label><Input id={`project-title-${creator.id}`} value={creator.featuredProject?.title ?? ''} onChange={(e) => handleProjectChange(creator.id, 'title', e.target.value)} /></div>
                                     <div className="space-y-2"><Label htmlFor={`project-url-${creator.id}`}>Project URL</Label><Input id={`project-url-${creator.id}`} value={creator.featuredProject?.url ?? ''} onChange={(e) => handleProjectChange(creator.id, 'url', e.target.value)} /></div>
                                     <div className="space-y-2"><Label htmlFor={`project-desc-${creator.id}`}>Project Description</Label><Textarea id={`project-desc-${creator.id}`} value={creator.featuredProject?.description ?? ''} onChange={(e) => handleProjectChange(creator.id, 'description', e.target.value)} rows={3} /></div>
-                                    <div className="space-y-2"><Label htmlFor={`project-imageUrl-${creator.id}`}>Project Image URL</Label>
+                                    <div className="space-y-2"><Label htmlFor={`project-imageId-${creator.id}`}>Project Image</Label>
                                         <div className="flex gap-2">
-                                            <Input id={`project-imageUrl-${creator.id}`} value={creator.featuredProject?.imageUrl ?? ''} onChange={(e) => handleProjectChange(creator.id, 'imageUrl', e.target.value)} />
+                                            <Input id={`project-imageId-${creator.id}`} value={creator.featuredProjectImageId ?? ''} disabled placeholder="Upload to get an ID" />
                                             <Button variant="outline" size="icon" onClick={() => fileInputRefs.current[`project-${creator.id}`]?.click()}><Upload className="h-4 w-4" /></Button>
-                                            <input type="file" ref={(el) => (fileInputRefs.current[`project-${creator.id}`] = el)} onChange={(e) => handleImageUpload(creator.id, 'featuredProject', e)} accept="image/*" className="hidden" />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2"><Label htmlFor={`project-imageHint-${creator.id}`}>Project Image AI Hint</Label>
-                                        <div className="flex gap-2">
-                                            <Input id={`project-imageHint-${creator.id}`} value={creator.featuredProject?.imageHint ?? ''} onChange={(e) => handleProjectChange(creator.id, 'imageHint', e.target.value)} />
-                                            <Button variant="outline" size="icon" onClick={() => handleImageGenerate(creator.id, 'featuredProject', creator.featuredProject?.imageHint || '')} disabled={generatingImages[`${creator.id}-featuredProject`]}>
-                                                {generatingImages[`${creator.id}-featuredProject`] ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
-                                            </Button>
+                                            <input type="file" ref={(el) => (fileInputRefs.current[`project-${creator.id}`] = el)} onChange={(e) => handleImageUpload(creator.id, 'featuredProjectImageId', e)} accept="image/*" className="hidden" />
                                         </div>
                                     </div>
                                 </CardContent>
@@ -364,22 +312,14 @@ export default function CreatorsAdminPage() {
                                 <CardContent className="space-y-4">
                                     {(creator.gallery ?? []).map((image, index) => (
                                         <div key={index} className="space-y-4 p-4 border rounded-lg bg-muted/20 relative">
-                                            <div className="space-y-2"><Label htmlFor={`gallery-url-${creator.id}-${index}`}>Image URL</Label>
+                                            <div className="space-y-2"><Label htmlFor={`gallery-imageId-${creator.id}-${index}`}>Image</Label>
                                                 <div className="flex gap-2">
-                                                    <Input id={`gallery-url-${creator.id}-${index}`} value={image.imageUrl} onChange={(e) => handleGalleryChange(creator.id, index, 'imageUrl', e.target.value)} />
+                                                    <Input id={`gallery-imageId-${creator.id}-${index}`} value={image.imageId} onChange={(e) => handleGalleryChange(creator.id, index, 'imageId', e.target.value)} />
                                                     <Button variant="outline" size="icon" onClick={() => fileInputRefs.current[`gallery-${creator.id}-${index}`]?.click()}><Upload className="h-4 w-4" /></Button>
                                                     <input type="file" ref={(el) => (fileInputRefs.current[`gallery-${creator.id}-${index}`] = el)} onChange={(e) => handleImageUpload(creator.id, `gallery.${index}`, e)} accept="image/*" className="hidden" />
                                                 </div>
                                             </div>
                                             <div className="space-y-2"><Label htmlFor={`gallery-desc-${creator.id}-${index}`}>Description / Alt Text</Label><Input id={`gallery-desc-${creator.id}-${index}`} value={image.description} onChange={(e) => handleGalleryChange(creator.id, index, 'description', e.target.value)} /></div>
-                                            <div className="space-y-2"><Label htmlFor={`gallery-hint-${creator.id}-${index}`}>AI Hint</Label>
-                                                <div className="flex gap-2">
-                                                    <Input id={`gallery-hint-${creator.id}-${index}`} value={image.imageHint} onChange={(e) => handleGalleryChange(creator.id, index, 'imageHint', e.target.value)} />
-                                                    <Button variant="outline" size="icon" onClick={() => handleImageGenerate(creator.id, `gallery`, image.imageHint, index)} disabled={generatingImages[`${creator.id}-gallery.${index}`]}>
-                                                        {generatingImages[`${creator.id}-gallery.${index}`] ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
-                                                    </Button>
-                                                </div>
-                                            </div>
                                             <Button variant="destructive" size="icon" className="absolute top-4 right-4" onClick={() => handleGalleryDelete(creator.id, index)}><Trash2 className="h-4 w-4" /></Button>
                                         </div>
                                     ))}
@@ -389,7 +329,7 @@ export default function CreatorsAdminPage() {
 
                             <Card><CardHeader><CardTitle className="font-headline flex items-center gap-2"><FileText className="w-6 h-6"/>Bio</CardTitle></CardHeader>
                                 <CardContent>
-                                    <MarkdownEditor value={creator.bio ?? ''} onChange={(value) => handleFieldChange(creator.id, 'bio', value)} rows={10} uploadSubdirectory={`spekulus/creators/${creator.slug}`} />
+                                    <MarkdownEditor value={creator.bio ?? ''} onChange={(value) => handleFieldChange(creator.id, 'bio', value)} rows={10} />
                                 </CardContent>
                             </Card>
                             

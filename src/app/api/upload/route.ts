@@ -1,9 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { v2 as cloudinary, type UploadApiResponse } from 'cloudinary';
-
-// Load environment variables from env.txt
-require('dotenv').config({ path: require('path').resolve(process.cwd(), 'env.txt') });
+import 'dotenv/config';
+import { uploadImage } from '@/lib/db/actions';
 
 // Helper to convert a file stream to a buffer
 async function streamToBuffer(stream: ReadableStream<Uint8Array>): Promise<Buffer> {
@@ -22,56 +20,21 @@ async function streamToBuffer(stream: ReadableStream<Uint8Array>): Promise<Buffe
 export async function POST(request: NextRequest) {
   const data = await request.formData();
   const file: File | null = data.get('file') as unknown as File;
-  const subdirectory: string | null = data.get('subdirectory') as string | null;
 
   if (!file) {
     return NextResponse.json({ success: false, error: 'No file uploaded.' }, { status: 400 });
   }
 
-  // Explicitly configure Cloudinary for this API call
-  const config = {
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
-  };
-
-  if (!config.cloud_name || !config.api_key || !config.api_secret) {
-      return NextResponse.json({ success: false, error: 'Cloudinary credentials are not configured correctly.' }, { status: 500 });
-  }
-
   try {
     const fileBuffer = await streamToBuffer(file.stream());
     
-    // Use a promise to handle the upload stream
-    const result: UploadApiResponse = await new Promise((resolve, reject) => {
-        const uploadStream = cloudinary.uploader.upload_stream(
-            {
-                ...config,
-                // The `folder` option automatically creates non-existent folders.
-                folder: subdirectory || 'spekulus/uploads',
-                // Use original filename and DO NOT make it unique.
-                use_filename: true,
-                unique_filename: false,
-                overwrite: true,
-                resource_type: 'auto',
-                invalidate: true,
-            },
-            (error, result) => {
-                if (error) {
-                    console.error('Cloudinary upload error:', error);
-                    return reject(new Error(error.message || 'Failed to upload file to Cloudinary.'));
-                }
-                if (result) {
-                    resolve(result);
-                }
-            }
-        );
-
-        // Write the buffer to the stream
-        uploadStream.end(fileBuffer);
-    });
+    const result = await uploadImage(fileBuffer, file.name, file.type);
     
-    return NextResponse.json({ success: true, url: result.secure_url, public_id: result.public_id });
+    if (!result || !result.id) {
+        throw new Error("Image upload failed to return an ID.");
+    }
+    
+    return NextResponse.json({ success: true, id: result.id });
 
   } catch (error) {
     console.error('Error in upload route:', error);

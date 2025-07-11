@@ -1,9 +1,9 @@
 
 import Image from 'next/image';
-import Link from 'next/link';
-import type { ActionSectionData } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
+import type { ActionSectionData } from '@/lib/data';
+
 
 export function ActionSection({ data }: { data: ActionSectionData | null }) {
   
@@ -24,14 +24,15 @@ export function ActionSection({ data }: { data: ActionSectionData | null }) {
         </div>
         <div className="flex flex-col items-center opacity-0 animate-fade-in-up" style={{ animationDelay: '450ms' }}>
           <div className="relative w-full max-w-5xl aspect-video rounded-lg overflow-hidden shadow-2xl group">
-            <Image
-              src={data.imageUrl}
-              alt={data.title}
-              data-ai-hint={data.imageHint}
-              layout="fill"
-              objectFit="cover"
-              className="group-hover:scale-105 transition-transform duration-500"
-            />
+            {data.imageId && (
+                <Image
+                src={`/api/images/${data.imageId}`}
+                alt={data.title}
+                layout="fill"
+                objectFit="cover"
+                className="group-hover:scale-105 transition-transform duration-500"
+                />
+            )}
           </div>
           <p className="mt-8 max-w-3xl text-center text-foreground/80 text-lg">
             {data.description}

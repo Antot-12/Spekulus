@@ -17,7 +17,7 @@ export async function getHeroData(lang: Language) {
   return await db.query.heroSections.findFirst({ where: eq(schema.heroSections.lang, lang) });
 }
 
-export async function updateHeroData(lang: Language, data: typeof schema.heroSections.$inferInsert) {
+export async function updateHeroData(lang: Language, data: Omit<typeof schema.heroSections.$inferInsert, 'lang'>) {
   return await db.insert(schema.heroSections)
     .values({ ...data, lang })
     .onConflictDoUpdate({ target: schema.heroSections.lang, set: data });
@@ -25,7 +25,10 @@ export async function updateHeroData(lang: Language, data: typeof schema.heroSec
 
 // Product Section Actions
 export async function getProductData(lang: Language) {
-    const components = await db.query.productComponents.findMany({ where: eq(schema.productComponents.lang, lang) });
+    const components = await db.query.productComponents.findMany({ 
+        where: eq(schema.productComponents.lang, lang),
+        orderBy: (productComponents, { asc }) => [asc(productComponents.id)],
+    });
     // This is a placeholder for a main title/subtitle for the product section if needed.
     // For now, we'll get it from the translations file. In a real scenario, this could be another table.
     return {
@@ -44,7 +47,10 @@ export async function updateProductComponents(lang: Language, components: (typeo
 
 // Advantages Section Actions
 export async function getAdvantagesData(lang: Language) {
-    return await db.query.advantages.findMany({ where: eq(schema.advantages.lang, lang) });
+    return await db.query.advantages.findMany({ 
+        where: eq(schema.advantages.lang, lang),
+        orderBy: (advantages, { asc }) => [asc(advantages.id)],
+     });
 }
 
 export async function updateAdvantagesData(lang: Language, advantages: (typeof schema.advantages.$inferInsert)[]) {
@@ -61,7 +67,7 @@ export async function getActionSectionData(lang: Language) {
     return await db.query.actionSections.findFirst({ where: eq(schema.actionSections.lang, lang) });
 }
 
-export async function updateActionSectionData(lang: Language, data: typeof schema.actionSections.$inferInsert) {
+export async function updateActionSectionData(lang: Language, data: Omit<typeof schema.actionSections.$inferInsert, 'lang'>) {
     return await db.insert(schema.actionSections)
       .values({ ...data, lang })
       .onConflictDoUpdate({ target: schema.actionSections.lang, set: data });
@@ -69,7 +75,10 @@ export async function updateActionSectionData(lang: Language, data: typeof schem
 
 // Roadmap Actions
 export async function getRoadmapEvents(lang: Language) {
-    return await db.query.roadmapEvents.findMany({ where: eq(schema.roadmapEvents.lang, lang) });
+    return await db.query.roadmapEvents.findMany({ 
+        where: eq(schema.roadmapEvents.lang, lang),
+        orderBy: (roadmapEvents, { asc }) => [asc(roadmapEvents.id)],
+    });
 }
 
 export async function updateRoadmapEvents(lang: Language, events: (typeof schema.roadmapEvents.$inferInsert)[]) {
@@ -85,7 +94,7 @@ export async function getFaqs(lang: Language) {
     return await db.query.faqItems.findMany({ where: eq(schema.faqItems.lang, lang) });
 }
 
-export async function updateFaqs(lang: Language, faqs: (typeof schema.faqItems.$inferInsert)[]) {
+export async function updateFaqs(lang: Language, faqs: (Omit<typeof schema.faqItems.$inferInsert, 'id' | 'lang'>)[]) {
     await db.delete(schema.faqItems).where(eq(schema.faqItems.lang, lang));
     if (faqs.length > 0) {
         return await db.insert(schema.faqItems).values(faqs.map(f => ({...f, lang})));
@@ -128,4 +137,19 @@ export async function updateDevNote(id: number, note: Partial<typeof schema.devN
 
 export async function deleteDevNote(id: number) {
     return await db.delete(schema.devNotes).where(eq(schema.devNotes.id, id));
+}
+
+// Image Actions
+export async function getImage(id: number) {
+  if (isNaN(id)) return null;
+  return await db.query.images.findFirst({ where: eq(schema.images.id, id) });
+}
+
+export async function uploadImage(fileBuffer: Buffer, filename: string, mimeType: string) {
+    const [inserted] = await db.insert(schema.images).values({
+        data: fileBuffer,
+        filename,
+        mimeType
+    }).returning({ id: schema.images.id });
+    return inserted;
 }

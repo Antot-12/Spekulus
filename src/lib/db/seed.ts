@@ -3,13 +3,25 @@ import "dotenv/config";
 import { neon } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
 import * as schema from './schema';
-import { initialData } from '../data'; // We'll move the data here
+import { initialData } from '../data';
 
 const sql = neon(process.env.DATABASE_URL!);
 const db = drizzle(sql, { schema });
 
 async function main() {
   console.log("Seeding database...");
+
+  // Clear existing data
+  await db.delete(schema.creators);
+  await db.delete(schema.devNotes);
+  await db.delete(schema.faqItems);
+  await db.delete(schema.roadmapEvents);
+  await db.delete(schema.actionSections);
+  await db.delete(schema.advantages);
+  await db.delete(schema.productComponents);
+  await db.delete(schema.heroSections);
+  await db.delete(schema.languages);
+  await db.delete(schema.images);
 
   // Seed languages
   await db.insert(schema.languages).values([
@@ -21,14 +33,14 @@ async function main() {
 
   // Seed hero sections
   for (const lang of ['en', 'uk', 'sk'] as const) {
-      await db.insert(schema.heroSections).values({ ...initialData.heroSectionData[lang], lang }).onConflictDoUpdate({ target: schema.heroSections.lang, set: initialData.heroSectionData[lang]});
+      await db.insert(schema.heroSections).values({ ...initialData.heroSectionData[lang], lang, imageId: null }).onConflictDoNothing();
   }
   console.log("Hero sections seeded.");
 
   // Seed product components
   for (const lang of ['en', 'uk', 'sk'] as const) {
       for (const component of initialData.productSectionData[lang].components) {
-          await db.insert(schema.productComponents).values({ ...component, lang }).onConflictDoUpdate({ target: schema.productComponents.id, set: component});
+          await db.insert(schema.productComponents).values({ ...component, lang, imageId: null }).onConflictDoNothing();
       }
   }
   console.log("Product components seeded.");
@@ -36,19 +48,18 @@ async function main() {
   // Seed advantages
   for (const lang of ['en', 'uk', 'sk'] as const) {
       for (const advantage of initialData.advantagesData[lang]) {
-          await db.insert(schema.advantages).values({ ...advantage, lang }).onConflictDoUpdate({target: schema.advantages.id, set: advantage});
+          await db.insert(schema.advantages).values({ ...advantage, lang }).onConflictDoNothing();
       }
   }
   console.log("Advantages seeded.");
 
     // Seed action sections
   for (const lang of ['en', 'uk', 'sk'] as const) {
-      await db.insert(schema.actionSections).values({ ...initialData.actionSectionData[lang], lang }).onConflictDoUpdate({target: schema.actionSections.lang, set: initialData.actionSectionData[lang]});
+      await db.insert(schema.actionSections).values({ ...initialData.actionSectionData[lang], lang, imageId: null }).onConflictDoNothing();
   }
   console.log("Action sections seeded.");
 
   // Seed roadmap events
-  await db.delete(schema.roadmapEvents);
   for (const lang of ['en', 'uk', 'sk'] as const) {
       for (const event of initialData.roadmapEvents[lang]) {
           await db.insert(schema.roadmapEvents).values({ ...event, lang });
@@ -57,28 +68,23 @@ async function main() {
   console.log("Roadmap events seeded.");
 
   // Seed FAQ items
-  await db.delete(schema.faqItems);
   for (const lang of ['en', 'uk', 'sk'] as const) {
       for (const item of initialData.faqData[lang]) {
-        // id is a serial, so we don't pass it in
-        const { id, ...rest } = item;
-        await db.insert(schema.faqItems).values({ ...rest, lang });
+        await db.insert(schema.faqItems).values({ ...item, lang });
       }
   }
   console.log("FAQ items seeded.");
 
   // Seed dev notes
-  await db.delete(schema.devNotes);
   for (const note of initialData.devNotes['en']) {
-      await db.insert(schema.devNotes).values({ ...note, date: new Date(note.date) });
+      await db.insert(schema.devNotes).values({ ...note, date: new Date(note.date), imageId: null });
   }
   console.log("Dev notes seeded.");
   
   // Seed creators
-  await db.delete(schema.creators);
   for (const lang of ['en', 'uk', 'sk'] as const) {
       for (const creator of initialData.creatorsData[lang]) {
-          await db.insert(schema.creators).values({ ...creator, lang });
+          await db.insert(schema.creators).values({ ...creator, lang, imageId: null, featuredProjectImageId: null });
       }
   }
   console.log("Creators seeded.");

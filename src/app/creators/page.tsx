@@ -68,7 +68,7 @@ export default function CreatorsPage() {
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 <div className="relative h-64 w-full">
-                  <Image src={creator.imageUrl} alt={creator.name} data-ai-hint={creator.imageHint} layout="fill" objectFit="cover" />
+                  {creator.imageId && <Image src={`/api/images/${creator.imageId}`} alt={creator.name} layout="fill" objectFit="cover" />}
                 </div>
                 <CardHeader>
                   <CardTitle className="font-headline text-xl group-hover:text-primary transition-colors">{creator.name}</CardTitle>

@@ -7,14 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Save, Sparkles, Upload, Wand2, Loader2 } from 'lucide-react';
+import { Save, Sparkles, Upload, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from '@/components/ui/label';
 import { ProductIcon } from '@/components/ProductIcon';
-import { generateImage } from '@/ai/flows/generate-image-flow';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { logAction } from '@/lib/logger';
+import NextImage from 'next/image';
 
 const SECTION_KEY = 'product-section';
 
@@ -42,7 +42,6 @@ export default function ProductSectionAdminPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [selectedLang, setSelectedLang] = useState<Language>('en');
-    const [generatingImages, setGeneratingImages] = useState<{ [key: number]: boolean }>({});
     const fileInputRefs = useRef<{ [key: number]: HTMLInputElement | null }>({});
 
 
@@ -114,7 +113,7 @@ export default function ProductSectionAdminPage() {
         updateState({ ...data, [field]: value });
     };
     
-    const handleComponentChange = (id: number, field: keyof ProductComponent, value: string) => {
+    const handleComponentChange = (id: number, field: keyof ProductComponent, value: string | number | null) => {
         const updatedComponents = data.components.map(item =>
             item.id === id ? { ...item, [field]: value } : item
         );
@@ -125,16 +124,8 @@ export default function ProductSectionAdminPage() {
         const file = event.target.files?.[0];
         if (!file) return;
 
-        const component = data.components.find(c => c.id === id);
-        if (!component) {
-            toast({ title: "Component not found", variant: "destructive" });
-            return;
-        }
-        const slug = component.title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('subdirectory', `product/${slug}`);
         
         toast({ title: "Uploading...", description: "Please wait while the image is uploaded." });
 
@@ -146,47 +137,21 @@ export default function ProductSectionAdminPage() {
             const result = await response.json();
 
             if (result.success) {
-                handleComponentChange(id, 'imageUrl', result.url);
+                handleComponentChange(id, 'imageId', result.id);
                 toast({ title: "Image Uploaded", description: "Image has been updated. Remember to save your changes." });
-                logAction('File Upload', 'Success', `Uploaded image for product component '${component.title}': ${result.url}`);
+                logAction('File Upload', 'Success', `Uploaded image for product component ID '${id}': ${result.id}`);
             } else {
                 toast({ title: "Upload Failed", description: result.error || "Could not upload image.", variant: 'destructive' });
-                logAction('File Upload', 'Failure', `Failed to upload for product component '${component.title}'. Reason: ${result.error}`);
+                logAction('File Upload', 'Failure', `Failed to upload for product component ID '${id}'. Reason: ${result.error}`);
             }
         } catch (error: any) {
             console.error("Image upload error:", error);
             toast({ title: "Upload Failed", description: "An error occurred during upload.", variant: 'destructive' });
-            logAction('File Upload', 'Failure', `Failed to upload for product component '${component.title}'. Reason: ${error.message}`);
+            logAction('File Upload', 'Failure', `Failed to upload for product component ID '${id}'. Reason: ${error.message}`);
         } finally {
              if (event.target) {
                 event.target.value = '';
             }
-        }
-    };
-    
-    const handleImageGenerate = async (id: number, hint: string) => {
-        if (!hint) {
-            toast({ title: "Hint required", description: "Please provide an AI hint to generate an image.", variant: 'destructive' });
-            return;
-        }
-
-        const component = data.components.find(c => c.id === id);
-        if (!component) return;
-
-        setGeneratingImages(prev => ({ ...prev, [id]: true }));
-        toast({ title: "Generating Image...", description: "The AI is creating an image based on your hint. This may take a moment." });
-
-        try {
-            const imageUrl = await generateImage(hint);
-            handleComponentChange(id, 'imageUrl', imageUrl);
-            toast({ title: "Image Generated!", description: "The new image has been set. Remember to save changes." });
-            logAction('File Upload', 'Success', `Generated image for product component '${component.title}' with hint: "${hint}"`);
-        } catch (error: any) {
-            console.error("Image generation error:", error);
-            toast({ title: "Generation Failed", description: "The AI could not generate an image. Please try a different hint.", variant: 'destructive' });
-            logAction('File Upload', 'Failure', `Failed to generate image for product component '${component.title}' with hint: "${hint}". Reason: ${error.message}`);
-        } finally {
-            setGeneratingImages(prev => ({ ...prev, [id]: false }));
         }
     };
 
@@ -219,8 +184,7 @@ export default function ProductSectionAdminPage() {
                         Save Changes
                     </Button>
                 </div>
-            </div>
-          </CardHeader>
+            </Header>
           <CardContent className="space-y-6">
             {isLoading || !data ? (
                 <div className="space-y-4 p-4">
@@ -266,22 +230,13 @@ export default function ProductSectionAdminPage() {
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor={`imageUrl-${component.id}`}>Image URL</Label>
+                                <Label htmlFor={`imageId-${component.id}`}>Image</Label>
                                 <div className="flex gap-2">
-                                    <Input id={`imageUrl-${component.id}`} value={component.imageUrl} onChange={(e) => handleComponentChange(component.id, 'imageUrl', e.target.value)} />
-                                    <Button variant="outline" size="icon" onClick={() => fileInputRefs.current[component.id]?.click()} aria-label="Upload image">
-                                        <Upload className="h-4 w-4" />
+                                    {component.imageId && <NextImage src={`/api/images/${component.imageId}`} alt={component.title} width={100} height={56} className="rounded-md aspect-video object-cover border" />}
+                                    <Button variant="outline" size="sm" onClick={() => fileInputRefs.current[component.id]?.click()} aria-label="Upload image" className="flex-grow">
+                                        <Upload className="mr-2 h-4 w-4" /> Upload
                                     </Button>
                                     <input type="file" ref={(el) => (fileInputRefs.current[component.id] = el)} onChange={(e) => handleImageUpload(component.id, e)} accept="image/*" className="hidden" />
-                                </div>
-                            </div>
-                             <div className="space-y-2">
-                                <Label htmlFor={`imageHint-${component.id}`}>Image AI Hint</Label>
-                                <div className="flex gap-2">
-                                    <Input id={`imageHint-${component.id}`} value={component.imageHint} onChange={(e) => handleComponentChange(component.id, 'imageHint', e.target.value)} />
-                                    <Button variant="outline" size="icon" onClick={() => handleImageGenerate(component.id, component.imageHint)} disabled={generatingImages[component.id]} aria-label="Generate image with AI">
-                                        {generatingImages[component.id] ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
-                                    </Button>
                                 </div>
                             </div>
                           </div>

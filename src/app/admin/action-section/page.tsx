@@ -7,15 +7,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Save, Upload, Wand2, Loader2, Eye, EyeOff } from 'lucide-react';
+import { Save, Upload, Loader2, Image as ImageIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { generateImage } from '@/ai/flows/generate-image-flow';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from '@/components/ui/separator';
 import { logAction } from '@/lib/logger';
+import NextImage from 'next/image';
 
 const SECTION_KEY = 'action-section';
 
@@ -42,7 +42,6 @@ export default function ActionSectionAdminPage() {
     const [data, setData] = useState<ActionSectionData>(defaultData.en);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
-    const [isGenerating, setIsGenerating] = useState(false);
     const [selectedLang, setSelectedLang] = useState<Language>('en');
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -106,7 +105,7 @@ export default function ActionSectionAdminPage() {
         }
     };
 
-    const handleChange = (field: keyof ActionSectionData, value: string | boolean) => {
+    const handleChange = (field: keyof ActionSectionData, value: string | boolean | number | null) => {
         const updatedData = { ...data, [field]: value };
         setData(updatedData);
     };
@@ -117,7 +116,6 @@ export default function ActionSectionAdminPage() {
 
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('subdirectory', 'action-section');
         
         toast({ title: "Uploading...", description: "Please wait while the image is uploaded." });
 
@@ -130,9 +128,9 @@ export default function ActionSectionAdminPage() {
             const result = await response.json();
 
             if (result.success) {
-                handleChange('imageUrl', result.url);
+                handleChange('imageId', result.id);
                 toast({ title: "Image Uploaded", description: "Image has been updated. Remember to save your changes." });
-                logAction('File Upload', 'Success', `Uploaded image for 'In Action' section: ${result.url}`);
+                logAction('File Upload', 'Success', `Uploaded image for 'In Action' section: ${result.id}`);
             } else {
                 toast({ title: "Upload Failed", description: result.error || "Could not upload image.", variant: 'destructive' });
                  logAction('File Upload', 'Failure', `Failed to upload image for 'In Action' section.`);
@@ -148,28 +146,6 @@ export default function ActionSectionAdminPage() {
         }
     };
 
-    const handleImageGenerate = async () => {
-        if (!data.imageHint) {
-            toast({ title: "Hint required", description: "Please provide an AI hint to generate an image.", variant: 'destructive' });
-            return;
-        }
-
-        setIsGenerating(true);
-        toast({ title: "Generating Image...", description: "The AI is creating an image based on your hint. This may take a moment." });
-
-        try {
-            const imageUrl = await generateImage(data.imageHint);
-            handleChange('imageUrl', imageUrl);
-            toast({ title: "Image Generated!", description: "The new image has been set. Remember to save changes." });
-            logAction('File Upload', 'Success', `Generated image for 'In Action' section with hint: "${data.imageHint}"`);
-        } catch (error) {
-            console.error("Image generation error:", error);
-            toast({ title: "Generation Failed", description: "The AI could not generate an image. Please try a different hint.", variant: 'destructive' });
-            logAction('File Upload', 'Failure', `Failed to generate image for 'In Action' section with hint: "${data.imageHint}"`);
-        } finally {
-            setIsGenerating(false);
-        }
-    };
 
     return (
         <Card className="opacity-0 animate-fade-in-up">
@@ -208,7 +184,7 @@ export default function ActionSectionAdminPage() {
                     <Skeleton className="h-10 w-1/3" />
                     <Skeleton className="h-10 w-full" />
                     <Skeleton className="h-24 w-full" />
-                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-48 w-full" />
                 </div>
             ) : (
                 <>
@@ -238,36 +214,32 @@ export default function ActionSectionAdminPage() {
                         <Label htmlFor="description">Description</Label>
                         <Textarea id="description" value={data.description} onChange={(e) => handleChange('description', e.target.value)} rows={4} />
                     </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="imageUrl">Image URL</Label>
-                        <div className="flex gap-2">
-                            <Input id="imageUrl" value={data.imageUrl} onChange={(e) => handleChange('imageUrl', e.target.value)} />
-                            <Button variant="outline" size="icon" onClick={() => fileInputRef.current?.click()} aria-label="Upload image">
-                                <Upload className="h-4 w-4" />
-                            </Button>
-                            <input
-                                type="file"
-                                ref={fileInputRef}
-                                onChange={handleImageUpload}
-                                accept="image/*"
-                                className="hidden"
-                            />
-                        </div>
-                    </div>
                      <div className="space-y-2">
-                        <Label htmlFor="imageHint">Image AI Hint</Label>
-                        <div className="flex gap-2">
-                            <Input id="imageHint" value={data.imageHint} onChange={(e) => handleChange('imageHint', e.target.value)} />
-                            <Button
-                                variant="outline"
-                                size="icon"
-                                onClick={handleImageGenerate}
-                                disabled={isGenerating}
-                                aria-label="Generate image with AI"
-                            >
-                                {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
-                            </Button>
-                        </div>
+                        <Label>Image</Label>
+                        <Card>
+                            <CardContent className="p-4 flex flex-col items-center gap-4">
+                                {data.imageId ? (
+                                    <div className="relative w-full aspect-video rounded-md overflow-hidden">
+                                        <NextImage src={`/api/images/${data.imageId}`} alt="Action section image" layout="fill" objectFit='cover' />
+                                    </div>
+                                ) : (
+                                    <div className="w-full aspect-video rounded-md bg-muted flex items-center justify-center">
+                                        <ImageIcon className="w-16 h-16 text-muted-foreground" />
+                                    </div>
+                                )}
+                                <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="w-full">
+                                    <Upload className="mr-2 h-4 w-4" />
+                                    Upload New Image
+                                </Button>
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    onChange={handleImageUpload}
+                                    accept="image/*"
+                                    className="hidden"
+                                />
+                            </CardContent>
+                        </Card>
                     </div>
 
                     <Separator className="my-6" />

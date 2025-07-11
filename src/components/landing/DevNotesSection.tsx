@@ -74,8 +74,8 @@ export function DevNotesSection() {
                 >
                   <Link href={`/dev-notes/${note.slug}`} className="block overflow-hidden">
                     <div className="relative h-56 w-full bg-muted">
-                      {note.imageUrl ? (
-                        <Image src={note.imageUrl} alt={note.title} data-ai-hint={note.imageHint} layout="fill" objectFit="cover" className="group-hover:scale-105 transition-transform duration-500" />
+                      {note.imageId ? (
+                        <Image src={`/api/images/${note.imageId}`} alt={note.title} layout="fill" objectFit="cover" className="group-hover:scale-105 transition-transform duration-500" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
                           <ImageIcon className="w-16 h-16 text-muted-foreground" />
