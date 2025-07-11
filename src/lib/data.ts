@@ -9,7 +9,7 @@ type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
 export type DevNote = {
   id: number;
   slug: string;
-  date: string;
+  date: Date;
   title: string;
   summary: string;
   content: string;
@@ -24,6 +24,7 @@ export type DevNote = {
 // ROADMAP
 // ==================================
 export type RoadmapEvent = {
+    id: number;
     date: string;
     title: string;
     description: string;
@@ -162,12 +163,11 @@ export type ProductSectionData = {
 // This object contains all the initial data that will be used to seed the database.
 // It is kept separate to clearly distinguish between the data types and the data itself.
 
-const rawDevNotes: Record<Language, PartialBy<DevNote, 'slug' | 'date' | 'imageId' | 'isVisible' | 'reactionCounts'>[]> = {
+const rawDevNotes: Record<Language, PartialBy<DevNote, 'id'>[]> = {
   en: [
     { 
-      id: 1, 
       slug: "backend-integration-update",
-      date: "2024-07-22",
+      date: new Date("2024-07-22"),
       title: "Backend Integration Nears Completion",
       summary: "The backend integration for our new stress detection API is now 75% complete. The team is now shifting focus to calibration and fine-tuning for the next sprint.",
       content: "We're excited to report significant progress on the new stress detection API. The core logic is in place, and we have successfully connected the frontend data streams to the backend processing services.\n\nOur next major hurdle is calibration. This involves testing with a diverse dataset to ensure accuracy across different lighting conditions and user demographics. We're on track for an internal beta next month.\n\n> We believe this feature will be a game-changer for proactive wellness management.\n\nStay tuned for more updates!",
@@ -177,9 +177,8 @@ const rawDevNotes: Record<Language, PartialBy<DevNote, 'slug' | 'date' | 'imageI
       reactionCounts: {},
     },
     { 
-      id: 2,
       slug: "skin-analysis-refactor",
-      date: "2024-07-18",
+      date: new Date("2024-07-18"),
       title: "Refactoring the Skin Analysis Model",
       summary: "To improve performance in low-light conditions, we've begun refactoring the skin analysis model. Early results are very promising, showing a significant reduction in noise.",
       content: "User feedback indicated that our skin analysis feature could be unreliable in sub-optimal lighting. To address this, we are undertaking a complete refactor of the underlying machine learning model.\n\nBy incorporating new data augmentation techniques and a more robust architecture, we're already seeing a **40% improvement in accuracy** during our internal benchmarks. The image below shows a comparison of the old model (left) vs. the new model (right) on a low-light sample.\n\nThis enhancement will ensure that Spekulus Vision provides reliable insights regardless of the environment.",
@@ -191,7 +190,8 @@ const rawDevNotes: Record<Language, PartialBy<DevNote, 'slug' | 'date' | 'imageI
   ],
   uk: [
     {
-        id: 1,
+        slug: "backend-integration-update",
+        date: new Date("2024-07-22"),
         title: "Інтеграція бекенду майже завершена",
         summary: "Інтеграція бекенду для нашого нового API виявлення стресу завершена на 75%. Команда переходить до калібрування та налаштування на наступний спринт.",
         content: "Ми раді повідомити про значний прогрес у розробці нового API для виявлення стресу. Основна логіка реалізована, і ми успішно підключили потоки даних з фронтенду до сервісів обробки на бекенді.\n\nНаступною великою перешкодою є калібрування. Це включає тестування з різноманітним набором даних для забезпечення точності за різних умов освітлення та демографічних характеристик користувачів. Ми плануємо вийти на внутрішню бету наступного місяця.\n\n> Ми віримо, що ця функція кардинально змінить підхід до проактивного управління здоров'ям.\n\nСлідкуйте за новинами!",
@@ -199,7 +199,8 @@ const rawDevNotes: Record<Language, PartialBy<DevNote, 'slug' | 'date' | 'imageI
         tags: ["Бекенд", "API", "Оновлення"],
     },
     {
-        id: 2,
+        slug: "skin-analysis-refactor",
+        date: new Date("2024-07-18"),
         title: "Рефакторинг моделі аналізу шкіри",
         summary: "Для покращення продуктивності в умовах недостатнього освітлення ми розпочали рефакторинг моделі аналізу шкіри. Перші результати дуже перспективні, показуючи значне зменшення шуму.",
         content: "Відгуки користувачів показали, що наша функція аналізу шкіри може бути ненадійною при недостатньому освітленні. Щоб вирішити цю проблему, ми проводимо повний рефакторинг базової моделі машинного навчання.\n\nЗавдяки впровадженню нових технік аугментації даних та більш надійної архітектури, ми вже бачимо **40% покращення точності** під час наших внутрішніх тестів. На зображенні нижче показано порівняння старої моделі (ліворуч) та нової моделі (праворуч) на зразку з низьким освітленням.\n\nЦе вдосконалення забезпечить надійні дані від Spekulus Vision незалежно від середовища.",
@@ -209,7 +210,8 @@ const rawDevNotes: Record<Language, PartialBy<DevNote, 'slug' | 'date' | 'imageI
   ],
   sk: [
     {
-        id: 1,
+        slug: "backend-integration-update",
+        date: new Date("2024-07-22"),
         title: "Integrácia backendu sa blíži ku koncu",
         summary: "Integrácia backendu pre naše nové API na detekciu stresu je teraz na 75% hotová. Tím sa teraz zameriava na kalibráciu a jemné ladenie na ďalší šprint.",
         content: "S radosťou oznamujeme významný pokrok v našom novom API na detekciu stresu. Jadro logiky je na mieste a úspešne sme prepojili dátové toky z frontendu so službami na spracovanie na backende.\n\nNašou ďalšou veľkou prekážkou je kalibrácia. To zahŕňa testovanie s rôznorodým súborom údajov, aby sa zabezpečila presnosť v rôznych svetelných podmienkach a u rôznych demografických skupín používateľov. Sme na dobrej ceste k internej beta verzii budúci mesiac.\n\n> Veríme, že táto funkcia zmení pravidlá hry v proaktívnom manažmente wellnessu.\n\nZostaňte naladení na ďalšie aktualizácie!",
@@ -217,7 +219,8 @@ const rawDevNotes: Record<Language, PartialBy<DevNote, 'slug' | 'date' | 'imageI
         tags: ["Backend", "API", "Aktualizácia"],
     },
     {
-        id: 2,
+        slug: "skin-analysis-refactor",
+        date: new Date("2024-07-18"),
         title: "Refaktorovanie modelu analýzy pleti",
         summary: "S cieľom zlepšiť výkon v podmienkach slabého osvetlenia sme začali refaktorovať model analýzy pleti. Prvé výsledky sú veľmi sľubné a ukazujú výrazné zníženie šumu.",
         content: "Spätná väzba od používateľov naznačila, že naša funkcia analýzy pleti môže byť nespoľahlivá v neoptimálnom osvetlení. Na riešenie tohto problému sme sa pustili do kompletného refaktorovania základného modelu strojového učenia.\n\nZačlenením nových techník augmentácie dát a robustnejšej architektúry už teraz vidíme **40% zlepšenie presnosti** počas našich interných testov. Obrázok nižšie ukazuje porovnanie starého modelu (vľavo) a nového modelu (vpravo) na vzorke so slabým osvetlením.\n\nToto vylepšenie zabezpečí, že Spekulus Vision bude poskytovať spoľahlivé poznatky bez ohľadu na prostredie.",
@@ -227,7 +230,7 @@ const rawDevNotes: Record<Language, PartialBy<DevNote, 'slug' | 'date' | 'imageI
   ]
 };
 
-const rawRoadmapEvents: Record<Language, PartialBy<RoadmapEvent, 'date'>[]> = {
+const rawRoadmapEvents: Record<Language, PartialBy<RoadmapEvent, 'id'>[]> = {
   en: [
     { date: "2024-04-28", title: "Idea Creation", description: "The birth of Spekulus Vision. Initial concept and mission defined." },
     { date: "2024-07-16", title: "Demo Release", description: "First functional prototype demonstrated to early investors and partners." },
@@ -257,7 +260,7 @@ const rawRoadmapEvents: Record<Language, PartialBy<RoadmapEvent, 'date'>[]> = {
   ]
 };
 
-const rawFaqData: Record<Language, Omit<FaqItem, 'id'>[]> = {
+const rawFaqData: Record<Language, PartialBy<FaqItem, 'id'>[]> = {
   en: [
     { question: 'What is Spekulus?', answer: 'Spekulus is an innovative smart mirror developed by us. It combines health monitoring, weather awareness, and smart home integration into a single, elegant device. With built-in AI and a camera, it delivers personalized insights to help you live smarter and healthier.' },
     { question: 'How does Spekulus detect stress and analyze health?', answer: 'Spekulus uses a Raspberry Pi camera to capture facial data and our custom AI software to analyze it. The system detects visible signs of stress, fatigue, or skin issues, then offers practical wellness tips, such as breathing exercises or reminders to rest.' },
@@ -281,12 +284,11 @@ const rawFaqData: Record<Language, Omit<FaqItem, 'id'>[]> = {
   ]
 };
 
-type RawCreator = PartialBy<Creator, 'name' | 'role' | 'bio' | 'location' | 'languages' | 'contributions' | 'education' | 'certifications' | 'hobbies' | 'achievements' | 'quote' | 'quoteAuthor' | 'featuredProject' | 'gallery' | 'imageId' | 'featuredProjectImageId'>;
+type RawCreator = Omit<Creator, 'id'>;
 
 const rawCreatorsData: Record<Language, RawCreator[]> = {
   en: [
     {
-      id: 1,
       slug: 'anton-shyrko',
       name: 'Anton Shyrko',
       role: 'CEO & Team Lead',
@@ -334,40 +336,39 @@ const rawCreatorsData: Record<Language, RawCreator[]> = {
   ],
   uk: [
     {
-      id: 1,
+      slug: 'anton-shyrko',
       name: 'Антон Ширко',
       role: 'CEO & Керівник команди',
       bio: "Антон — візіонер, що стоїть за Spekulus, він керує командою твердою рукою та пристрастю до інноваційних технологій. Він координує загальну стратегію проєкту, очолює прийняття рішень та забезпечує відповідність команди нашим амбітним цілям. Він вірить у прозору розробку та створення продуктів, які справді покращують повсякденне життя людей.\n\n### Основні філософії\n\n- **Дизайн, орієнтований на користувача**: Кожна функція повинна вирішувати реальну проблему користувача.\n- **Відкрита співпраця**: Найкращі ідеї можуть прийти звідки завгодно.\n- **Сталий розвиток**: Побудова довготривалої компанії, яка цінує своїх людей.",
       location: "Київ, Україна",
+      socials: {}
     },
   ],
   sk: [
     {
-      id: 1,
+      slug: 'anton-shyrko',
       name: 'Anton Shyrko',
       role: 'CEO & Vedúci tímu',
       bio: "Anton je vizionárom za projektom Spekulus, vedie tím pevnou rukou a s vášňou pre inovatívne technológie. Koordinuje celkovú stratégiu projektu, vedie rozhodovanie a zabezpečuje súlad tímu s našimi ambicióznymi cieľmi. Verí v transparentný vývoj a budovanie produktov, ktoré skutočne zlepšujú každodenný život ľudí.\n\n### Základné filozofie\n\n- **Dizajn zameraný na používateľa**: Každá funkcia musí riešiť skutočný problém používateľa.\n- **Otvorená spolupráca**: Najlepšie nápady môžu prísť odkiaľkoľvek.\n- **Udržateľný rast**: Budovanie trvalej spoločnosti, ktorá si váži svojich ľudí.",
       location: "Kyjev, Ukrajina",
+      socials: {}
     },
   ]
 };
 
-const rawAdvantagesData: Record<Language, PartialBy<Advantage, 'icon'>[]> = {
+const rawAdvantagesData: Record<Language, PartialBy<Advantage, 'id'>[]> = {
   en: [
     {
-      id: 1,
       icon: 'ScanFace',
       title: 'AI-Powered Skin Diagnostics',
       description: 'Analyze your skin in real time and receive personalized beauty and skincare recommendations using AI.',
     },
     {
-      id: 2,
       icon: 'Activity',
       title: 'Stress & Health Monitoring',
       description: 'Spekulus evaluates your emotional and physical state and gives you feedback to help reduce stress and fatigue.',
     },
     {
-      id: 3,
       icon: 'Home',
       title: 'Smart Environment Sync',
       description: 'Integrates with your smart home, allowing control over lighting, music, calendars, weather, and more.',
@@ -375,21 +376,41 @@ const rawAdvantagesData: Record<Language, PartialBy<Advantage, 'icon'>[]> = {
   ],
   uk: [
     {
-        id: 1,
+        icon: 'ScanFace',
         title: 'Діагностика шкіри за допомогою ШІ',
         description: 'Аналізуйте свою шкіру в реальному часі та отримуйте персоналізовані рекомендації щодо краси та догляду за шкірою за допомогою ШІ.',
+    },
+     {
+      icon: 'Activity',
+      title: 'Моніторинг стресу та здоров\'я',
+      description: 'Spekulus оцінює ваш емоційний та фізичний стан і дає вам зворотний зв\'язок, щоб допомогти зменшити стрес і втому.',
+    },
+    {
+      icon: 'Home',
+      title: 'Синхронізація з розумним середовищем',
+      description: 'Інтегрується з вашим розумним будинком, дозволяючи керувати освітленням, музикою, календарями, погодою та іншим.',
     },
   ],
   sk: [
     {
-        id: 1,
+        icon: 'ScanFace',
         title: 'Diagnostika pleti pomocou AI',
         description: 'Analyzujte svoju pleť v reálnom čase a získajte personalizované odporúčania pre krásu a starostlivosť o pleť pomocou AI.',
+    },
+    {
+      icon: 'Activity',
+      title: 'Monitorovanie stresu a zdravia',
+      description: 'Spekulus hodnotí váš emocionálny a fyzický stav a poskytuje vám spätnú väzbu, ktorá vám pomôže znížiť stres a únavu.',
+    },
+    {
+      icon: 'Home',
+      title: 'Synchronizácia s inteligentným prostredím',
+      description: 'Integruje sa s vaším inteligentným domom, čo umožňuje ovládanie osvetlenia, hudby, kalendárov, počasia a ďalších funkcií.',
     },
   ]
 };
 
-const rawActionSectionData: Record<Language, Partial<ActionSectionData>> = {
+const rawActionSectionData: Record<Language, ActionSectionData> = {
   en: {
     title: 'See Spekulus in Action',
     subtitle: 'A glimpse of how our smart mirror fits into your everyday life.',
@@ -403,17 +424,23 @@ const rawActionSectionData: Record<Language, Partial<ActionSectionData>> = {
     title: 'Spekulus в дії',
     subtitle: 'Погляд на те, як наше розумне дзеркало вписується у ваше повсякденне життя.',
     description: 'Наше розумне дзеркало бездоганно інтегрується в будь-який сучасний житловий простір. Завдяки дисплею від краю до краю та мінімалістичному дизайну, Spekulus є одночасно функціональним центральним елементом та витвором мистецтва, надаючи важливу інформацію, не порушуючи естетику вашого дому.',
+    visible: true,
     buttonText: 'Дізнатися більше',
+    buttonUrl: 'https://antot-12.github.io/Spekulus-Presentation/',
+    buttonVisible: true,
   },
   sk: {
     title: 'Pozrite sa na Spekulus v akcii',
     subtitle: 'Náhľad na to, ako sa naše inteligentné zrkadlo hodí do vášho každodenného života.',
     description: 'Naše inteligentné zrkadlo sa bez problémov integruje do každého moderného obytného priestoru. S displejom od okraja po okraj a minimalistickým dizajnom je Spekulus funkčným stredobodom aj umeleckým dielom, ktoré poskytuje dôležité informácie bez narušenia estetiky vášho domova.',
+    visible: true,
     buttonText: 'Zistiť viac',
+    buttonUrl: 'https://antot-12.github.io/Spekulus-Presentation/',
+    buttonVisible: true,
   }
 };
 
-const rawHeroSectionData: Record<Language, Partial<HeroSectionData>> = {
+const rawHeroSectionData: Record<Language, HeroSectionData> = {
   en: {
     title: 'Spekulus: Reflect Smarter, Live Better.',
     subtitle: 'The world\'s most advanced smart mirror, designed to be the center of your wellness and daily routine.',
@@ -482,32 +509,33 @@ const rawProductSectionData: Record<Language, Partial<ProductSectionData>> = {
 };
 
 
-const mergeData = <T extends { id: number }>(baseData: T[], langData: PartialBy<T, keyof T>[]) => {
-  return baseData.map(baseItem => {
-    const langItem = langData.find(item => item.id === baseItem.id);
-    return { ...baseItem, ...langItem };
-  }) as T[];
+const mergeData = <T extends { [key: string]: any }, U extends Partial<T>>(baseData: T[], langData: U[], idKey: keyof T & keyof U): T[] => {
+  const langMap = new Map(langData.map(item => [item[idKey], item]));
+  return baseData.map(baseItem => ({
+    ...baseItem,
+    ...(langMap.get(baseItem[idKey]) || {}),
+  }));
 };
 
 const devNotes: Record<Language, DevNote[]> = {
   en: rawDevNotes.en as DevNote[],
-  uk: mergeData(rawDevNotes.en as DevNote[], rawDevNotes.uk),
-  sk: mergeData(rawDevNotes.en as DevNote[], rawDevNotes.sk),
+  uk: mergeData(rawDevNotes.en as DevNote[], rawDevNotes.uk, 'slug'),
+  sk: mergeData(rawDevNotes.en as DevNote[], rawDevNotes.sk, 'slug'),
 };
 
-const roadmapEvents: Record<Language, RoadmapEvent[]> = {
-    en: rawRoadmapEvents.en as RoadmapEvent[],
-    uk: rawRoadmapEvents.en.map((base, i) => ({...base, ...rawRoadmapEvents.uk[i]})) as RoadmapEvent[],
-    sk: rawRoadmapEvents.en.map((base, i) => ({...base, ...rawRoadmapEvents.sk[i]})) as RoadmapEvent[],
+const roadmapEvents: Record<Language, PartialBy<RoadmapEvent, 'id'>[]> = {
+    en: rawRoadmapEvents.en,
+    uk: mergeData(rawRoadmapEvents.en, rawRoadmapEvents.uk, 'title'),
+    sk: mergeData(rawRoadmapEvents.en, rawRoadmapEvents.sk, 'title'),
 }
 
-const faqData: Record<Language, Omit<FaqItem, 'id'>[]> = {
+const faqData: Record<Language, PartialBy<FaqItem, 'id'>[]> = {
     en: rawFaqData.en,
     uk: rawFaqData.uk,
     sk: rawFaqData.sk
 };
 
-const mergeCreators = (base: RawCreator, lang: RawCreator): Creator => {
+const mergeCreators = (base: RawCreator, lang: Partial<RawCreator>): Creator => {
   const merged = { ...base, ...lang } as Creator;
   if (lang.featuredProject || base.featuredProject) {
     merged.featuredProject = {
@@ -527,39 +555,39 @@ const mergeCreators = (base: RawCreator, lang: RawCreator): Creator => {
 const creatorsData: Record<Language, Creator[]> = {
   en: rawCreatorsData.en as Creator[],
   uk: rawCreatorsData.en.map(baseCreator => {
-    const langCreator = rawCreatorsData.uk.find(c => c.id === baseCreator.id);
-    return mergeCreators(baseCreator, langCreator || { id: baseCreator.id, socials: {} });
+    const langCreator = rawCreatorsData.uk.find(c => c.slug === baseCreator.slug);
+    return mergeCreators(baseCreator, langCreator || {});
   }),
   sk: rawCreatorsData.en.map(baseCreator => {
-    const langCreator = rawCreatorsData.sk.find(c => c.id === baseCreator.id);
-    return mergeCreators(baseCreator, langCreator || { id: baseCreator.id, socials: {} });
+    const langCreator = rawCreatorsData.sk.find(c => c.slug === baseCreator.slug);
+    return mergeCreators(baseCreator, langCreator || {});
   }),
 }
 
-const advantagesData: Record<Language, Advantage[]> = {
-  en: rawAdvantagesData.en as Advantage[],
-  uk: mergeData(rawAdvantagesData.en as Advantage[], rawAdvantagesData.uk),
-  sk: mergeData(rawAdvantagesData.en as Advantage[], rawAdvantagesData.sk),
+const advantagesData: Record<Language, PartialBy<Advantage, 'id'>[]> = {
+  en: rawAdvantagesData.en,
+  uk: mergeData(rawAdvantagesData.en, rawAdvantagesData.uk, 'title'),
+  sk: mergeData(rawAdvantagesData.en, rawAdvantagesData.sk, 'title'),
 };
 
 const actionSectionData: Record<Language, ActionSectionData> = {
-    en: rawActionSectionData.en as ActionSectionData,
-    uk: { ...rawActionSectionData.en, ...rawActionSectionData.uk } as ActionSectionData,
-    sk: { ...rawActionSectionData.en, ...rawActionSectionData.sk } as ActionSectionData,
+    en: rawActionSectionData.en,
+    uk: { ...rawActionSectionData.en, ...rawActionSectionData.uk },
+    sk: { ...rawActionSectionData.en, ...rawActionSectionData.sk },
 }
 
 const heroSectionData: Record<Language, HeroSectionData> = {
-    en: rawHeroSectionData.en as HeroSectionData,
-    uk: { ...rawHeroSectionData.en, ...rawHeroSectionData.uk } as HeroSectionData,
-    sk: { ...rawHeroSectionData.en, ...rawHeroSectionData.sk } as HeroSectionData,
+    en: rawHeroSectionData.en,
+    uk: { ...rawHeroSectionData.en, ...rawHeroSectionData.uk },
+    sk: { ...rawHeroSectionData.en, ...rawHeroSectionData.sk },
 };
 
 const mergeProductData = (lang: Language): ProductSectionData => {
     const baseData = rawProductSectionData.en as ProductSectionData;
     const langData = rawProductSectionData[lang];
     return {
-        ...baseData,
-        ...langData,
+        title: langData.title || baseData.title,
+        subtitle: langData.subtitle || baseData.subtitle,
         components: baseData.components.map(baseComponent => {
             const langComponent = langData.components?.find(c => c.id === baseComponent.id);
             return { ...baseComponent, ...langComponent };

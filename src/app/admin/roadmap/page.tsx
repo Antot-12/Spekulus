@@ -48,11 +48,11 @@ export default function RoadmapAdminPage() {
                 return data;
             }
             console.warn(`No content found for ${lang}/roadmap, using default data.`);
-            return initialData.roadmapEvents[lang];
+            return initialData.roadmapEvents[lang].map((item, index) => ({...item, id: index}));
         } catch (error) {
             console.error(`Failed to fetch roadmap data for ${lang}, falling back to default.`, error);
             toast({ title: "Fetch Error", description: `Could not load roadmap data for ${languageNames[lang]}.`, variant: "destructive" });
-            return initialData.roadmapEvents[lang];
+            return initialData.roadmapEvents[lang].map((item, index) => ({...item, id: index}));
         }
     }, [toast]);
 
@@ -80,11 +80,14 @@ export default function RoadmapAdminPage() {
     const handleSave = async () => {
         setIsSaving(true);
         try {
-            await updateRoadmapEvents(selectedLang, roadmap);
+            const eventsToSave = roadmap.map(({ id, ...rest }) => rest);
+            await updateRoadmapEvents(selectedLang, eventsToSave);
             toast({ title: "Saved!", description: `All roadmap changes for ${languageNames[selectedLang]} have been saved.`});
             logAction('Roadmap Update', 'Success', `Saved all changes for ${languageNames[selectedLang]} roadmap.`);
-            const updatedAllData = { ...allData, [selectedLang]: roadmap };
+            const updatedData = await fetchData(selectedLang);
+            const updatedAllData = { ...allData, [selectedLang]: updatedData };
             setAllData(updatedAllData as AllRoadmapData);
+            setRoadmap(updatedData);
         } catch (error) {
             toast({ title: "Save Failed", description: "An error occurred during save.", variant: 'destructive' });
         } finally {
@@ -96,9 +99,9 @@ export default function RoadmapAdminPage() {
         setRoadmap(newRoadmap);
     };
 
-    const handleRoadmapChange = (index: number, field: keyof RoadmapEvent, value: string) => {
-        const updatedRoadmap = roadmap.map((event, i) =>
-            i === index ? { ...event, [field]: value } : event
+    const handleRoadmapChange = (id: number, field: keyof Omit<RoadmapEvent, 'id'>, value: string) => {
+        const updatedRoadmap = roadmap.map((event) =>
+            event.id === id ? { ...event, [field]: value } : event
         );
         updateState(updatedRoadmap);
     };
@@ -118,9 +121,9 @@ export default function RoadmapAdminPage() {
         }
     };
     
-    const handleRoadmapDelete = (indexToDelete: number) => {
-        const eventToDelete = roadmap[indexToDelete];
-        updateState(roadmap.filter((_, index) => index !== indexToDelete));
+    const handleRoadmapDelete = (idToDelete: number) => {
+        const eventToDelete = roadmap.find(e => e.id === idToDelete);
+        updateState(roadmap.filter((event) => event.id !== idToDelete));
         toast({ title: "Roadmap Event Deleted", variant: 'destructive', description: "Remember to save changes."});
         logAction('Roadmap Update', 'Success', `Deleted roadmap event "${eventToDelete?.title}" for ${languageNames[selectedLang]}.`);
     };
@@ -172,27 +175,27 @@ export default function RoadmapAdminPage() {
                     ))}
                 </div>
             ) : (
-                roadmap.map((event, index) => (
+                roadmap.map((event) => (
                   <div key={event.id} className="space-y-2 p-4 border rounded-md">
                     <div className="flex items-center gap-4">
                       <Input 
                         type="text" 
                         value={event.date}
-                        onChange={(e) => handleRoadmapChange(index, 'date', e.target.value)}
+                        onChange={(e) => handleRoadmapChange(event.id, 'date', e.target.value)}
                         placeholder="YYYY-MM-DD or Q4 2025"
                         className="w-48 transition-colors focus:border-primary" />
                       <Input 
                         value={event.title}
-                        onChange={(e) => handleRoadmapChange(index, 'title', e.target.value)}
+                        onChange={(e) => handleRoadmapChange(event.id, 'title', e.target.value)}
                         className="flex-grow transition-colors focus:border-primary" />
-                      <Button variant="destructive" size="icon" onClick={() => handleRoadmapDelete(index)}>
+                      <Button variant="destructive" size="icon" onClick={() => handleRoadmapDelete(event.id)}>
                         <Trash2 className="h-4 w-4"/>
                         <span className="sr-only">Delete</span>
                       </Button>
                     </div>
                     <Textarea 
                         value={event.description}
-                        onChange={(e) => handleRoadmapChange(index, 'description', e.target.value)}
+                        onChange={(e) => handleRoadmapChange(event.id, 'description', e.target.value)}
                         className="transition-colors focus:border-primary"
                      />
                   </div>

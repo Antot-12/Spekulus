@@ -17,7 +17,7 @@ export async function getHeroData(lang: Language) {
   return await db.query.heroSections.findFirst({ where: eq(schema.heroSections.lang, lang) });
 }
 
-export async function updateHeroData(lang: Language, data: Omit<typeof schema.heroSections.$inferInsert, 'lang'>) {
+export async function updateHeroData(lang: Language, data: Omit<typeof schema.heroSections.$inferInsert, 'lang' | 'id'>) {
     await db.insert(schema.heroSections)
     .values({ ...data, lang })
     .onConflictDoUpdate({ target: [schema.heroSections.lang], set: data });
@@ -66,11 +66,10 @@ export async function createAdvantage(lang: Language, advantage: Omit<typeof sch
     return newAdvantage;
 }
 
-export async function updateAdvantagesData(lang: Language, advantages: (typeof schema.advantages.$inferInsert)[]) {
+export async function updateAdvantagesData(lang: Language, advantages: (Omit<typeof schema.advantages.$inferInsert, 'id' | 'lang'>)[]) {
     await db.delete(schema.advantages).where(eq(schema.advantages.lang, lang));
     if (advantages.length > 0) {
-        const insertData = advantages.map(({ id, ...rest }) => ({ ...rest, lang }));
-        await db.insert(schema.advantages).values(insertData);
+        await db.insert(schema.advantages).values(advantages.map(adv => ({...adv, lang})));
     }
 }
 
@@ -98,11 +97,10 @@ export async function createRoadmapEvent(lang: Language, event: Omit<typeof sche
     return newEvent;
 }
 
-export async function updateRoadmapEvents(lang: Language, events: (typeof schema.roadmapEvents.$inferInsert)[]) {
+export async function updateRoadmapEvents(lang: Language, events: (Omit<typeof schema.roadmapEvents.$inferInsert, 'id' | 'lang'>)[]) {
     await db.delete(schema.roadmapEvents).where(eq(schema.roadmapEvents.lang, lang));
     if (events.length > 0) {
-        const insertData = events.map(({ id, ...rest }) => ({ ...rest, lang }));
-        await db.insert(schema.roadmapEvents).values(insertData);
+        await db.insert(schema.roadmapEvents).values(events.map(e => ({...e, lang})));
     }
 }
 
