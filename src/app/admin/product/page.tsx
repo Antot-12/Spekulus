@@ -7,17 +7,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Save, Sparkles, Upload, Loader2 } from 'lucide-react';
+import { Save, Sparkles, Upload, Loader2, Image as ImageIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from '@/components/ui/label';
 import { ProductIcon } from '@/components/ProductIcon';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { logAction } from '@/lib/logger';
+import { getProductData, updateProductComponents } from '@/lib/db/actions';
 import NextImage from 'next/image';
 
 const defaultData = initialData.productSectionData;
-const SECTION_KEY = 'product-section';
 
 type AllProductData = Record<Language, ProductSectionData>;
 
@@ -36,85 +36,78 @@ const languageNames: Record<Language, string> = {
     sk: 'Slovak'
 };
 
+const createDefaultProductSectionData = (lang: Language): ProductSectionData => ({
+    title: `Title for ${languageNames[lang]}`,
+    subtitle: `Subtitle for ${languageNames[lang]}`,
+    components: defaultData[lang].components.map(c => ({...c, imageId: null}))
+});
+
 export default function ProductSectionAdminPage() {
     const { toast } = useToast();
     const [allData, setAllData] = useState<AllProductData | null>(null);
-    const [data, setData] = useState<ProductSectionData>(defaultData.en);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [selectedLang, setSelectedLang] = useState<Language>('en');
     const fileInputRefs = useRef<{ [key: number]: HTMLInputElement | null }>({});
-
-
-    const fetchData = useCallback(async (lang: Language): Promise<ProductSectionData> => {
-        try {
-            const response = await fetch(`/api/content?lang=${lang}&section=${SECTION_KEY}`);
-            const result = await response.json();
-            if (result.success && result.content) {
-                return result.content;
-            }
-            console.warn(`No content found for ${lang}/${SECTION_KEY}, using default data.`);
-            return defaultData[lang];
-        } catch (error) {
-            console.error(`Failed to fetch product section data for ${lang}, falling back to default.`, error);
-            return defaultData[lang];
-        }
-    }, []);
+    
+    const data = allData?.[selectedLang] ?? null;
 
     useEffect(() => {
         const loadAllData = async () => {
             setIsLoading(true);
-            const enData = await fetchData('en');
-            const ukData = await fetchData('uk');
-            const skData = await fetchData('sk');
-            const newAllData = { en: enData, uk: ukData, sk: skData };
+            const languages: Language[] = ['en', 'uk', 'sk'];
+            const promises = languages.map(lang => getProductData(lang));
+            const results = await Promise.all(promises);
+            
+            const newAllData = languages.reduce((acc, lang, index) => {
+                const resultData = results[index];
+                if (resultData && resultData.components.length > 0) {
+                    // This assumes title/subtitle might come from elsewhere in a real app
+                    // For now, we use defaults from the translations file or data file
+                    acc[lang] = {
+                        ...defaultData[lang], // Use default title/subtitle
+                        components: resultData.components
+                    };
+                } else {
+                    acc[lang] = createDefaultProductSectionData(lang);
+                }
+                return acc;
+            }, {} as AllProductData);
+
             setAllData(newAllData);
-            setData(newAllData[selectedLang]);
             setIsLoading(false);
         };
         loadAllData();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    useEffect(() => {
-        if (allData) {
-            setData(allData[selectedLang]);
-        }
-    }, [selectedLang, allData]);
-
     const handleSave = async () => {
+        if (!data) return;
         setIsSaving(true);
         try {
-            const response = await fetch('/api/content', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ lang: selectedLang, section: SECTION_KEY, content: data }),
-            });
-            const result = await response.json();
-            if (result.success) {
-                toast({ title: "Saved!", description: `Changes to the Product section for ${languageNames[selectedLang]} have been saved.`});
-                logAction('Product Update', 'Success', `Saved all changes for ${languageNames[selectedLang]} product section.`);
-                const updatedAllData = { ...allData, [selectedLang]: data };
-                setAllData(updatedAllData as AllProductData);
-            } else {
-                toast({ title: "Save Failed", description: result.error || "Could not save changes.", variant: 'destructive' });
-            }
+            // Here we would also save the title and subtitle if they were in the DB
+            // For now, we only save the components which are in the DB.
+            await updateProductComponents(selectedLang, data.components);
+
+            toast({ title: "Saved!", description: `Changes to the Product section for ${languageNames[selectedLang]} have been saved.`});
+            logAction('Product Update', 'Success', `Saved all changes for ${languageNames[selectedLang]} product section.`);
         } catch (error) {
             toast({ title: "Save Failed", description: "An error occurred during save.", variant: 'destructive' });
         } finally {
             setIsSaving(false);
         }
     };
-
+    
     const updateState = (newData: ProductSectionData) => {
-        setData(newData);
+        setAllData(prev => prev ? { ...prev, [selectedLang]: newData } : null);
     };
 
     const handleMainChange = (field: 'title' | 'subtitle', value: string) => {
+        if (!data) return;
         updateState({ ...data, [field]: value });
     };
     
     const handleComponentChange = (id: number, field: keyof ProductComponent, value: string | number | null) => {
+        if (!data) return;
         const updatedComponents = data.components.map(item =>
             item.id === id ? { ...item, [field]: value } : item
         );
@@ -232,14 +225,31 @@ export default function ProductSectionAdminPage() {
                                     </div>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor={`imageId-${component.id}`}>Image</Label>
-                                    <div className="flex gap-2">
-                                        {component.imageId && <NextImage src={`/api/images/${component.imageId}`} alt={component.title} width={100} height={56} className="rounded-md aspect-video object-cover border" />}
-                                        <Button variant="outline" size="sm" onClick={() => fileInputRefs.current[component.id]?.click()} aria-label="Upload image" className="flex-grow">
-                                            <Upload className="mr-2 h-4 w-4" /> Upload
-                                        </Button>
-                                        <input type="file" ref={(el) => (fileInputRefs.current[component.id] = el)} onChange={(e) => handleImageUpload(component.id, e)} accept="image/*" className="hidden" />
-                                    </div>
+                                    <Label>Image</Label>
+                                    <Card>
+                                        <CardContent className="p-4 flex flex-col items-center gap-4">
+                                            {component.imageId ? (
+                                                <div className="relative w-full aspect-video rounded-md overflow-hidden">
+                                                    <NextImage src={`/api/images/${component.imageId}`} alt={component.title} layout="fill" objectFit='cover' />
+                                                </div>
+                                            ) : (
+                                                <div className="w-full aspect-video rounded-md bg-muted flex items-center justify-center">
+                                                    <ImageIcon className="w-16 h-16 text-muted-foreground" />
+                                                </div>
+                                            )}
+                                            <Button variant="outline" onClick={() => fileInputRefs.current[component.id]?.click()} className="w-full">
+                                                <Upload className="mr-2 h-4 w-4" />
+                                                Upload New Image
+                                            </Button>
+                                            <input
+                                                type="file"
+                                                ref={(el) => (fileInputRefs.current[component.id] = el)}
+                                                onChange={(e) => handleImageUpload(component.id, e)}
+                                                accept="image/*"
+                                                className="hidden"
+                                            />
+                                        </CardContent>
+                                    </Card>
                                 </div>
                               </div>
                             ))}
