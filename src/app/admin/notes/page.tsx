@@ -80,8 +80,8 @@ export default function NotesAdminPage() {
         if (!activeNote) return;
         setActiveNote(prev => {
             if (!prev) return null;
-            const newActiveNote = { ...prev, [field]: value };
-            if (field === 'title') {
+            let newActiveNote = { ...prev, [field]: value };
+            if (field === 'title' && typeof value === 'string') {
                 newActiveNote.slug = generateSlug(value);
             }
             return newActiveNote;
