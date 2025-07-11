@@ -24,6 +24,7 @@ import { TechIcon } from './TechIcon';
 import { AchievementIcon } from '@/components/AchievementIcon';
 import { MusicIcon } from './MusicIcon';
 import { cn } from '@/lib/utils';
+import { getCreatorBySlug } from '@/lib/db/actions';
 
 // Helper component for consistent section styling
 const ProfileSection = ({ icon, title, children, className, style }: { icon: ReactNode, title: string, children: ReactNode, className?: string, style?: CSSProperties }) => (
@@ -389,16 +390,11 @@ export default function CreatorDetailPage() {
 
     const fetchCreator = async () => {
         try {
-            const response = await fetch(`/api/creators?slug=${slug}&lang=${language}`);
-            if (response.ok) {
-                const data = await response.json();
-                if (data.success && data.creator.isVisible !== false) {
-                    setCreator(data.creator);
-                } else {
-                    setCreator(null);
-                }
+            const data = await getCreatorBySlug(language, slug);
+            if (data && data.isVisible !== false) {
+                setCreator(data);
             } else {
-                 setCreator(null);
+                setCreator(null);
             }
         } catch (error) {
             console.error("Failed to fetch creator:", error);

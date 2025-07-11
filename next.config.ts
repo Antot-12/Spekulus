@@ -1,8 +1,6 @@
-
-import type {NextConfig} from 'next';
+import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  /* config options here */
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -14,31 +12,30 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'placehold.co',
-        port: '',
         pathname: '/**',
       },
       {
         protocol: 'https',
         hostname: 'res.cloudinary.com',
-        port: '',
         pathname: '/**',
       },
       {
         protocol: 'http',
         hostname: 'res.cloudinary.com',
-        port: '',
         pathname: '/**',
       },
       {
         protocol: 'https',
         hostname: '6000-firebase-studio-1751707908116.cluster-c23mj7ubf5fxwq6nrbev4ugaxa.cloudworkstations.dev',
         pathname: '/**',
+      },
+      {
+        protocol: 'http',
+        hostname: '6000-firebase-studio-1751707908116.cluster-c23mj7ubf5fxwq6nrbev4ugaxa.cloudworkstations.dev',
+        pathname: '/**',
       }
     ],
-  },  
-  allowedDevOrigins: [
-    'https://6000-firebase-studio-1751707908116.cluster-c23mj7ubf5fxwq6nrbev4ugaxa.cloudworkstations.dev',
-  ],
+  },
 };
 
 export default nextConfig;
