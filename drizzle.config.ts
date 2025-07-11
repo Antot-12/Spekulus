@@ -1,3 +1,4 @@
+
 import { defineConfig } from "drizzle-kit";
 import "dotenv/config";
 
@@ -11,6 +12,7 @@ export default defineConfig({
   dbCredentials: {
     url: process.env.DATABASE_URL,
   },
+  tablesFilter: ["advantages", "dev_notes", "faq_items", "hero_sections", "product_components", "roadmap_events", "creators"],
   out: "./drizzle",
   verbose: true,
   strict: true,
