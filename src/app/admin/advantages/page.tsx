@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { advantagesData as defaultData, type Advantage, type Language } from '@/lib/data';
+import { type Advantage, type Language } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -13,8 +13,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { AdvantageIcon } from '@/components/AdvantageIcon';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { logAction } from '@/lib/logger';
-
-const SECTION_KEY = 'advantages';
+import { getAdvantagesData, updateAdvantagesData } from '@/lib/db/actions';
+import { initialData } from '@/lib/data';
 
 type AllAdvantagesData = Record<Language, Advantage[]>;
 
@@ -36,73 +36,52 @@ const languageNames: Record<Language, string> = {
 export default function AdvantagesAdminPage() {
     const { toast } = useToast();
     const [allData, setAllData] = useState<AllAdvantagesData | null>(null);
-    const [advantages, setAdvantages] = useState<Advantage[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [selectedLang, setSelectedLang] = useState<Language>('en');
 
-    const fetchData = useCallback(async (lang: Language) => {
-        try {
-            const response = await fetch(`/api/content?lang=${lang}&section=${SECTION_KEY}`);
-            const result = await response.json();
-            if (result.success && result.content) {
-                return result.content;
+    const advantages = allData?.[selectedLang] ?? [];
+
+    const fetchData = useCallback(async () => {
+        setIsLoading(true);
+        const languages: Language[] = ['en', 'uk', 'sk'];
+        const promises = languages.map(lang => getAdvantagesData(lang));
+        const results = await Promise.all(promises);
+        
+        const newAllData = languages.reduce((acc, lang, index) => {
+            const resultData = results[index];
+            if (resultData && resultData.length > 0) {
+                acc[lang] = resultData;
+            } else {
+                acc[lang] = initialData.advantagesData[lang];
             }
-            console.warn(`No content found for ${lang}/${SECTION_KEY}, using default data.`);
-            return defaultData[lang];
-        } catch (error) {
-            console.error(`Failed to fetch advantages data for ${lang}, falling back to default.`, error);
-            return defaultData[lang];
-        }
+            return acc;
+        }, {} as AllAdvantagesData);
+
+        setAllData(newAllData);
+        setIsLoading(false);
     }, []);
 
     useEffect(() => {
-        const loadAllData = async () => {
-            setIsLoading(true);
-            const enData = await fetchData('en');
-            const ukData = await fetchData('uk');
-            const skData = await fetchData('sk');
-            const newAllData = { en: enData, uk: ukData, sk: skData };
-            setAllData(newAllData);
-            setAdvantages(newAllData[selectedLang] || []);
-            setIsLoading(false);
-        }
-        loadAllData();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
-    useEffect(() => {
-        if (allData) {
-            setAdvantages(allData[selectedLang] || []);
-        }
-    }, [selectedLang, allData]);
+        fetchData();
+    }, [fetchData]);
 
     const handleSave = async () => {
+        if (!allData) return;
         setIsSaving(true);
         try {
-            const response = await fetch('/api/content', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ lang: selectedLang, section: SECTION_KEY, content: advantages }),
-            });
-            const result = await response.json();
-            if (result.success) {
-                toast({ title: "Saved!", description: `All advantage changes for ${languageNames[selectedLang]} have been saved.`});
-                logAction('Advantages Update', 'Success', `Saved all changes for ${languageNames[selectedLang]} advantages.`);
-                const updatedAllData = { ...allData, [selectedLang]: advantages };
-                setAllData(updatedAllData as AllAdvantagesData);
-            } else {
-                 toast({ title: "Save Failed", description: result.error || "Could not save changes.", variant: 'destructive' });
-            }
+            await updateAdvantagesData(selectedLang, allData[selectedLang]);
+            toast({ title: "Saved!", description: `All advantage changes for ${languageNames[selectedLang]} have been saved.`});
+            logAction('Advantages Update', 'Success', `Saved all changes for ${languageNames[selectedLang]} advantages.`);
         } catch (error) {
-            toast({ title: "Save Failed", description: "An error occurred during save.", variant: 'destructive' });
+             toast({ title: "Save Failed", description: "Could not save changes.", variant: 'destructive' });
         } finally {
             setIsSaving(false);
         }
     };
-
+    
     const updateState = (newAdvantages: Advantage[]) => {
-        setAdvantages(newAdvantages);
+        setAllData(prev => prev ? { ...prev, [selectedLang]: newAdvantages } : null);
     };
 
     const handleAdvantageChange = (id: number, field: keyof Advantage, value: string) => {
@@ -163,7 +142,7 @@ export default function AdvantagesAdminPage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
-            {isLoading || !advantages ? (
+            {isLoading ? (
                 <div className="space-y-6">
                     {[...Array(3)].map((_, i) => (
                         <div key={i} className="space-y-2 p-4 border rounded-md">

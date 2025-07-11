@@ -20,7 +20,7 @@ export async function getHeroData(lang: Language) {
 export async function updateHeroData(lang: Language, data: Omit<typeof schema.heroSections.$inferInsert, 'lang'>) {
   return await db.insert(schema.heroSections)
     .values({ ...data, lang })
-    .onConflictDoUpdate({ target: schema.heroSections.lang, set: data });
+    .onConflictDoUpdate({ target: [schema.heroSections.lang], set: data });
 }
 
 // Product Section Actions
@@ -40,7 +40,15 @@ export async function updateProductComponents(lang: Language, components: (typeo
     const promises = components.map(component => 
         db.insert(schema.productComponents)
           .values({ ...component, lang })
-          .onConflictDoUpdate({ target: schema.productComponents.id, set: component })
+          .onConflictDoUpdate({ 
+              target: [schema.productComponents.id, schema.productComponents.lang], 
+              set: { 
+                  icon: component.icon, 
+                  title: component.title, 
+                  description: component.description, 
+                  imageId: component.imageId 
+                } 
+            })
     );
     return Promise.all(promises);
 }
@@ -54,12 +62,14 @@ export async function getAdvantagesData(lang: Language) {
 }
 
 export async function updateAdvantagesData(lang: Language, advantages: (typeof schema.advantages.$inferInsert)[]) {
-    const promises = advantages.map(advantage => 
-        db.update(schema.advantages)
-          .set(advantage)
-          .where(eq(schema.advantages.id, advantage.id!))
-    );
-    return Promise.all(promises);
+    // Since IDs might be temporary (e.g., Date.now()), we can't reliably update.
+    // A simple approach is to delete and re-insert for the given language.
+    // For a production app, a more robust system with stable IDs would be better.
+    await db.delete(schema.advantages).where(eq(schema.advantages.lang, lang));
+    if (advantages.length > 0) {
+        const insertData = advantages.map(({ id, ...rest }) => ({ ...rest, lang }));
+        return db.insert(schema.advantages).values(insertData);
+    }
 }
 
 // Action Section Actions
