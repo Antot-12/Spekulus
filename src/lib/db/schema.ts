@@ -5,7 +5,22 @@ export const languages = pgTable('languages', {
     name: text('name').notNull(),
 });
 
-const bytea = customType<{ data: Buffer }>('bytea');
+const bytea = customType<{ data: Buffer; driverData: string }>({
+    dataType() {
+        return 'bytea';
+    },
+    toDriver(value: Buffer): string {
+        return '\\x' + value.toString('hex');
+    },
+    fromDriver(value: string): Buffer {
+        // node-postgres returns a Buffer for bytea, but neon http returns a hex string
+        if (value.startsWith('\\x')) {
+            return Buffer.from(value.slice(2), 'hex');
+        }
+        return Buffer.from(value, 'hex');
+    },
+});
+
 
 export const images = pgTable('images', {
     id: serial('id').primaryKey(),
