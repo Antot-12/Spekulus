@@ -10,12 +10,13 @@ import { ContactSection } from '@/components/landing/ContactSection';
 import { ActionSection } from '@/components/landing/ActionSection';
 import { getLanguage } from '@/lib/getLanguage';
 import { getHeroData, getProductData, getAdvantagesData, getActionSectionData, getRoadmapEvents, getFaqs } from '@/lib/db/actions';
+import { initialData } from '@/lib/data';
 
 export default async function Home() {
   const lang = getLanguage();
   
   // Fetch all data in parallel for performance
-  const [
+  let [
     heroData, 
     productData, 
     advantagesData, 
@@ -31,14 +32,25 @@ export default async function Home() {
     getFaqs(lang),
   ]);
 
+  // Fallback to initial data if database is empty
+  if (!heroData) heroData = initialData.heroSectionData[lang];
+  if (!productData || !productData.components || productData.components.length === 0) {
+    productData = initialData.productSectionData[lang];
+  }
+  if (!advantagesData || advantagesData.length === 0) advantagesData = initialData.advantagesData[lang];
+  if (!actionSectionData) actionSectionData = initialData.actionSectionData[lang];
+  if (!roadmapEvents || roadmapEvents.length === 0) roadmapEvents = initialData.roadmapEvents[lang];
+  if (!faqs || faqs.length === 0) faqs = initialData.faqData[lang].map((faq, index) => ({...faq, id: index + 1}));
+
+
   return (
     <>
       <HeroSection data={heroData} />
-      {productData && <ProductSection data={productData} />}
-      {advantagesData && advantagesData.length > 0 && <AdvantagesSection data={advantagesData} />}
-      {actionSectionData && <ActionSection data={actionSectionData} />}
-      {roadmapEvents && roadmapEvents.length > 0 && <RoadmapSection data={roadmapEvents} />}
-      {faqs && <FaqSection initialFaqs={faqs} />}
+      <ProductSection data={productData} />
+      <AdvantagesSection data={advantagesData} />
+      <ActionSection data={actionSectionData} />
+      <RoadmapSection data={roadmapEvents} />
+      <FaqSection initialFaqs={faqs} />
       <DevNotesSection />
       <CreatorsSection />
       <ContactSection />
