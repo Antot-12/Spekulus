@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from '@/components/ui/switch';
 import { logAction } from '@/lib/logger';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { getCreators, updateCreators } from '@/lib/db/actions';
+import { getCreators, updateCreators, createCreator } from '@/lib/db/actions';
 import { initialData } from '@/lib/data';
 
 const newCreatorBioExample = `### About Me
@@ -109,15 +109,32 @@ export default function CreatorsAdminPage() {
         handleFieldChange(id, 'featuredProject', updatedProject);
     };
 
-    const handleCreatorAdd = () => {
-        const newCreator: Creator = {
-            id: Date.now(), name: 'New Creator', slug: `new-creator-${Date.now()}`, role: 'Team Member',
-            bio: newCreatorBioExample, quote: '', quoteAuthor: '', music: { spotify: '' }, socials: { github: '', twitter: '', linkedin: '' },
-            skills: [], gallery: [], featuredProject: { title: '', url: '', description: '' },
+    const handleCreatorAdd = async () => {
+        const newCreatorData = {
+            name: 'New Creator',
+            slug: `new-creator-${Date.now()}`,
+            role: 'Team Member',
+            bio: newCreatorBioExample,
+            quote: '',
+            quoteAuthor: '',
+            music: { spotify: '' },
+            socials: { github: '', twitter: '', linkedin: '' },
+            skills: [],
+            gallery: [],
+            featuredProject: { title: '', url: '', description: '' },
             isVisible: false,
         };
-        setCreators([...creators, newCreator]);
-        toast({ title: "Creator Added", description: "A new profile has been added. Remember to save." });
+        try {
+            const newCreator = await createCreator(selectedLang, newCreatorData);
+            if (newCreator) {
+                setCreators(prev => [...prev, newCreator]);
+                toast({ title: "Creator Added", description: "A new profile has been added. Remember to save your changes." });
+            } else {
+                toast({ title: "Add Failed", description: "Could not add creator.", variant: 'destructive' });
+            }
+        } catch (error) {
+            toast({ title: "Add Failed", description: "An error occurred while adding the creator.", variant: 'destructive' });
+        }
     };
 
     const handleCreatorDelete = (idToDelete: number) => {

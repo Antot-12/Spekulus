@@ -133,6 +133,11 @@ export async function getCreatorBySlug(lang: Language, slug: string) {
     return await db.query.creators.findFirst({ where: eq(schema.creators.slug, slug) && eq(schema.creators.lang, lang) });
 }
 
+export async function createCreator(lang: Language, creatorData: Omit<typeof schema.creators.$inferInsert, 'id' | 'lang'>) {
+    const [newCreator] = await db.insert(schema.creators).values({ ...creatorData, lang }).returning();
+    return newCreator;
+}
+
 export async function updateCreators(lang: Language, creatorsData: (typeof schema.creators.$inferInsert)[]) {
     await db.delete(schema.creators).where(eq(schema.creators.lang, lang));
     if (creatorsData.length > 0) {

@@ -90,21 +90,15 @@ export default function NotesAdminPage() {
     const handleSaveNote = async () => {
         if (!activeNote) return;
 
-        const isExistingNote = notes.some(note => note.id === activeNote.id);
         setIsSaving(true);
         
-        // Ensure date is a valid Date object before saving
         const noteToSave = {
             ...activeNote,
             date: new Date(activeNote.date),
         };
 
         try {
-            if (isExistingNote) {
-                await updateDevNote(noteToSave.id, noteToSave);
-            } else {
-                await createDevNote(noteToSave as any); // Type assertion as new note won't have all fields yet
-            }
+            await updateDevNote(noteToSave.id, noteToSave);
             toast({ title: "Note Saved", description: `"${activeNote.title}" has been saved.` });
             logAction('Notes Update', 'Success', `Saved changes for note '${activeNote.title}'.`);
             await fetchNotes(); 
@@ -115,12 +109,11 @@ export default function NotesAdminPage() {
         }
     };
 
-    const handleNoteAdd = () => {
-        const newNote: DevNote = {
-            id: Date.now(),
+    const handleNoteAdd = async () => {
+        const newNoteData = {
             title: 'New Note Title',
-            slug: 'new-note-title',
-            date: new Date().toISOString(),
+            slug: `new-note-title-${Date.now()}`,
+            date: new Date(),
             summary: 'A brief summary of the new note.',
             content: newNoteContentExample,
             author: 'Spekulus Team',
@@ -129,7 +122,19 @@ export default function NotesAdminPage() {
             reactionCounts: {},
             imageId: null,
         };
-        setActiveNote(newNote); 
+
+        try {
+            const newNote = await createDevNote(newNoteData);
+            if (newNote) {
+                setActiveNote(newNote);
+                await fetchNotes(); // Refetch to include the new note in the list
+                toast({ title: "Note Created", description: "You are now editing a new note." });
+            } else {
+                toast({ title: "Creation Failed", description: "Could not create a new note.", variant: 'destructive' });
+            }
+        } catch (error: any) {
+            toast({ title: "Creation Failed", description: error.message, variant: 'destructive' });
+        }
     };
 
     const handleNoteDelete = async (noteToDelete: DevNote) => {
