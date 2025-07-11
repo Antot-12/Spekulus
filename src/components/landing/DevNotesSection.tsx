@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight, ImageIcon, Calendar, User } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
 import { Badge } from '../ui/badge';
+import { getDevNotes } from '@/lib/db/actions';
 
 export function DevNotesSection() {
   const { language, translations } = useLanguage();
@@ -20,15 +21,10 @@ export function DevNotesSection() {
   const fetchNotes = useCallback(async () => {
     setIsLoaded(false);
     try {
-        const response = await fetch('/api/dev-notes');
-        const data = await response.json();
-        if (data.success) {
-            const visibleNotes = data.notes.filter((note: DevNote) => note.isVisible !== false);
-            const sortedNotes = visibleNotes.sort((a: DevNote, b: DevNote) => new Date(b.date).getTime() - new Date(a.date).getTime());
-            setNotes(sortedNotes.slice(0, 3));
-        } else {
-            console.error("Failed to fetch notes for landing page:", data.error);
-        }
+        const data = await getDevNotes();
+        const visibleNotes = data.filter((note: DevNote) => note.isVisible !== false);
+        const sortedNotes = visibleNotes.sort((a: DevNote, b: DevNote) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        setNotes(sortedNotes.slice(0, 3));
     } catch (error) {
         console.error("Network error fetching notes:", error);
     }
@@ -135,3 +131,5 @@ export function DevNotesSection() {
     </section>
   );
 }
+
+    

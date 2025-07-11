@@ -15,6 +15,7 @@ import rehypeRaw from 'rehype-raw';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Reactions } from '@/components/dev-notes/Reactions';
+import { getDevNoteBySlug } from '@/lib/db/actions';
 
 const calculateReadingTime = (text: string): number => {
     if (!text) return 0;
@@ -35,10 +36,9 @@ export default function DevNotePage() {
 
     const fetchNote = async () => {
       try {
-        const response = await fetch(`/api/dev-notes?slug=${slug}`);
-        const data = await response.json();
-        if (data.success && data.note.isVisible !== false) {
-          setNote(data.note);
+        const data = await getDevNoteBySlug(slug);
+        if (data && data.isVisible !== false) {
+          setNote(data);
         } else {
           setNote(null);
         }
@@ -110,7 +110,7 @@ export default function DevNotePage() {
                     )}
                     <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4"/>
-                        <time dateTime={note.date}>
+                        <time dateTime={new Date(note.date).toISOString()}>
                             {new Date(note.date).toLocaleDateString(language, { year: 'numeric', month: 'long', day: 'numeric' })}
                         </time>
                     </div>
@@ -153,3 +153,5 @@ export default function DevNotePage() {
     </div>
   );
 }
+
+    

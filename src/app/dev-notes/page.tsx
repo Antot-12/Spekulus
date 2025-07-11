@@ -8,12 +8,13 @@ import type { DevNote } from '@/lib/data';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Calendar, ImageIcon, Search, User, Clock, Tag, X } from 'lucide-react';
+import { ArrowRight, ImageIcon, Calendar, User, Clock, Tag, X } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
+import { getDevNotes } from '@/lib/db/actions';
 
 type SortOrder = 'newest' | 'oldest';
 
@@ -39,13 +40,8 @@ export default function DevNotesPage() {
   const fetchNotes = useCallback(async () => {
     setIsLoading(true);
     try {
-        const response = await fetch('/api/dev-notes');
-        const data = await response.json();
-        if (data.success) {
-            setNotes(data.notes);
-        } else {
-            console.error("Failed to fetch notes:", data.error);
-        }
+        const data = await getDevNotes();
+        setNotes(data);
     } catch (error) {
         console.error("Network error fetching notes:", error);
     }
@@ -154,8 +150,8 @@ export default function DevNotesPage() {
                 >
                   <Link href={`/dev-notes/${note.slug}`} className="block overflow-hidden">
                     <div className="relative h-56 w-full bg-muted">
-                      {note.imageUrl ? (
-                        <Image src={note.imageUrl} alt={note.title} data-ai-hint={note.imageHint} layout="fill" objectFit="cover" className="group-hover:scale-105 transition-transform duration-500" />
+                      {note.imageId ? (
+                        <Image src={`/api/images/${note.imageId}`} alt={note.title} layout="fill" objectFit="cover" className="group-hover:scale-105 transition-transform duration-500" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
                           <ImageIcon className="w-16 h-16 text-muted-foreground" />
@@ -216,3 +212,5 @@ export default function DevNotesPage() {
     </div>
   );
 }
+
+    

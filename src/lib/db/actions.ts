@@ -20,7 +20,7 @@ export async function getHeroData(lang: Language) {
 export async function updateHeroData(lang: Language, data: Omit<typeof schema.heroSections.$inferInsert, 'lang'>) {
   return await db.insert(schema.heroSections)
     .values({ ...data, lang })
-    .onConflictDoUpdate({ target: [schema.heroSections.lang], set: data });
+    .onConflictDoUpdate({ target: schema.heroSections.lang, set: data });
 }
 
 // Product Section Actions
@@ -62,9 +62,6 @@ export async function getAdvantagesData(lang: Language) {
 }
 
 export async function updateAdvantagesData(lang: Language, advantages: (typeof schema.advantages.$inferInsert)[]) {
-    // Since IDs might be temporary (e.g., Date.now()), we can't reliably update.
-    // A simple approach is to delete and re-insert for the given language.
-    // For a production app, a more robust system with stable IDs would be better.
     await db.delete(schema.advantages).where(eq(schema.advantages.lang, lang));
     if (advantages.length > 0) {
         const insertData = advantages.map(({ id, ...rest }) => ({ ...rest, lang }));
@@ -138,7 +135,7 @@ export async function getDevNoteBySlug(slug: string) {
 }
 
 export async function createDevNote(note: typeof schema.devNotes.$inferInsert) {
-    return await db.insert(schema.devNotes).values(note);
+    return await db.insert(schema.devNotes).values(note).onConflictDoNothing();
 }
 
 export async function updateDevNote(id: number, note: Partial<typeof schema.devNotes.$inferInsert>) {
@@ -163,3 +160,5 @@ export async function uploadImage(fileBuffer: Buffer, filename: string, mimeType
     }).returning({ id: schema.images.id });
     return inserted;
 }
+
+    

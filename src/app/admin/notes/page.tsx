@@ -17,6 +17,7 @@ import { Separator } from '@/components/ui/separator';
 import { logAction } from '@/lib/logger';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from '@/components/ui/badge';
+import { getDevNotes, createDevNote, updateDevNote, deleteDevNote } from '@/lib/db/actions';
 
 const newNoteContentExample = `### This is a Subheading
 
@@ -50,17 +51,12 @@ export default function NotesAdminPage() {
     const fetchNotes = useCallback(async () => {
         setIsLoading(true);
         try {
-            const response = await fetch('/api/dev-notes');
-            const data = await response.json();
-            if (data.success) {
-                const sortedNotes = data.notes.sort((a: DevNote, b: DevNote) => new Date(b.date).getTime() - new Date(a.date).getTime());
-                setNotes(sortedNotes);
-                if (activeNote) {
-                    const updatedActiveNote = sortedNotes.find(n => n.id === activeNote.id) || null;
-                    setActiveNote(updatedActiveNote);
-                }
-            } else {
-                toast({ title: "Error", description: "Could not fetch developer notes.", variant: 'destructive' });
+            const data = await getDevNotes();
+            const sortedNotes = data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            setNotes(sortedNotes);
+            if (activeNote) {
+                const updatedActiveNote = sortedNotes.find(n => n.id === activeNote.id) || null;
+                setActiveNote(updatedActiveNote);
             }
         } catch (error) {
             toast({ title: "Network Error", description: "Failed to connect to the server.", variant: 'destructive' });
@@ -95,25 +91,19 @@ export default function NotesAdminPage() {
         if (!activeNote) return;
 
         const isExistingNote = notes.some(note => note.id === activeNote.id);
-        const method = isExistingNote ? 'PUT' : 'POST';
-
         setIsSaving(true);
+        
         try {
-            const response = await fetch('/api/dev-notes', {
-                method: method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(activeNote),
-            });
-            const result = await response.json();
-            if (result.success) {
-                toast({ title: "Note Saved", description: `"${activeNote.title}" has been saved.` });
-                logAction('Notes Update', 'Success', `Saved changes for note '${activeNote.title}'.`);
-                await fetchNotes(); 
+            if (isExistingNote) {
+                await updateDevNote(activeNote.id, activeNote);
             } else {
-                toast({ title: "Save Failed", description: result.error || "Could not save changes.", variant: 'destructive' });
+                await createDevNote(activeNote as any); // Type assertion as new note won't have all fields yet
             }
-        } catch (error) {
-            toast({ title: "Network Error", description: "Failed to connect to the server.", variant: 'destructive' });
+            toast({ title: "Note Saved", description: `"${activeNote.title}" has been saved.` });
+            logAction('Notes Update', 'Success', `Saved changes for note '${activeNote.title}'.`);
+            await fetchNotes(); 
+        } catch (error: any) {
+            toast({ title: "Save Failed", description: error.message || "Could not save changes.", variant: 'destructive' });
         } finally {
             setIsSaving(false);
         }
@@ -124,35 +114,29 @@ export default function NotesAdminPage() {
             id: Date.now(),
             title: 'New Note Title',
             slug: 'new-note-title',
-            date: new Date().toISOString().split('T')[0],
+            date: new Date().toISOString(),
             summary: 'A brief summary of the new note.',
             content: newNoteContentExample,
             author: 'Spekulus Team',
             tags: ['Update'],
             isVisible: false,
             reactionCounts: {},
+            imageId: null,
         };
         setActiveNote(newNote); 
     };
 
     const handleNoteDelete = async (noteToDelete: DevNote) => {
         try {
-            const response = await fetch(`/api/dev-notes?slug=${noteToDelete.slug}`, {
-                method: 'DELETE',
-            });
-            const result = await response.json();
-            if (result.success) {
-                toast({ title: "Note Deleted", variant: 'destructive' });
-                logAction('Notes Update', 'Success', `Deleted note '${noteToDelete.title}'.`);
-                if (activeNote?.id === noteToDelete.id) {
-                    setActiveNote(null);
-                }
-                await fetchNotes();
-            } else {
-                toast({ title: "Deletion Failed", description: result.error, variant: 'destructive' });
+            await deleteDevNote(noteToDelete.id);
+            toast({ title: "Note Deleted", variant: 'destructive' });
+            logAction('Notes Update', 'Success', `Deleted note '${noteToDelete.title}'.`);
+            if (activeNote?.id === noteToDelete.id) {
+                setActiveNote(null);
             }
-        } catch (error) {
-            toast({ title: "Network Error", description: "Failed to delete note.", variant: 'destructive' });
+            await fetchNotes();
+        } catch (error: any) {
+            toast({ title: "Deletion Failed", description: error.message, variant: 'destructive' });
         }
     };
     
@@ -278,7 +262,7 @@ export default function NotesAdminPage() {
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="date">Date</Label>
-                                    <Input id="date" type="date" value={activeNote.date} onChange={(e) => handleFieldChange('date', e.target.value)} />
+                                    <Input id="date" type="date" value={new Date(activeNote.date).toISOString().split('T')[0]} onChange={(e) => handleFieldChange('date', e.target.value)} />
                                 </div>
                             </div>
                             
@@ -339,3 +323,5 @@ export default function NotesAdminPage() {
         </div>
     );
 }
+
+    
