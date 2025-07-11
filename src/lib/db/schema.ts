@@ -32,7 +32,7 @@ export const images = pgTable('images', {
 
 export const heroSections = pgTable('hero_sections', {
     id: serial('id').primaryKey(),
-    lang: varchar('lang', { length: 2 }).notNull().references(() => languages.code),
+    lang: varchar('lang', { length: 2 }).notNull().references(() => languages.code).unique(),
     title: text('title').notNull(),
     subtitle: text('subtitle').notNull(),
     imageId: integer('image_id').references(() => images.id, { onDelete: 'set null' }),
@@ -57,7 +57,7 @@ export const advantages = pgTable('advantages', {
 
 export const actionSections = pgTable('action_sections', {
     id: serial('id').primaryKey(),
-    lang: varchar('lang', { length: 2 }).notNull().references(() => languages.code),
+    lang: varchar('lang', { length: 2 }).notNull().references(() => languages.code).unique(),
     title: text('title').notNull(),
     subtitle: text('subtitle').notNull(),
     description: text('description').notNull(),
