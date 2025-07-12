@@ -8,8 +8,9 @@ import type { Creator } from '@/lib/data';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Github, Twitter, Linkedin } from 'lucide-react';
+import { Github, Twitter, Linkedin, ArrowLeft } from 'lucide-react';
 import { getCreators } from '@/lib/db/actions';
+import { Button } from '@/components/ui/button';
 
 export default function CreatorsPage() {
   const { language, translations } = useLanguage();
@@ -34,6 +35,14 @@ export default function CreatorsPage() {
 
   return (
     <div className="container mx-auto px-4 py-12 md:py-20">
+      <div className="mb-8">
+          <Button asChild variant="outline">
+            <Link href="/" className="inline-flex items-center gap-2">
+              <ArrowLeft className="w-4 h-4" />
+              Back to Home
+            </Link>
+          </Button>
+        </div>
       <div className="text-center mb-12">
         <h1 className="text-4xl md:text-5xl font-bold font-headline">{translations.creators.title}</h1>
         <p className="text-xl text-foreground/70 mt-3">{translations.creators.subtitle}</p>
