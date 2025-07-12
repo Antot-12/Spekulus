@@ -9,18 +9,24 @@ import { LayoutDashboard, FileText, Calendar, HelpCircle, LogOut, Loader2, Users
 import { usePathname } from 'next/navigation';
 import { logAction } from '@/lib/logger';
 
-const pageTitles: { [key: string]: string } = {
-    '/admin': 'Dashboard',
-    '/admin/pages': 'Pages Overview',
-    '/admin/hero': 'Hero Section Management',
-    '/admin/advantages': 'Advantages Management',
-    '/admin/product': 'Product Section Management',
-    '/admin/action-section': 'In Action Section',
-    '/admin/notes': 'Developer Notes',
-    '/admin/creators': 'Creators Management',
-    '/admin/roadmap': 'Roadmap',
-    '/admin/faq': 'FAQ Management',
-    '/admin/logs': 'Action Logs',
+const getPageTitle = (pathname: string): string => {
+    if (pathname === '/admin') return 'Dashboard';
+    
+    const segments = pathname.split('/').filter(Boolean);
+    const lastSegment = segments[segments.length - 1];
+
+    if (!lastSegment) return 'Admin';
+
+    // For dynamic routes like /admin/creators/[slug], show a generic title
+    if (lastSegment.startsWith('[') && lastSegment.endsWith(']')) {
+        const parentSegment = segments[segments.length - 2];
+        if (parentSegment) {
+            return parentSegment.charAt(0).toUpperCase() + parentSegment.slice(1);
+        }
+    }
+    
+    // For other routes, capitalize the last segment
+    return lastSegment.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 };
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -44,7 +50,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, [router]);
   
   useEffect(() => {
-    setPageTitle(pageTitles[pathname] || 'Admin');
+    setPageTitle(getPageTitle(pathname));
   }, [pathname]);
 
   const handleLogout = () => {
@@ -84,52 +90,52 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </SidebarMenuButton>
             </SidebarMenuItem>
              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname === '/admin/hero'}>
+                <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/hero')}>
                     <Link href="/admin/hero"><Home />Hero Section</Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname === '/admin/product'}>
+                <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/product')}>
                     <Link href="/admin/product"><Cpu />Product Section</Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname === '/admin/advantages'}>
+                <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/advantages')}>
                     <Link href="/admin/advantages"><Sparkles />Advantages</Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname === '/admin/action-section'}>
+                <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/action-section')}>
                     <Link href="/admin/action-section"><Camera />In Action Section</Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname === '/admin/notes'}>
+                <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/notes')}>
                     <Link href="/admin/notes"><FileText />Dev Notes</Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname === '/admin/creators'}>
+                <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/creators')}>
                     <Link href="/admin/creators"><Users />Creators</Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname === '/admin/roadmap'}>
+                <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/roadmap')}>
                     <Link href="/admin/roadmap"><Calendar />Roadmap</Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname === '/admin/faq'}>
+                <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/faq')}>
                     <Link href="/admin/faq"><HelpCircle />FAQ</Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname === '/admin/pages'}>
+                <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/pages')}>
                     <Link href="/admin/pages"><LayoutGrid />Pages</Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname === '/admin/logs'}>
+                <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/logs')}>
                     <Link href="/admin/logs"><History />Logs</Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
