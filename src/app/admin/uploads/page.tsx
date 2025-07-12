@@ -1,7 +1,7 @@
 
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,6 +13,8 @@ import {
   Copy,
   Loader2,
   FileImage,
+  Search,
+  Link as LinkIcon,
 } from 'lucide-react'
 import {
   AlertDialog,
@@ -41,6 +43,7 @@ export default function UploadsAdminPage() {
   const [images, setImages] = useState<ImageInfo[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isUploading, setIsUploading] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const fetchImages = useCallback(async () => {
@@ -62,6 +65,12 @@ export default function UploadsAdminPage() {
   useEffect(() => {
     fetchImages()
   }, [fetchImages])
+
+  const filteredImages = useMemo(() => {
+    return images.filter(image =>
+      image.filename?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [images, searchTerm]);
 
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -116,6 +125,7 @@ export default function UploadsAdminPage() {
       toast({
         title: 'Image Deleted',
         description: `Image ID ${id} has been deleted.`,
+        variant: 'destructive',
       })
       logAction(
         'File Delete',
@@ -133,9 +143,9 @@ export default function UploadsAdminPage() {
     }
   }
 
-  const copyToClipboard = (text: string) => {
+  const copyToClipboard = (text: string, type: 'ID' | 'URL') => {
     navigator.clipboard.writeText(text)
-    toast({ description: `Copied "${text}" to clipboard.` })
+    toast({ description: `Copied image ${type} to clipboard.` })
   }
 
   return (
@@ -145,7 +155,7 @@ export default function UploadsAdminPage() {
           <div>
             <CardTitle>Manage Uploads</CardTitle>
             <CardDescription>
-              Browse, upload, and delete images from your site's library.
+              Browse, search, upload, and delete images from your site's library.
             </CardDescription>
           </div>
           <Button
@@ -167,6 +177,15 @@ export default function UploadsAdminPage() {
             className="hidden"
           />
         </div>
+        <div className="relative mt-4">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <Input 
+              placeholder="Search by filename..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+          />
+        </div>
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -175,75 +194,69 @@ export default function UploadsAdminPage() {
               <Skeleton key={i} className="aspect-square rounded-lg" />
             ))}
           </div>
-        ) : images.length > 0 ? (
+        ) : filteredImages.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {images.map((image) => (
-              <div
+            {filteredImages.map((image) => (
+              <Card
                 key={image.id}
-                className="group relative aspect-square overflow-hidden rounded-lg border bg-muted"
+                className="group relative overflow-hidden"
               >
-                <img
-                  src={`/api/images/${image.id}`}
-                  alt={image.filename || `Image ${image.id}`}
-                  className="h-full w-full object-cover"
-                  loading="lazy"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
-                  <p
-                    className="text-white text-xs font-semibold truncate"
-                    title={image.filename || ''}
-                  >
-                    {image.filename || 'Untitled'}
-                  </p>
-                  <p className="text-white/80 text-xs">
-                    {format(new Date(image.createdAt), 'MMM d, yyyy')}
-                  </p>
-                  <div className="flex gap-1 mt-2">
-                    <Button
-                      variant="secondary"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() => copyToClipboard(String(image.id))}
-                    >
-                      <Copy className="h-3 w-3" />
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          variant="destructive"
-                          size="icon"
-                          className="h-7 w-7"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This will permanently delete the image "
-                            {image.filename || `ID ${image.id}`}". This action cannot
-                            be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleDelete(image.id)}>
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
+                <div className="aspect-square w-full bg-muted">
+                    <img
+                        src={`/api/images/${image.id}`}
+                        alt={image.filename || `Image ${image.id}`}
+                        className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                        loading="lazy"
+                    />
                 </div>
-              </div>
+                <div className="p-4 border-t">
+                    <p className="text-sm font-semibold truncate" title={image.filename || ''}>{image.filename || 'Untitled'}</p>
+                    <p className="text-xs text-muted-foreground">ID: {image.id}</p>
+                    <p className="text-xs text-muted-foreground">Uploaded: {format(new Date(image.createdAt), 'MMM d, yyyy')}</p>
+                    <div className="flex gap-2 mt-3">
+                        <Button variant="outline" size="sm" className="flex-1" onClick={() => copyToClipboard(String(image.id), 'ID')}>
+                            <Copy className="mr-2 h-4 w-4" />
+                            Copy ID
+                        </Button>
+                        <Button variant="outline" size="sm" className="flex-1" onClick={() => copyToClipboard(`/api/images/${image.id}`, 'URL')}>
+                            <LinkIcon className="mr-2 h-4 w-4" />
+                            Copy URL
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                              <Button variant="destructive" size="icon" className="shrink-0">
+                                  <Trash2 className="h-4 w-4" />
+                              </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will permanently delete the image "{image.filename || `ID ${image.id}`}". This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDelete(image.id)}>
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
+                </div>
+              </Card>
             ))}
           </div>
         ) : (
           <div className="text-center py-16 text-muted-foreground border-2 border-dashed rounded-lg flex flex-col items-center justify-center">
             <FileImage className="w-12 h-12 mb-4" />
-            <h3 className="text-xl font-semibold">Your library is empty</h3>
-            <p>Click "Upload File" to add your first image.</p>
+            <h3 className="text-xl font-semibold">
+              {searchTerm ? 'No images found' : 'Your library is empty'}
+            </h3>
+            <p>
+              {searchTerm ? 'Try a different search term.' : 'Click "Upload File" to add your first image.'}
+            </p>
           </div>
         )}
       </CardContent>
