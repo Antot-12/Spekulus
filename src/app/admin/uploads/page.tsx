@@ -15,6 +15,13 @@ import {
   FileImage,
   Search,
   Link as LinkIcon,
+  LayoutGrid,
+  List,
+  ArrowUpDown,
+  ChevronsLeft,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsRight
 } from 'lucide-react'
 import {
   AlertDialog,
@@ -27,9 +34,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { getImages, deleteImage } from '@/lib/db/actions'
 import { logAction } from '@/lib/logger'
 import { format } from 'date-fns'
+import { cn } from '@/lib/utils'
 
 type ImageInfo = {
   id: number
@@ -38,12 +48,20 @@ type ImageInfo = {
   createdAt: Date
 }
 
+type ViewMode = 'grid' | 'list';
+type SortMode = 'newest' | 'oldest' | 'name';
+
+const IMAGES_PER_PAGE = 12;
+
 export default function UploadsAdminPage() {
   const { toast } = useToast()
   const [images, setImages] = useState<ImageInfo[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isUploading, setIsUploading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [sortMode, setSortMode] = useState<SortMode>('newest');
+  const [currentPage, setCurrentPage] = useState(1);
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const fetchImages = useCallback(async () => {
@@ -66,11 +84,27 @@ export default function UploadsAdminPage() {
     fetchImages()
   }, [fetchImages])
 
-  const filteredImages = useMemo(() => {
-    return images.filter(image =>
-      image.filename?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [images, searchTerm]);
+  const filteredAndSortedImages = useMemo(() => {
+    return images
+      .filter(image =>
+        image.filename?.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+      .sort((a, b) => {
+        switch (sortMode) {
+          case 'oldest':
+            return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          case 'name':
+            return (a.filename || '').localeCompare(b.filename || '');
+          case 'newest':
+          default:
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        }
+      });
+  }, [images, searchTerm, sortMode]);
+  
+  const totalPages = Math.ceil(filteredAndSortedImages.length / IMAGES_PER_PAGE);
+  const paginatedImages = filteredAndSortedImages.slice((currentPage - 1) * IMAGES_PER_PAGE, currentPage * IMAGES_PER_PAGE);
+
 
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -148,6 +182,22 @@ export default function UploadsAdminPage() {
     toast({ description: `Copied image ${type} to clipboard.` })
   }
 
+  const renderPagination = () => (
+     totalPages > 1 && (
+        <div className="flex items-center justify-between mt-6">
+            <div className="text-sm text-muted-foreground">
+                Page {currentPage} of {totalPages}
+            </div>
+            <div className="flex items-center space-x-2">
+                <Button variant="outline" size="icon" onClick={() => setCurrentPage(1)} disabled={currentPage === 1}><ChevronsLeft /></Button>
+                <Button variant="outline" size="icon" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}><ChevronLeft /></Button>
+                <Button variant="outline" size="icon" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}><ChevronRight /></Button>
+                <Button variant="outline" size="icon" onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages}><ChevronsRight /></Button>
+            </div>
+        </div>
+    )
+  );
+
   return (
     <Card className="opacity-0 animate-fade-in-up">
       <CardHeader>
@@ -177,15 +227,39 @@ export default function UploadsAdminPage() {
             className="hidden"
           />
         </div>
-        <div className="relative mt-4">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-          <Input 
-              placeholder="Search by filename..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-          />
+        
+        <div className="flex flex-col md:flex-row gap-2 mt-4 p-2 border rounded-lg bg-muted/50">
+            <div className="relative flex-grow">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input 
+                    placeholder="Search by filename..."
+                    value={searchTerm}
+                    onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+                    className="pl-10"
+                />
+            </div>
+            <div className="flex gap-2">
+                <Select value={sortMode} onValueChange={(v) => setSortMode(v as SortMode)}>
+                    <SelectTrigger className="w-full md:w-[150px]">
+                        <SelectValue placeholder="Sort by..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="newest">Newest First</SelectItem>
+                        <SelectItem value="oldest">Oldest First</SelectItem>
+                        <SelectItem value="name">Filename (A-Z)</SelectItem>
+                    </SelectContent>
+                </Select>
+                <div className="flex rounded-md border bg-background p-1">
+                    <Button variant={viewMode === 'grid' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('grid')}>
+                        <LayoutGrid className="h-5 w-5"/>
+                    </Button>
+                    <Button variant={viewMode === 'list' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('list')}>
+                        <List className="h-5 w-5"/>
+                    </Button>
+                </div>
+            </div>
         </div>
+
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -194,60 +268,110 @@ export default function UploadsAdminPage() {
               <Skeleton key={i} className="aspect-square rounded-lg" />
             ))}
           </div>
-        ) : filteredImages.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {filteredImages.map((image) => (
-              <Card
-                key={image.id}
-                className="group relative overflow-hidden"
-              >
-                <div className="aspect-square w-full bg-muted">
-                    <img
-                        src={`/api/images/${image.id}`}
-                        alt={image.filename || `Image ${image.id}`}
-                        className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                        loading="lazy"
-                    />
-                </div>
-                <div className="p-4 border-t">
-                    <p className="text-sm font-semibold truncate" title={image.filename || ''}>{image.filename || 'Untitled'}</p>
-                    <p className="text-xs text-muted-foreground">ID: {image.id}</p>
-                    <p className="text-xs text-muted-foreground">Uploaded: {format(new Date(image.createdAt), 'MMM d, yyyy')}</p>
-                    <div className="flex gap-2 mt-3">
-                        <Button variant="outline" size="sm" className="flex-1" onClick={() => copyToClipboard(String(image.id), 'ID')}>
-                            <Copy className="mr-2 h-4 w-4" />
-                            Copy ID
-                        </Button>
-                        <Button variant="outline" size="sm" className="flex-1" onClick={() => copyToClipboard(`/api/images/${image.id}`, 'URL')}>
-                            <LinkIcon className="mr-2 h-4 w-4" />
-                            Copy URL
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                              <Button variant="destructive" size="icon" className="shrink-0">
-                                  <Trash2 className="h-4 w-4" />
-                              </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This will permanently delete the image "{image.filename || `ID ${image.id}`}". This action cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDelete(image.id)}>
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+        ) : paginatedImages.length > 0 ? (
+          <>
+            {viewMode === 'grid' ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {paginatedImages.map((image) => (
+                  <Card key={image.id} className="group relative overflow-hidden">
+                    <div className="aspect-square w-full bg-muted">
+                        <img
+                            src={`/api/images/${image.id}`}
+                            alt={image.filename || `Image ${image.id}`}
+                            className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                            loading="lazy"
+                        />
                     </div>
+                    <div className="p-4 border-t">
+                        <p className="text-sm font-semibold truncate" title={image.filename || ''}>{image.filename || 'Untitled'}</p>
+                        <p className="text-xs text-muted-foreground">ID: {image.id}</p>
+                        <p className="text-xs text-muted-foreground">Uploaded: {format(new Date(image.createdAt), 'MMM d, yyyy')}</p>
+                        <div className="flex gap-2 mt-3">
+                            <Button variant="outline" size="sm" className="flex-1" onClick={() => copyToClipboard(String(image.id), 'ID')}>
+                                <Copy className="mr-2 h-4 w-4" /> ID
+                            </Button>
+                            <Button variant="outline" size="sm" className="flex-1" onClick={() => copyToClipboard(`/api/images/${image.id}`, 'URL')}>
+                                <LinkIcon className="mr-2 h-4 w-4" /> URL
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                  <Button variant="destructive" size="icon" className="shrink-0">
+                                      <Trash2 className="h-4 w-4" />
+                                  </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This will permanently delete the image "{image.filename || `ID ${image.id}`}". This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDelete(image.id)}>Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+                <div className="border rounded-md">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="w-[80px]">Preview</TableHead>
+                                <TableHead>Filename</TableHead>
+                                <TableHead>Type</TableHead>
+                                <TableHead>Uploaded</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {paginatedImages.map(image => (
+                                <TableRow key={image.id}>
+                                    <TableCell>
+                                        <div className="w-16 h-16 bg-muted rounded-md overflow-hidden">
+                                          <img src={`/api/images/${image.id}`} alt={image.filename || ''} className="h-full w-full object-cover"/>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <p className="font-medium truncate" title={image.filename || ''}>{image.filename || 'Untitled'}</p>
+                                        <p className="text-xs text-muted-foreground">ID: {image.id}</p>
+                                    </TableCell>
+                                    <TableCell className="text-muted-foreground">{image.mimeType || 'N/A'}</TableCell>
+                                    <TableCell className="text-muted-foreground">{format(new Date(image.createdAt), 'yyyy-MM-dd')}</TableCell>
+                                    <TableCell className="text-right">
+                                         <div className="flex gap-2 justify-end">
+                                            <Button variant="ghost" size="icon" onClick={() => copyToClipboard(String(image.id), 'ID')}><Copy className="h-4 w-4"/></Button>
+                                            <Button variant="ghost" size="icon" onClick={() => copyToClipboard(`/api/images/${image.id}`, 'URL')}><LinkIcon className="h-4 w-4"/></Button>
+                                            <AlertDialog>
+                                              <AlertDialogTrigger asChild>
+                                                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4"/></Button>
+                                              </AlertDialogTrigger>
+                                              <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                  <AlertDialogDescription>This will permanently delete "{image.filename || `ID ${image.id}`}".</AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                  <AlertDialogAction onClick={() => handleDelete(image.id)}>Delete</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                              </AlertDialogContent>
+                                            </AlertDialog>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
                 </div>
-              </Card>
-            ))}
-          </div>
+            )}
+            {renderPagination()}
+          </>
         ) : (
           <div className="text-center py-16 text-muted-foreground border-2 border-dashed rounded-lg flex flex-col items-center justify-center">
             <FileImage className="w-12 h-12 mb-4" />
