@@ -289,10 +289,10 @@ export default function UploadsAdminPage() {
             {viewMode === 'grid' ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {paginatedImages.map((image) => (
-                  <Card key={image.id} className="group relative overflow-hidden">
+                  <Card key={image.id} className="group relative overflow-hidden flex flex-col">
                     <Dialog>
                        <DialogTrigger asChild>
-                         <div className="aspect-square w-full bg-muted cursor-pointer">
+                         <div className="aspect-square w-full bg-muted cursor-pointer resize overflow-auto relative">
                             <img
                                 src={`/api/images/${image.id}`}
                                 alt={image.filename || `Image ${image.id}`}
@@ -311,11 +311,13 @@ export default function UploadsAdminPage() {
                             <img src={`/api/images/${image.id}`} alt={image.filename || ''} className="max-h-[90vh] w-auto h-auto rounded-lg mx-auto" />
                        </DialogContent>
                     </Dialog>
-                    <div className="p-4 border-t">
-                        <p className="text-sm font-semibold truncate" title={image.filename || ''}>{image.filename || 'Untitled'}</p>
-                        <p className="text-xs text-muted-foreground">ID: {image.id}</p>
-                        <p className="text-xs text-muted-foreground">Size: {formatFileSize(image.size)}</p>
-                        <p className="text-xs text-muted-foreground">Uploaded: {format(new Date(image.createdAt), 'MMM d, yyyy')}</p>
+                    <div className="p-4 border-t flex-grow flex flex-col justify-between">
+                        <div>
+                            <p className="text-sm font-semibold truncate" title={image.filename || ''}>{image.filename || 'Untitled'}</p>
+                            <p className="text-xs text-muted-foreground">ID: {image.id}</p>
+                            <p className="text-xs text-muted-foreground">Size: {formatFileSize(image.size)}</p>
+                            <p className="text-xs text-muted-foreground">Uploaded: {format(new Date(image.createdAt), 'MMM d, yyyy')}</p>
+                        </div>
                         <div className="flex gap-2 mt-3">
                             <Button variant="outline" size="sm" className="flex-1" onClick={() => copyToClipboard(String(image.id), 'ID')}>
                                 <Copy className="mr-2 h-4 w-4" /> ID
