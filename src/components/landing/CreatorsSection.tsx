@@ -62,7 +62,7 @@ export function CreatorsSection() {
                   className="group relative flex flex-col items-center text-center opacity-0 animate-fade-in-up"
                   style={{ animationDelay: `${index * 150}ms` }}
                 >
-                  <Link href={`/creators/${creator.slug}`} className="block">
+                  <Link href={`/creators/${creator.slug}`} className="block mb-4">
                     <div className="relative h-40 w-40">
                       {creator.imageId && (
                         <Image 
@@ -74,30 +74,26 @@ export function CreatorsSection() {
                         />
                       )}
                     </div>
-                    <CardHeader className="p-4">
-                      <CardTitle className="font-headline text-xl group-hover:text-primary transition-colors">{creator.name}</CardTitle>
-                      <CardDescription>{creator.role}</CardDescription>
-                    </CardHeader>
+                    <h3 className="font-headline text-xl mt-4 group-hover:text-primary transition-colors">{creator.name}</h3>
+                    <p className="text-muted-foreground">{creator.role}</p>
                   </Link>
-                  <CardContent className="flex-grow flex items-end p-0">
-                    <div className="flex gap-4 text-muted-foreground z-10">
-                      {creator.socials.github && (
-                        <a href={`https://github.com/${creator.socials.github}`} target="_blank" rel="noopener noreferrer" aria-label="GitHub Profile" className="hover:text-primary transition-colors">
-                          <Github className="h-5 w-5"/>
-                        </a>
-                      )}
-                      {creator.socials.twitter && (
-                        <a href={creator.socials.twitter} target="_blank" rel="noopener noreferrer" aria-label="Twitter Profile" className="hover:text-primary transition-colors">
-                          <Twitter className="h-5 w-5"/>
-                        </a>
-                      )}
-                      {creator.socials.linkedin && (
-                        <a href={creator.socials.linkedin} target="_blank" rel="noopener noreferrer" aria-label="LinkedIn Profile" className="hover:text-primary transition-colors">
-                           <Linkedin className="h-5 w-5"/>
-                        </a>
-                      )}
-                    </div>
-                  </CardContent>
+                  <div className="flex gap-4 text-muted-foreground z-10">
+                    {creator.socials.github && (
+                      <a href={`https://github.com/${creator.socials.github}`} target="_blank" rel="noopener noreferrer" aria-label="GitHub Profile" className="hover:text-primary transition-colors">
+                        <Github className="h-5 w-5"/>
+                      </a>
+                    )}
+                    {creator.socials.twitter && (
+                      <a href={creator.socials.twitter} target="_blank" rel="noopener noreferrer" aria-label="Twitter Profile" className="hover:text-primary transition-colors">
+                        <Twitter className="h-5 w-5"/>
+                      </a>
+                    )}
+                    {creator.socials.linkedin && (
+                      <a href={creator.socials.linkedin} target="_blank" rel="noopener noreferrer" aria-label="LinkedIn Profile" className="hover:text-primary transition-colors">
+                         <Linkedin className="h-5 w-5"/>
+                      </a>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
