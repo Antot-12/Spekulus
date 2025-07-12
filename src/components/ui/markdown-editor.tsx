@@ -17,14 +17,13 @@ type MarkdownEditorProps = {
   value: string;
   onChange: (value: string) => void;
   rows?: number;
-  uploadSubdirectory?: string;
 };
 
 const UnderlineIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M6 4v6a6 6 0 0 0 12 0V4"/><path d="M4 20h16"/></svg>
 );
 
-export function MarkdownEditor({ value, onChange, rows = 12, uploadSubdirectory }: MarkdownEditorProps) {
+export function MarkdownEditor({ value, onChange, rows = 12 }: MarkdownEditorProps) {
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const imageInputRef = React.useRef<HTMLInputElement>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -70,12 +69,6 @@ export function MarkdownEditor({ value, onChange, rows = 12, uploadSubdirectory 
 
     const formData = new FormData();
     formData.append('file', file);
-
-    let finalSubdirectory = uploadSubdirectory || 'spekulus/uploads';
-    if (!isImage && uploadSubdirectory) {
-        finalSubdirectory = `${uploadSubdirectory}/attachments`;
-    }
-    formData.append('subdirectory', finalSubdirectory);
     
     toast({ title: "Uploading...", description: "Please wait while the file is uploaded." });
 
@@ -87,11 +80,12 @@ export function MarkdownEditor({ value, onChange, rows = 12, uploadSubdirectory 
 
       const result = await response.json();
 
-      if (result.success) {
+      if (result.success && result.id) {
+        const imageUrl = `/api/images/${result.id}`;
         if (isImage) {
-            applyFormatting(`\n![${file.name}](${result.url})\n`);
+            applyFormatting(`\n![${file.name}](${imageUrl})\n`);
         } else {
-            applyFormatting(`[Download ${file.name}](${result.url})`);
+            applyFormatting(`[Download ${file.name}](${imageUrl})`);
         }
         toast({ title: "Upload Complete", description: "File successfully added to content." });
       } else {

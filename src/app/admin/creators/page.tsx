@@ -414,6 +414,23 @@ export default function CreatorsAdminPage() {
                    <Button variant="outline" size="sm" onClick={() => handleComplexArrayAdd(creator.id, 'certifications')}><PlusCircle className="mr-2 h-4 w-4"/>Add Certification</Button>
                 </CardContent>
               </Card>
+              
+              <Card>
+                <CardHeader><CardTitle className="font-headline flex items-center gap-2"><Award className="w-6 h-6" />Achievements</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                  {creator.achievements?.map((ach, idx) => (
+                    <div key={idx} className="flex gap-2 items-end p-2 border rounded-md">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 flex-grow">
+                          <Input placeholder="Icon (e.g., Star)" value={ach.icon} onChange={e => handleComplexArrayChange(creator.id, 'achievements', idx, 'icon', e.target.value)} />
+                          <Input placeholder="Achievement Name" value={ach.name} onChange={e => handleComplexArrayChange(creator.id, 'achievements', idx, 'name', e.target.value)} />
+                          <Textarea placeholder="Description..." value={ach.description} onChange={e => handleComplexArrayChange(creator.id, 'achievements', idx, 'description', e.target.value)} className="sm:col-span-3"/>
+                      </div>
+                      <Button variant="ghost" size="icon" onClick={() => handleComplexArrayDelete(creator.id, 'achievements', idx)}><Trash2 className="w-4 h-4 text-destructive"/></Button>
+                    </div>
+                  ))}
+                   <Button variant="outline" size="sm" onClick={() => handleComplexArrayAdd(creator.id, 'achievements')}><PlusCircle className="mr-2 h-4 w-4"/>Add Achievement</Button>
+                </CardContent>
+              </Card>
 
               <Card>
                 <CardHeader><CardTitle className="font-headline flex items-center gap-2"><Music className="w-6 h-6" />Music & Playlists</CardTitle></CardHeader>

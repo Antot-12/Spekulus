@@ -148,9 +148,9 @@ import {
     Creators
   ─────────────────────────────────────────────────────*/
   export const creators = pgTable("creators", {
+    id: serial("id").notNull(),
     slug: text("slug").notNull(),
     lang: varchar("lang", { length: 2 }).notNull().references(() => languages.code),
-    id: serial("id").notNull(),
     name: text("name").notNull(),
     role: text("role").notNull(),
     bio: text("bio").notNull(),
