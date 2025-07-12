@@ -72,8 +72,8 @@ export type Achievement = {
 };
 
 export type Creator = {
-  id: number;
   slug: string;
+  lang: Language;
   name: string;
   role: string;
   bio: string;
@@ -286,12 +286,11 @@ const rawFaqData: Record<Language, PartialBy<FaqItem, 'id'>[]> = {
   ]
 };
 
-type RawCreator = Omit<Creator, 'id'>;
-
-const rawCreatorsData: Record<Language, RawCreator[]> = {
+const rawCreatorsData: Record<Language, Creator[]> = {
   en: [
     {
       slug: 'anton-shyrko',
+      lang: 'en',
       name: 'Anton Shyrko',
       role: 'CEO & Team Lead',
       bio: "Anton is the visionary behind Spekulus, guiding the team with a steady hand and a passion for innovative technology. He coordinates the overall project strategy, leads decision-making, and ensures the team's alignment with our ambitious goals. He believes in transparent development and building products that genuinely improve people's daily lives.\n\n### Core Philosophies\n\n- **User-Centric Design**: Every feature must solve a real user problem.\n- **Open Collaboration**: The best ideas can come from anywhere.\n- **Sustainable Growth**: Building a lasting company that values its people.",
@@ -339,6 +338,7 @@ const rawCreatorsData: Record<Language, RawCreator[]> = {
   uk: [
     {
       slug: 'anton-shyrko',
+      lang: 'uk',
       name: 'Антон Ширко',
       role: 'CEO & Керівник команди',
       bio: "Антон — візіонер, що стоїть за Spekulus, він керує командою твердою рукою та пристрастю до інноваційних технологій. Він координує загальну стратегію проєкту, очолює прийняття рішень та забезпечує відповідність команди нашим амбітним цілям. Він вірить у прозору розробку та створення продуктів, які справді покращують повсякденне життя людей.\n\n### Основні філософії\n\n- **Дизайн, орієнтований на користувача**: Кожна функція повинна вирішувати реальну проблему користувача.\n- **Відкрита співпраця**: Найкращі ідеї можуть прийти звідки завгодно.\n- **Сталий розвиток**: Побудова довготривалої компанії, яка цінує своїх людей.",
@@ -349,6 +349,7 @@ const rawCreatorsData: Record<Language, RawCreator[]> = {
   sk: [
     {
       slug: 'anton-shyrko',
+      lang: 'sk',
       name: 'Anton Shyrko',
       role: 'CEO & Vedúci tímu',
       bio: "Anton je vizionárom za projektom Spekulus, vedie tím pevnou rukou a s vášňou pre inovatívne technológie. Koordinuje celkovú stratégiu projektu, vedie rozhodovanie a zabezpečuje súlad tímu s našimi ambicióznymi cieľmi. Verí v transparentný vývoj a budovanie produktov, ktoré skutočne zlepšujú každodenný život ľudí.\n\n### Základné filozofie\n\n- **Dizajn zameraný na používateľa**: Každá funkcia musí riešiť skutočný problém používateľa.\n- **Otvorená spolupráca**: Najlepšie nápady môžu prísť odkiaľkoľvek.\n- **Udržateľný rast**: Budovanie trvalej spoločnosti, ktorá si váži svojich ľudí.",
@@ -358,19 +359,22 @@ const rawCreatorsData: Record<Language, RawCreator[]> = {
   ]
 };
 
-const rawAdvantagesData: Record<Language, PartialBy<Advantage, 'id'>[]> = {
+const rawAdvantagesData: Record<Language, Advantage[]> = {
   en: [
     {
+      id: 1,
       icon: 'ScanFace',
       title: 'AI-Powered Skin Diagnostics',
       description: 'Analyze your skin in real time and receive personalized beauty and skincare recommendations using AI.',
     },
     {
+      id: 2,
       icon: 'Activity',
       title: 'Stress & Health Monitoring',
       description: 'Spekulus evaluates your emotional and physical state and gives you feedback to help reduce stress and fatigue.',
     },
     {
+      id: 3,
       icon: 'Home',
       title: 'Smart Environment Sync',
       description: 'Integrates with your smart home, allowing control over lighting, music, calendars, weather, and more.',
@@ -378,16 +382,19 @@ const rawAdvantagesData: Record<Language, PartialBy<Advantage, 'id'>[]> = {
   ],
   uk: [
     {
+        id: 1,
         icon: 'ScanFace',
         title: 'Діагностика шкіри за допомогою ШІ',
         description: 'Аналізуйте свою шкіру в реальному часі та отримуйте персоналізовані рекомендації щодо краси та догляду за шкірою за допомогою ШІ.',
     },
      {
+      id: 2,
       icon: 'Activity',
       title: 'Моніторинг стресу та здоров\'я',
       description: 'Spekulus оцінює ваш емоційний та фізичний стан і дає вам зворотний зв\'язок, щоб допомогти зменшити стрес і втому.',
     },
     {
+      id: 3,
       icon: 'Home',
       title: 'Синхронізація з розумним середовищем',
       description: 'Інтегрується з вашим розумним будинком, дозволяючи керувати освітленням, музикою, календарями, погодою та іншим.',
@@ -395,16 +402,19 @@ const rawAdvantagesData: Record<Language, PartialBy<Advantage, 'id'>[]> = {
   ],
   sk: [
     {
+        id: 1,
         icon: 'ScanFace',
         title: 'Diagnostika pleti pomocou AI',
         description: 'Analyzujte svoju pleť v reálnom čase a získajte personalizované odporúčania pre krásu a starostlivosť o pleť pomocou AI.',
     },
     {
+      id: 2,
       icon: 'Activity',
       title: 'Monitorovanie stresu a zdravia',
       description: 'Spekulus hodnotí váš emocionálny a fyzický stav a poskytuje vám spätnú väzbu, ktorá vám pomôže znížiť stres a únavu.',
     },
     {
+      id: 3,
       icon: 'Home',
       title: 'Synchronizácia s inteligentným prostredím',
       description: 'Integruje sa s vaším inteligentným domom, čo umožňuje ovládanie osvetlenia, hudby, kalendárov, počasia a ďalších funkcií.',
@@ -537,8 +547,8 @@ const faqData: Record<Language, PartialBy<FaqItem, 'id'>[]> = {
     sk: rawFaqData.sk
 };
 
-const mergeCreators = (base: RawCreator, lang: Partial<RawCreator>): Creator => {
-  const merged = { ...base, ...lang } as Creator;
+const mergeCreators = (base: Creator, lang: Partial<Creator>): Creator => {
+  const merged = { ...base, ...lang };
   if (lang.featuredProject || base.featuredProject) {
     merged.featuredProject = {
       ...(base.featuredProject || { title: '', url: '', description: ''}),
@@ -555,21 +565,21 @@ const mergeCreators = (base: RawCreator, lang: Partial<RawCreator>): Creator => 
 }
 
 const creatorsData: Record<Language, Creator[]> = {
-  en: rawCreatorsData.en.map((c, i) => ({...c, id: i + 1})),
-  uk: rawCreatorsData.en.map((baseCreator, i) => {
+  en: rawCreatorsData.en,
+  uk: rawCreatorsData.en.map((baseCreator) => {
     const langCreator = rawCreatorsData.uk.find(c => c.slug === baseCreator.slug);
-    return { ...mergeCreators(baseCreator, langCreator || {}), id: i + 1 };
+    return mergeCreators(baseCreator, langCreator || {});
   }),
-  sk: rawCreatorsData.en.map((baseCreator, i) => {
+  sk: rawCreatorsData.en.map((baseCreator) => {
     const langCreator = rawCreatorsData.sk.find(c => c.slug === baseCreator.slug);
-    return { ...mergeCreators(baseCreator, langCreator || {}), id: i + 1 };
+    return mergeCreators(baseCreator, langCreator || {});
   }),
 }
 
-const advantagesData: Record<Language, PartialBy<Advantage, 'id'>[]> = {
+const advantagesData: Record<Language, Advantage[]> = {
   en: rawAdvantagesData.en,
-  uk: mergeData(rawAdvantagesData.en, rawAdvantagesData.uk, 'title'),
-  sk: mergeData(rawAdvantagesData.en, rawAdvantagesData.sk, 'title'),
+  uk: mergeData(rawAdvantagesData.en, rawAdvantagesData.uk, 'title') as Advantage[],
+  sk: mergeData(rawAdvantagesData.en, rawAdvantagesData.sk, 'title') as Advantage[],
 };
 
 const actionSectionData: Record<Language, Omit<ActionSectionData, 'id'>> = {

@@ -84,7 +84,7 @@ export default function AdvantagesAdminPage() {
         setAllData(prev => prev ? { ...prev, [selectedLang]: newAdvantages } : null);
     };
 
-    const handleAdvantageChange = (id: number, field: keyof Advantage, value: string) => {
+    const handleAdvantageChange = (id: number, field: keyof Omit<Advantage, 'id'>, value: string) => {
         const updatedAdvantages = advantages.map(item =>
             item.id === id ? { ...item, [field]: value } : item
         );
