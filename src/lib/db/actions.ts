@@ -181,60 +181,69 @@ export async function createCreator(lang: Language, data: Omit<Creator, 'id'>) {
 }
 
 export async function updateCreators(lang: Language, creatorsData: Creator[]) {
-  const safeCreators = creatorsData.map((c) => ({
-    id: c.id,
-    lang,
-    slug: c.slug,
-    name: c.name,
-    role: c.role,
-    bio: c.bio,
-    location: c.location ?? undefined,
-    isVisible: c.isVisible ?? true,
-    imageId: c.imageId || null,
-    featuredProjectImageId: c.featuredProjectImageId || null,
-    gallery: c.gallery ?? [],
-    skills: c.skills ?? [],
-    languages: c.languages ?? [],
-    contributions: c.contributions ?? [],
-    hobbies: c.hobbies ?? [],
-    music: c.music ?? {},
-    socials: c.socials ?? {},
-    education: c.education ?? [],
-    certifications: c.certifications ?? [],
-    achievements: c.achievements ?? [],
-    featuredProject: c.featuredProject ?? { title: '', description: '', url: '' },
-    cvUrl: c.cvUrl ?? undefined,
-    quote: c.quote ?? undefined,
-    quoteAuthor: c.quoteAuthor ?? undefined,
-  }));
+  const safeCreators = creatorsData.map((c) => {
+    const { id, ...rest } = c;
+    return {
+      ...rest,
+      id,
+      lang,
+      isVisible: c.isVisible ?? true,
+      imageId: c.imageId ?? null,
+      featuredProjectImageId: c.featuredProjectImageId ?? null,
+      gallery: c.gallery ?? [],
+      skills: c.skills ?? [],
+      languages: c.languages ?? [],
+      contributions: c.contributions ?? [],
+      hobbies: c.hobbies ?? [],
+      music: c.music ?? {},
+      socials: c.socials ?? {},
+      education: c.education ?? [],
+      certifications: c.certifications ?? [],
+      achievements: c.achievements ?? [],
+      featuredProject: c.featuredProject ?? { title: '', description: '', url: '' },
+      cvUrl: c.cvUrl ?? null,
+      quote: c.quote ?? null,
+      quoteAuthor: c.quoteAuthor ?? null,
+    };
+  });
 
-  await db.transaction(async (tx) => {
-    for (const creator of safeCreators) {
-      await tx
+  try {
+    for (let i = 0; i < safeCreators.length; i++) {
+      const creator = safeCreators[i];
+      const id = creatorsData[i].id;
+      const { id: _omitId, ...creatorWithoutId } = creator;
+
+      await db
         .insert(schema.creators)
-        .values(creator)
+        .values({ ...creator, id })
         .onConflictDoUpdate({
-          target: [schema.creators.id, schema.creators.lang],
-          set: {
-            ...creator,
-            id: undefined, // Don't update the ID
-          },
+          target: schema.creators.id,
+          set: creatorWithoutId,
         });
     }
 
-    const currentIds = safeCreators.map(c => c.id);
+    const currentIds = creatorsData.map((c) => c.id);
+
     if (currentIds.length > 0) {
-      await tx.delete(schema.creators).where(
+      await db
+        .delete(schema.creators)
+        .where(
           and(
-              eq(schema.creators.lang, lang), 
-              notInArray(schema.creators.id, currentIds)
+            eq(schema.creators.lang, lang),
+            notInArray(schema.creators.id, currentIds)
           )
-      );
+        );
     } else {
-        await tx.delete(schema.creators).where(eq(schema.creators.lang, lang));
+      await db.delete(schema.creators).where(eq(schema.creators.lang, lang));
     }
-  });
+  } catch (error: any) {
+    const msg = error?.message || "Unknown error in updateCreators";
+    console.error("❌ updateCreators error:", msg);
+    throw new Error("[updateCreators] " + msg);
+  }
 }
+
+
 
 
 // Dev Notes Actions

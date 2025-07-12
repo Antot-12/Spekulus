@@ -88,15 +88,24 @@ export default function CreatorsAdminPage() {
     setIsSaving(true);
     try {
       await updateCreators(selectedLang, creators);
-      toast({ title: "Saved!", description: `All creator changes for ${languageNames[selectedLang]} have been saved.` });
+      toast({
+        title: "Saved!",
+        description: `All creator changes for ${languageNames[selectedLang]} have been saved.`,
+      });
       logAction('Creators Update', 'Success', `Saved all changes for ${languageNames[selectedLang]} creators.`);
       fetchCreators(selectedLang);
-    } catch {
-      toast({ title: "Save Failed", description: "Could not save changes.", variant: 'destructive' });
+    } catch (error: any) {
+      console.error("🔥 Save error:", error);
+      toast({
+        title: "Save Failed",
+        description: error?.message || "Could not save changes.",
+        variant: 'destructive',
+      });
     } finally {
       setIsSaving(false);
     }
   };
+  
 
   const handleFieldChange = (id: number, field: keyof Creator, value: any) => {
     setCreators(prev => prev.map(c => c.id === id ? { ...c, [field]: value } : c));
