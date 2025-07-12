@@ -6,9 +6,9 @@ import Link from 'next/link';
 import Image from 'next/image';
 import type { Creator } from '@/lib/data';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Github, Twitter, Linkedin } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
 import { getCreators } from '@/lib/db/actions';
 
@@ -57,11 +57,12 @@ export function CreatorsSection() {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-y-10 gap-x-6 justify-center">
               {creators.map((creator, index) => (
-                <Link href={`/creators/${creator.slug}`} key={creator.id} className="block group">
-                  <Card 
-                    className="bg-transparent border-none shadow-none text-center items-center flex flex-col opacity-0 animate-fade-in-up"
-                    style={{ animationDelay: `${index * 150}ms` }}
-                  >
+                <div 
+                  key={creator.id}
+                  className="group relative flex flex-col items-center text-center opacity-0 animate-fade-in-up"
+                  style={{ animationDelay: `${index * 150}ms` }}
+                >
+                  <Link href={`/creators/${creator.slug}`} className="block">
                     <div className="relative h-40 w-40">
                       {creator.imageId && (
                         <Image 
@@ -77,8 +78,27 @@ export function CreatorsSection() {
                       <CardTitle className="font-headline text-xl group-hover:text-primary transition-colors">{creator.name}</CardTitle>
                       <CardDescription>{creator.role}</CardDescription>
                     </CardHeader>
-                  </Card>
-                </Link>
+                  </Link>
+                  <CardContent className="flex-grow flex items-end p-0">
+                    <div className="flex gap-4 text-muted-foreground z-10">
+                      {creator.socials.github && (
+                        <a href={`https://github.com/${creator.socials.github}`} target="_blank" rel="noopener noreferrer" aria-label="GitHub Profile" className="hover:text-primary transition-colors">
+                          <Github className="h-5 w-5"/>
+                        </a>
+                      )}
+                      {creator.socials.twitter && (
+                        <a href={creator.socials.twitter} target="_blank" rel="noopener noreferrer" aria-label="Twitter Profile" className="hover:text-primary transition-colors">
+                          <Twitter className="h-5 w-5"/>
+                        </a>
+                      )}
+                      {creator.socials.linkedin && (
+                        <a href={creator.socials.linkedin} target="_blank" rel="noopener noreferrer" aria-label="LinkedIn Profile" className="hover:text-primary transition-colors">
+                           <Linkedin className="h-5 w-5"/>
+                        </a>
+                      )}
+                    </div>
+                  </CardContent>
+                </div>
               ))}
             </div>
             <div className="text-center mt-12">
@@ -98,5 +118,3 @@ export function CreatorsSection() {
     </section>
   );
 }
-
-    
