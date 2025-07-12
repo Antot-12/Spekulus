@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -10,9 +11,6 @@ import {
   Trash2,
   PlusCircle,
   Upload,
-  Github,
-  Twitter,
-  Linkedin,
   Loader2,
   Eye,
   EyeOff,
@@ -22,7 +20,9 @@ import {
   FileText,
   Link as LinkIcon,
   Image as ImageIcon,
-  Save
+  Save,
+  Music,
+  Briefcase
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -209,6 +209,14 @@ export default function CreatorsAdminPage() {
     handleFieldChange(id, field, arr);
   };
 
+  const handleGalleryChange = (creatorId: number, idx: number, value: string) => {
+    const creator = creators.find(c => c.id === creatorId);
+    if (!creator) return;
+    const gallery = [...(creator.gallery ?? [])];
+    gallery[idx] = { ...gallery[idx], description: value };
+    handleFieldChange(creatorId, 'gallery', gallery);
+  };
+
   const handleGalleryAdd = (creatorId: number) => {
     const creator = creators.find(c => c.id === creatorId);
     if (!creator) return;
@@ -319,6 +327,69 @@ export default function CreatorsAdminPage() {
                 <CardHeader><CardTitle className="font-headline flex items-center gap-2"><FileText className="w-6 h-6" />Bio</CardTitle></CardHeader>
                 <CardContent><MarkdownEditor value={creator.bio} onChange={v => handleFieldChange(creator.id, 'bio', v)} rows={10} /></CardContent>
               </Card>
+
+              <Card>
+                <CardHeader><CardTitle className="font-headline flex items-center gap-2"><Music className="w-6 h-6" />Music & Playlists</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor={`spotify-${creator.id}`}>Spotify Playlist ID</Label>
+                    <Input id={`spotify-${creator.id}`} value={creator.music?.spotify ?? ''} onChange={e => handleMusicChange(creator.id, 'spotify', e.target.value)} />
+                  </div>
+                  <div>
+                    <Label htmlFor={`apple-${creator.id}`}>Apple Music Playlist URL</Label>
+                    <Input id={`apple-${creator.id}`} value={creator.music?.appleMusic ?? ''} onChange={e => handleMusicChange(creator.id, 'appleMusic', e.target.value)} />
+                  </div>
+                  <div>
+                    <Label htmlFor={`youtube-${creator.id}`}>YouTube Music Playlist ID</Label>
+                    <Input id={`youtube-${creator.id}`} value={creator.music?.youtubeMusic ?? ''} onChange={e => handleMusicChange(creator.id, 'youtubeMusic', e.target.value)} />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader><CardTitle className="font-headline flex items-center gap-2"><Briefcase className="w-6 h-6" />Featured Project</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                  <div><Label>Project Title</Label><Input value={creator.featuredProject?.title ?? ''} onChange={e => handleProjectChange(creator.id, 'title', e.target.value)} /></div>
+                  <div><Label>Project URL</Label><Input value={creator.featuredProject?.url ?? ''} onChange={e => handleProjectChange(creator.id, 'url', e.target.value)} /></div>
+                  <div><Label>Project Description</Label><Textarea value={creator.featuredProject?.description ?? ''} onChange={e => handleProjectChange(creator.id, 'description', e.target.value)} rows={3}/></div>
+                  <div>
+                    <Label>Project Image</Label>
+                    <div className="flex gap-2">
+                        <Input value={creator.featuredProjectImageId ?? ''} disabled />
+                        <Button variant="outline" size="icon" onClick={() => fileInputRefs.current[`project-${creator.id}`]?.click()}><Upload className="h-4 w-4" /></Button>
+                        <input type="file" ref={el => fileInputRefs.current[`project-${creator.id}`] = el} accept="image/*" onChange={e => handleImageUpload(creator.id, 'featuredProjectImageId', e)} className="hidden" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                    <div className="flex justify-between items-center">
+                        <CardTitle className="font-headline flex items-center gap-2"><Camera className="w-6 h-6" />Gallery</CardTitle>
+                        <Button size="sm" onClick={() => handleGalleryAdd(creator.id)}><PlusCircle className="mr-2 h-4 w-4" />Add Image</Button>
+                    </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    {creator.gallery?.map((img, idx) => (
+                        <div key={idx} className="flex gap-4 p-4 border rounded-md bg-muted/20">
+                            <div className="flex-grow space-y-2">
+                                <Label>Image Description</Label>
+                                <Input value={img.description} onChange={e => handleGalleryChange(creator.id, idx, e.target.value)} />
+                                <Label>Image</Label>
+                                <div className="flex gap-2">
+                                    <Input value={img.imageId || ''} disabled />
+                                    <Button variant="outline" size="icon" onClick={() => fileInputRefs.current[`gallery-${creator.id}-${idx}`]?.click()}><Upload className="h-4 w-4" /></Button>
+                                    <input type="file" ref={el => fileInputRefs.current[`gallery-${creator.id}-${idx}`] = el} accept="image/*" onChange={e => handleImageUpload(creator.id, `gallery.${idx}`, e)} className="hidden" />
+                                </div>
+                            </div>
+                            <Button variant="destructive" size="icon" onClick={() => handleGalleryDelete(creator.id, idx)} className="shrink-0 self-end"><Trash2 className="w-4 h-4"/></Button>
+                        </div>
+                    ))}
+                    {!creator.gallery || creator.gallery.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">No gallery images yet.</p>}
+                </CardContent>
+              </Card>
+
 
               <div className="flex justify-end">
                 <AlertDialog>
