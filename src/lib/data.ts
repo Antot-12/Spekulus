@@ -613,5 +613,3 @@ export const initialData = {
     heroSectionData,
     productSectionData,
 };
-
-    

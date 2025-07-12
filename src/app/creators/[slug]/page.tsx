@@ -8,7 +8,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import type { Creator, Education, Certification, GalleryImage, Achievement, FeaturedProject } from '@/lib/data';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { ArrowLeft, ArrowRight, Github, Twitter, Linkedin, Loader2, Download, MapPin, Languages as LanguagesIcon, CheckCircle, Award, Briefcase, GraduationCap, Camera, Lightbulb, Users, Code, Heart, Quote as QuoteIcon, Music } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Github, Twitter, Linkedin, Loader2, Download, MapPin, Languages as LanguagesIcon, CheckCircle, Award, Briefcase, GraduationCap, Camera, Lightbulb, Users, Code, Heart, Quote as QuoteIcon, Music, BriefcaseBusiness } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -25,6 +25,7 @@ import { AchievementIcon } from '@/components/AchievementIcon';
 import { MusicIcon } from './MusicIcon';
 import { cn } from '@/lib/utils';
 import { getCreatorBySlug } from '@/lib/db/actions';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 
 // Helper component for consistent section styling
 const ProfileSection = ({ icon, title, children, className, style }: { icon: ReactNode, title: string, children: ReactNode, className?: string, style?: CSSProperties }) => (
@@ -225,24 +226,42 @@ const MusicSection = ({ music, style }: { music?: Creator['music'], style?: CSSP
 
 const SkillsSection = ({ skills, style }: { skills?: string[], style?: CSSProperties }) => {
     if (!skills || skills.length === 0) return null;
+
+    const techSkills = ['python', 'java', 'javascript', 'typescript', 'c++', 'go', 'rust', 'react', 'next.js', 'vue.js', 'angular', 'svelte', 'html5', 'css', 'docker', 'git', 'linux', 'ubuntu', 'pytorch', 'firebase', 'ai/ml', 'data science', 'data', 'system architecture', 'system design', 'embedded systems'];
+    const otherSkills = ['design', 'ux/ui design', 'user research', 'prototyping', 'design systems', 'leadership', 'project management', 'business strategy', 'public speaking'];
+
+    const technical = skills.filter(s => techSkills.includes(s.toLowerCase()));
+    const professional = skills.filter(s => otherSkills.includes(s.toLowerCase()) || !techSkills.includes(s.toLowerCase()));
+
     return (
-        <ProfileSection icon={<Code className="w-6 h-6" />} title="Skills & Tech Stack" style={style}>
-            <div className="flex flex-wrap gap-3">
-                {skills.map(skill => (
-                     <TooltipProvider key={skill}>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <div className="flex items-center gap-2 rounded-lg bg-muted px-3 py-2 text-sm font-medium transition-colors hover:bg-primary/10 hover:text-primary">
-                                    <TechIcon skill={skill} className="h-5 w-5" />
-                                    <span className="truncate">{skill}</span>
-                                </div>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>{skill}</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-                ))}
+        <ProfileSection icon={<Code className="w-6 h-6" />} title="Skills & Competencies" style={style}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <h4 className="font-semibold text-lg mb-3 flex items-center gap-2"><Code className="w-5 h-5 text-primary"/> Technical Skills</h4>
+                    <div className="flex flex-wrap gap-2">
+                        {technical.map(skill => (
+                            <TooltipProvider key={skill}>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <div className="flex items-center gap-2 rounded-lg bg-muted px-3 py-1.5 text-sm font-medium transition-colors hover:bg-primary/10 hover:text-primary">
+                                            <TechIcon skill={skill} className="h-4 w-4" />
+                                            <span className="truncate">{skill}</span>
+                                        </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent><p>{skill}</p></TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        ))}
+                    </div>
+                </div>
+                <div>
+                    <h4 className="font-semibold text-lg mb-3 flex items-center gap-2"><BriefcaseBusiness className="w-5 h-5 text-primary"/> Professional Skills</h4>
+                    <div className="flex flex-wrap gap-2">
+                        {professional.map(skill => (
+                            <Badge key={skill} variant="secondary" className="text-base">{skill}</Badge>
+                        ))}
+                    </div>
+                </div>
             </div>
         </ProfileSection>
     );
@@ -371,11 +390,18 @@ const GallerySection = ({ gallery, style }: { gallery?: GalleryImage[], style?: 
         <ProfileSection icon={<Camera className="w-6 h-6"/>} title="Gallery" style={style}>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {gallery.map((image, index) => (
-                    <div key={index} className="group relative aspect-square overflow-hidden rounded-lg">
-                        <Image src={`/api/images/${image.imageId}`} alt={image.description} layout="fill" objectFit="cover" className="group-hover:scale-105 transition-transform duration-300" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                        <p className="absolute bottom-2 left-2 text-white text-xs drop-shadow-md">{image.description}</p>
-                    </div>
+                    <Dialog key={index}>
+                        <DialogTrigger asChild>
+                            <div className="group relative aspect-square overflow-hidden rounded-lg cursor-zoom-in">
+                                <Image src={`/api/images/${image.imageId}`} alt={image.description} layout="fill" objectFit="cover" className="group-hover:scale-105 transition-transform duration-300" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                                <p className="absolute bottom-2 left-2 text-white text-xs drop-shadow-md">{image.description}</p>
+                            </div>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-4xl p-2 bg-transparent border-none shadow-none">
+                            <img src={`/api/images/${image.imageId}`} alt={image.description} className="max-h-[90vh] w-auto h-auto rounded-lg" />
+                        </DialogContent>
+                    </Dialog>
                 ))}
             </div>
         </ProfileSection>
@@ -484,9 +510,9 @@ export default function CreatorDetailPage() {
             <FeaturedProjectSection project={creator.featuredProject} imageId={creator.featuredProjectImageId} style={{ animationDelay: '500ms' }} />
             <ContributionsSection contributions={creator.contributions} style={{ animationDelay: '600ms' }} />
             <SkillsSection skills={creator.skills} style={{ animationDelay: '700ms' }} />
-            <MusicSection music={creator.music} style={{ animationDelay: '800ms' }} />
-            <AchievementsSection achievements={creator.achievements} style={{ animationDelay: '900ms' }} />
-            <EducationSection education={creator.education} certifications={creator.certifications} style={{ animationDelay: '1000ms' }} />
+            <AchievementsSection achievements={creator.achievements} style={{ animationDelay: '800ms' }} />
+            <EducationSection education={creator.education} certifications={creator.certifications} style={{ animationDelay: '900ms' }} />
+            <MusicSection music={creator.music} style={{ animationDelay: '1000ms' }} />
             <PersonalSection hobbies={creator.hobbies} quote={creator.quote} quoteAuthor={creator.quoteAuthor} style={{ animationDelay: '1100ms' }} />
             <GallerySection gallery={creator.gallery} style={{ animationDelay: '1200ms' }} />
           </main>

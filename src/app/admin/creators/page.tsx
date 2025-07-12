@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import type { Creator, FeaturedProject, Language, GalleryImage } from '@/lib/data';
+import type { Creator, FeaturedProject, Language, GalleryImage, Education, Certification, Achievement } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,7 +22,9 @@ import {
   Image as ImageIcon,
   Save,
   Music,
-  Briefcase
+  Briefcase,
+  GraduationCap,
+  Award,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -126,7 +128,7 @@ export default function CreatorsAdminPage() {
     const updated = { ...(creator?.featuredProject || { title: '', url: '', description: '' }), [field]: value };
     handleFieldChange(id, 'featuredProject', updated);
   };
-
+  
   const handleCreatorAdd = async () => {
     const newCreatorData: Omit<Creator, 'id'> = {
       name: 'New Creator',
@@ -204,9 +206,46 @@ export default function CreatorsAdminPage() {
     }
   };
 
-  const handleArrayChange = (id: number, field: keyof Creator, value: string) => {
+  const handleArrayChange = (id: number, field: 'skills' | 'languages' | 'hobbies' | 'contributions', value: string) => {
     const arr = value.split(',').map(s => s.trim()).filter(Boolean);
     handleFieldChange(id, field, arr);
+  };
+  
+  const handleComplexArrayChange = <T extends Education | Certification | Achievement>(
+    creatorId: number, 
+    field: 'education' | 'certifications' | 'achievements',
+    idx: number,
+    prop: keyof T,
+    value: string
+  ) => {
+    const creator = creators.find(c => c.id === creatorId);
+    if (!creator) return;
+
+    const array = [...(creator[field] as T[] ?? [])];
+    array[idx] = { ...array[idx], [prop]: value };
+    handleFieldChange(creatorId, field, array);
+  };
+
+  const handleComplexArrayAdd = (creatorId: number, field: 'education' | 'certifications' | 'achievements') => {
+    const creator = creators.find(c => c.id === creatorId);
+    if (!creator) return;
+
+    let newItem;
+    if (field === 'education') newItem = { institution: 'New Institution', degree: 'New Degree', year: new Date().getFullYear().toString() };
+    if (field === 'certifications') newItem = { name: 'New Certification', authority: 'New Authority', year: new Date().getFullYear().toString() };
+    if (field === 'achievements') newItem = { icon: 'Star', name: 'New Achievement', description: 'Description...' };
+
+    if (newItem) {
+        const array = [...(creator[field] as any[] ?? []), newItem];
+        handleFieldChange(creatorId, field, array);
+    }
+  };
+
+  const handleComplexArrayDelete = (creatorId: number, field: 'education' | 'certifications' | 'achievements', idx: number) => {
+    const creator = creators.find(c => c.id === creatorId);
+    if (!creator) return;
+    const array = (creator[field] as any[])?.filter((_, i) => i !== idx);
+    handleFieldChange(creatorId, field, array);
   };
 
   const handleGalleryChange = (creatorId: number, idx: number, value: string) => {
@@ -277,7 +316,7 @@ export default function CreatorsAdminPage() {
                 <Label htmlFor={`visible-${creator.id}`} className="text-base flex items-center gap-2">
                   {creator.isVisible ? <Eye className="w-5 h-5 text-primary" /> : <EyeOff className="w-5 h-5 text-muted-foreground" />} Profile Visibility
                 </Label>
-                <Switch id={`visible-${creator.id}`} checked={creator.isVisible} onCheckedChange={v => handleFieldChange(creator.id, 'isVisible', v)} />
+                <Switch id={`visible-${creator.id}`} checked={!!creator.isVisible} onCheckedChange={v => handleFieldChange(creator.id, 'isVisible', v)} />
               </div>
 
               <Card>
@@ -295,7 +334,7 @@ export default function CreatorsAdminPage() {
                 <CardHeader><CardTitle className="font-headline flex items-center gap-2"><ImageIcon className="w-6 h-6" />Profile Image</CardTitle></CardHeader>
                 <CardContent>
                   <div className="flex gap-2">
-                    <Input value={creator.imageId ?? ''} disabled />
+                    <Input value={creator.imageId ?? ''} disabled placeholder="Upload an image to get an ID"/>
                     <Button variant="outline" size="icon" onClick={() => fileInputRefs.current[`creator-${creator.id}`]?.click()}><Upload className="h-4 w-4"/></Button>
                     <input type="file" ref={el => (fileInputRefs.current[`creator-${creator.id}`] = el)} accept="image/*" onChange={e => handleImageUpload(creator.id, 'imageId', e)} className="hidden" />
                   </div>
@@ -307,10 +346,10 @@ export default function CreatorsAdminPage() {
                 <CardContent className="space-y-2">
                   <Label>Quote</Label><Textarea value={creator.quote ?? ''} onChange={e => handleFieldChange(creator.id, 'quote', e.target.value)} rows={2} />
                   <Label>Quote Author</Label><Input value={creator.quoteAuthor ?? ''} onChange={e => handleFieldChange(creator.id, 'quoteAuthor', e.target.value)} />
-                  <Label>Skills</Label><Input value={creator.skills?.join(', ') ?? ''} onChange={e => handleArrayChange(creator.id, 'skills', e.target.value)} />
-                  <Label>Languages</Label><Input value={creator.languages?.join(', ') ?? ''} onChange={e => handleArrayChange(creator.id, 'languages', e.target.value)} />
-                  <Label>Contributions</Label><Textarea value={creator.contributions?.join(', ') ?? ''} onChange={e => handleArrayChange(creator.id, 'contributions', e.target.value)} rows={3} />
-                  <Label>Hobbies</Label><Input value={creator.hobbies?.join(', ') ?? ''} onChange={e => handleArrayChange(creator.id, 'hobbies', e.target.value)} />
+                  <Label>Skills (comma-separated)</Label><Input value={creator.skills?.join(', ') ?? ''} onChange={e => handleArrayChange(creator.id, 'skills', e.target.value)} />
+                  <Label>Languages (comma-separated)</Label><Input value={creator.languages?.join(', ') ?? ''} onChange={e => handleArrayChange(creator.id, 'languages', e.target.value)} />
+                  <Label>Contributions (comma-separated)</Label><Textarea value={creator.contributions?.join(', ') ?? ''} onChange={e => handleArrayChange(creator.id, 'contributions', e.target.value)} rows={3} />
+                  <Label>Hobbies (comma-separated)</Label><Input value={creator.hobbies?.join(', ') ?? ''} onChange={e => handleArrayChange(creator.id, 'hobbies', e.target.value)} />
                 </CardContent>
               </Card>
 
@@ -326,6 +365,40 @@ export default function CreatorsAdminPage() {
               <Card className="bg-muted/30">
                 <CardHeader><CardTitle className="font-headline flex items-center gap-2"><FileText className="w-6 h-6" />Bio</CardTitle></CardHeader>
                 <CardContent><MarkdownEditor value={creator.bio} onChange={v => handleFieldChange(creator.id, 'bio', v)} rows={10} /></CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader><CardTitle className="font-headline flex items-center gap-2"><GraduationCap className="w-6 h-6" />Education</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                  {creator.education?.map((edu, idx) => (
+                    <div key={idx} className="flex gap-2 items-end p-2 border rounded-md">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 flex-grow">
+                          <Input placeholder="Institution" value={edu.institution} onChange={e => handleComplexArrayChange(creator.id, 'education', idx, 'institution', e.target.value)} />
+                          <Input placeholder="Degree" value={edu.degree} onChange={e => handleComplexArrayChange(creator.id, 'education', idx, 'degree', e.target.value)} />
+                          <Input placeholder="Year" value={edu.year} onChange={e => handleComplexArrayChange(creator.id, 'education', idx, 'year', e.target.value)} />
+                      </div>
+                      <Button variant="ghost" size="icon" onClick={() => handleComplexArrayDelete(creator.id, 'education', idx)}><Trash2 className="w-4 h-4 text-destructive"/></Button>
+                    </div>
+                  ))}
+                   <Button variant="outline" size="sm" onClick={() => handleComplexArrayAdd(creator.id, 'education')}><PlusCircle className="mr-2 h-4 w-4"/>Add Education</Button>
+                </CardContent>
+              </Card>
+
+               <Card>
+                <CardHeader><CardTitle className="font-headline flex items-center gap-2"><Award className="w-6 h-6" />Certifications</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                  {creator.certifications?.map((cert, idx) => (
+                    <div key={idx} className="flex gap-2 items-end p-2 border rounded-md">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 flex-grow">
+                          <Input placeholder="Certification Name" value={cert.name} onChange={e => handleComplexArrayChange(creator.id, 'certifications', idx, 'name', e.target.value)} />
+                          <Input placeholder="Issuing Authority" value={cert.authority} onChange={e => handleComplexArrayChange(creator.id, 'certifications', idx, 'authority', e.target.value)} />
+                          <Input placeholder="Year" value={cert.year} onChange={e => handleComplexArrayChange(creator.id, 'certifications', idx, 'year', e.target.value)} />
+                      </div>
+                      <Button variant="ghost" size="icon" onClick={() => handleComplexArrayDelete(creator.id, 'certifications', idx)}><Trash2 className="w-4 h-4 text-destructive"/></Button>
+                    </div>
+                  ))}
+                   <Button variant="outline" size="sm" onClick={() => handleComplexArrayAdd(creator.id, 'certifications')}><PlusCircle className="mr-2 h-4 w-4"/>Add Certification</Button>
+                </CardContent>
               </Card>
 
               <Card>
@@ -355,7 +428,7 @@ export default function CreatorsAdminPage() {
                   <div>
                     <Label>Project Image</Label>
                     <div className="flex gap-2">
-                        <Input value={creator.featuredProjectImageId ?? ''} disabled />
+                        <Input value={creator.featuredProjectImageId ?? ''} disabled placeholder="Upload an image to get an ID"/>
                         <Button variant="outline" size="icon" onClick={() => fileInputRefs.current[`project-${creator.id}`]?.click()}><Upload className="h-4 w-4" /></Button>
                         <input type="file" ref={el => fileInputRefs.current[`project-${creator.id}`] = el} accept="image/*" onChange={e => handleImageUpload(creator.id, 'featuredProjectImageId', e)} className="hidden" />
                     </div>
@@ -378,7 +451,7 @@ export default function CreatorsAdminPage() {
                                 <Input value={img.description} onChange={e => handleGalleryChange(creator.id, idx, e.target.value)} />
                                 <Label>Image</Label>
                                 <div className="flex gap-2">
-                                    <Input value={img.imageId || ''} disabled />
+                                    <Input value={img.imageId || ''} disabled placeholder="Upload an image to get an ID"/>
                                     <Button variant="outline" size="icon" onClick={() => fileInputRefs.current[`gallery-${creator.id}-${idx}`]?.click()}><Upload className="h-4 w-4" /></Button>
                                     <input type="file" ref={el => fileInputRefs.current[`gallery-${creator.id}-${idx}`] = el} accept="image/*" onChange={e => handleImageUpload(creator.id, `gallery.${idx}`, e)} className="hidden" />
                                 </div>
