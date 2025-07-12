@@ -8,7 +8,7 @@ import type { DevNote } from '@/lib/data';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, ImageIcon, Calendar, User, Clock, Tag, X, Search } from 'lucide-react';
+import { ArrowRight, ImageIcon, Calendar, User, Clock, Tag, X, Search, ArrowLeft } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -78,6 +78,14 @@ export default function DevNotesPage() {
       <div className="text-center mb-8">
         <h1 className="text-4xl md:text-5xl font-bold font-headline">{translations.devNotes.title}</h1>
         <p className="text-xl text-foreground/70 mt-3">{translations.devNotes.subtitle}</p>
+         <div className="mt-8">
+          <Button asChild variant="outline">
+            <Link href="/" className="inline-flex items-center gap-2">
+              <ArrowLeft className="w-4 h-4" />
+              Back to Home
+            </Link>
+          </Button>
+        </div>
       </div>
       
       <div className="flex flex-col md:flex-row gap-4 mb-8 justify-center items-center max-w-2xl mx-auto">
