@@ -182,10 +182,9 @@ export async function createCreator(lang: Language, data: Omit<Creator, 'id'>) {
 
 export async function updateCreators(lang: Language, creatorsData: Creator[]) {
   const safeCreators = creatorsData.map((c) => {
-    const { id, ...rest } = c;
+    const { ...rest } = c;
     return {
       ...rest,
-      id,
       lang,
       isVisible: c.isVisible ?? true,
       imageId: c.imageId ?? null,
@@ -208,28 +207,26 @@ export async function updateCreators(lang: Language, creatorsData: Creator[]) {
   });
 
   try {
-    for (let i = 0; i < safeCreators.length; i++) {
-      const creator = safeCreators[i];
+    for (const creator of safeCreators) {
       const { id, ...creatorWithoutId } = creator;
-
       await db
         .insert(schema.creators)
-        .values({ ...creator })
+        .values(creator)
         .onConflictDoUpdate({
-          target: [schema.creators.id, schema.creators.lang],
+          target: [schema.creators.slug, schema.creators.lang],
           set: creatorWithoutId,
         });
     }
 
-    const currentIds = creatorsData.map((c) => c.id);
+    const currentSlugs = creatorsData.map((c) => c.slug);
 
-    if (currentIds.length > 0) {
+    if (currentSlugs.length > 0) {
       await db
         .delete(schema.creators)
         .where(
           and(
             eq(schema.creators.lang, lang),
-            notInArray(schema.creators.id, currentIds)
+            notInArray(schema.creators.slug, currentSlugs)
           )
         );
     } else {
