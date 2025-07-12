@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { CheckCircle } from 'lucide-react';
 import type { HeroSectionData, Language } from '@/lib/data';
 import { translations } from '@/lib/translations';
+import { AdvantageIcon } from '../AdvantageIcon';
 
 export function HeroSection({ data, lang }: { data: HeroSectionData | null, lang: Language }) {
   const t = translations[lang];
@@ -50,22 +51,12 @@ export function HeroSection({ data, lang }: { data: HeroSectionData | null, lang
             className="pt-8 grid grid-cols-2 md:grid-cols-4 gap-4 text-left text-gray-200 opacity-0 animate-fade-in-up"
             style={{ animationDelay: '600ms' }}
           >
-            <div className="flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-primary" />
-              <span>{t.hero.feature1}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-primary" />
-              <span>{t.hero.feature2}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-primary" />
-              <span>{t.hero.feature3}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-primary" />
-              <span>{t.hero.feature4}</span>
-            </div>
+            {data.features?.map((feature) => (
+              <div key={feature.id} className="flex items-center gap-2">
+                <AdvantageIcon name={feature.icon} className="w-5 h-5 text-primary" />
+                <span>{feature.text}</span>
+              </div>
+            ))}
           </div>
           <div
             className="flex justify-center pt-4 opacity-0 animate-fade-in-up"

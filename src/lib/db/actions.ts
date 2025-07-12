@@ -7,6 +7,7 @@ import * as schema from './schema'
 import {
   Language,
   HeroSectionData,
+  HeroFeature,
   ActionSectionData,
   ProductComponent,
   Creator,
@@ -21,8 +22,11 @@ import 'dotenv/config'
 const sql = neon(process.env.DATABASE_URL!)
 const db = drizzle(sql, { schema })
 
-export async function getHeroData(lang: Language) {
-  return await db.query.heroSections.findFirst({ where: eq(schema.heroSections.lang, lang) })
+export async function getHeroData(lang: Language): Promise<HeroSectionData | null> {
+  const hero = await db.query.heroSections.findFirst({ where: eq(schema.heroSections.lang, lang) });
+  if (!hero) return null;
+  const features = await db.query.heroFeatures.findMany({ where: eq(schema.heroFeatures.lang, lang) });
+  return { ...hero, features };
 }
 
 export async function updateHeroData(lang: Language, data: Omit<HeroSectionData, 'id'>) {
@@ -31,6 +35,13 @@ export async function updateHeroData(lang: Language, data: Omit<HeroSectionData,
     target: schema.heroSections.lang,
     set: payload
   })
+  
+  // Update features
+  await db.delete(schema.heroFeatures).where(eq(schema.heroFeatures.lang, lang));
+  if (data.features.length > 0) {
+    const featureValues = data.features.map(f => ({ text: f.text, icon: f.icon, lang }));
+    await db.insert(schema.heroFeatures).values(featureValues);
+  }
 }
 
 export async function getProductData(lang: Language) {
@@ -140,54 +151,60 @@ export async function getCreatorBySlug(lang: Language, slug: string) {
   })
 }
 
-export async function createCreator(lang: Language, data: Omit<Creator, 'id'>) {
-  const payload = {
-    ...data,
-    lang,
-    imageId: data.imageId ?? null,
-    featuredProjectImageId: data.featuredProjectImageId ?? null
-  }
-  const [newCreator] = await db.insert(schema.creators).values(payload).returning()
-  return newCreator
+export async function createCreator(lang: Language, data: Creator) {
+    const payload = {
+        ...data,
+        lang,
+        imageId: data.imageId ?? null,
+        featuredProjectImageId: data.featuredProjectImageId ?? null
+    };
+    const [newCreator] = await db.insert(schema.creators).values(payload).returning();
+    return newCreator;
 }
 
 export async function updateCreators(lang: Language, creatorsData: Creator[]) {
-  const safe = creatorsData.map(c => ({
-    ...c,
-    lang,
-    imageId: c.imageId ?? null,
-    featuredProjectImageId: c.featuredProjectImageId ?? null,
-    gallery: c.gallery ?? [],
-    skills: c.skills ?? [],
-    languages: c.languages ?? [],
-    contributions: c.contributions ?? [],
-    hobbies: c.hobbies ?? [],
-    music: c.music ?? {},
-    socials: c.socials ?? {},
-    education: c.education ?? [],
-    certifications: c.certifications ?? [],
-    achievements: c.achievements ?? [],
-    featuredProject: c.featuredProject ?? { title: '', description: '', url: '' },
-    cvUrl: c.cvUrl ?? null,
-    quote: c.quote ?? null,
-    quoteAuthor: c.quoteAuthor ?? null,
-    isVisible: c.isVisible ?? true
-  }))
+  try {
+    const safe = creatorsData.map(c => ({
+      ...c,
+      lang,
+      imageId: c.imageId ?? null,
+      featuredProjectImageId: c.featuredProjectImageId ?? null,
+      gallery: c.gallery ?? [],
+      skills: c.skills ?? [],
+      languages: c.languages ?? [],
+      contributions: c.contributions ?? [],
+      hobbies: c.hobbies ?? [],
+      music: c.music ?? {},
+      socials: c.socials ?? {},
+      education: c.education ?? [],
+      certifications: c.certifications ?? [],
+      achievements: c.achievements ?? [],
+      featuredProject: c.featuredProject ?? { title: '', description: '', url: '' },
+      cvUrl: c.cvUrl ?? "",
+      quote: c.quote ?? "",
+      quoteAuthor: c.quoteAuthor ?? "",
+      isVisible: c.isVisible ?? true
+    }));
 
-  for (const creator of safe) {
-    await db.insert(schema.creators).values(creator).onConflictDoUpdate({
-      target: [schema.creators.slug, schema.creators.lang],
-      set: creator
-    })
-  }
+    for (const creator of safe) {
+      await db.insert(schema.creators).values(creator).onConflictDoUpdate({
+        target: [schema.creators.slug, schema.creators.lang],
+        set: creator
+      });
+    }
 
-  const slugs = creatorsData.map(c => c.slug)
-  if (slugs.length > 0) {
-    await db.delete(schema.creators).where(
-      and(eq(schema.creators.lang, lang), notInArray(schema.creators.slug, slugs))
-    )
-  } else {
-    await db.delete(schema.creators).where(eq(schema.creators.lang, lang))
+    const slugs = creatorsData.map(c => c.slug);
+    if (slugs.length > 0) {
+      await db.delete(schema.creators).where(
+        and(eq(schema.creators.lang, lang), notInArray(schema.creators.slug, slugs))
+      );
+    } else {
+      await db.delete(schema.creators).where(eq(schema.creators.lang, lang));
+    }
+  } catch (error: any) {
+    const msg = error?.message || "Unknown error in updateCreators";
+    console.error("❌ updateCreators error:", msg);
+    throw new Error("[updateCreators] " + msg);
   }
 }
 

@@ -38,7 +38,12 @@ export default async function Home() {
   ]);
 
   if (!heroData) {
-    heroData = initialData.heroSectionData[lang];
+    heroData = {
+      ...initialData.heroSectionData[lang],
+      id: 0,
+      imageId: null,
+      features: initialData.heroFeaturesData[lang].map((f, i) => ({...f, id: i}))
+    };
   }
 
   if (!productData || !productData.components || productData.components.length === 0) {

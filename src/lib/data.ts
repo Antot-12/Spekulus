@@ -133,11 +133,18 @@ export type ActionSectionData = {
 // ==================================
 // HERO SECTION
 // ==================================
+export type HeroFeature = {
+  id: number;
+  text: string;
+  icon: string;
+};
+
 export type HeroSectionData = {
   id: number;
   title: string;
   subtitle: string;
   imageId?: number | null;
+  features: HeroFeature[];
 };
 
 // ==================================
@@ -361,64 +368,19 @@ const rawCreatorsData: Record<Language, Creator[]> = {
 
 const rawAdvantagesData: Record<Language, Advantage[]> = {
   en: [
-    {
-      id: 1,
-      icon: 'ScanFace',
-      title: 'AI-Powered Skin Diagnostics',
-      description: 'Analyze your skin in real time and receive personalized beauty and skincare recommendations using AI.',
-    },
-    {
-      id: 2,
-      icon: 'Activity',
-      title: 'Stress & Health Monitoring',
-      description: 'Spekulus evaluates your emotional and physical state and gives you feedback to help reduce stress and fatigue.',
-    },
-    {
-      id: 3,
-      icon: 'Home',
-      title: 'Smart Environment Sync',
-      description: 'Integrates with your smart home, allowing control over lighting, music, calendars, weather, and more.',
-    },
+    { id: 1, icon: 'ScanFace', title: 'AI-Powered Skin Diagnostics', description: 'Analyze your skin in real time and receive personalized beauty and skincare recommendations using AI.'},
+    { id: 2, icon: 'Activity', title: 'Stress & Health Monitoring', description: 'Spekulus evaluates your emotional and physical state and gives you feedback to help reduce stress and fatigue.'},
+    { id: 3, icon: 'Home', title: 'Smart Environment Sync', description: 'Integrates with your smart home, allowing control over lighting, music, calendars, weather, and more.'},
   ],
   uk: [
-    {
-      id: 4,
-      icon: 'ScanFace',
-      title: 'Діагностика шкіри за допомогою ШІ',
-      description: 'Аналізуйте свою шкіру в реальному часі та отримуйте персоналізовані рекомендації щодо краси та догляду за шкірою за допомогою ШІ.',
-    },
-     {
-      id: 5,
-      icon: 'Activity',
-      title: 'Моніторинг стресу та здоров\'я',
-      description: 'Spekulus оцінює ваш емоційний та фізичний стан і дає вам зворотний зв\'язок, щоб допомогти зменшити стрес і втому.',
-    },
-    {
-      id: 6,
-      icon: 'Home',
-      title: 'Синхронізація з розумним середовищем',
-      description: 'Інтегрується з вашим розумним будинком, дозволяючи керувати освітленням, музикою, календарями, погодою та іншим.',
-    },
+    { id: 4, icon: 'ScanFace', title: 'Діагностика шкіри за допомогою ШІ', description: 'Аналізуйте свою шкіру в реальному часі та отримуйте персоналізовані рекомендації щодо краси та догляду за шкірою за допомогою ШІ.'},
+    { id: 5, icon: 'Activity', title: 'Моніторинг стресу та здоров\'я', description: 'Spekulus оцінює ваш емоційний та фізичний стан і дає вам зворотний зв\'язок, щоб допомогти зменшити стрес і втому.'},
+    { id: 6, icon: 'Home', title: 'Синхронізація з розумним середовищем', description: 'Інтегрується з вашим розумним будинком, дозволяючи керувати освітленням, музикою, календарями, погодою та іншим.'},
   ],
   sk: [
-    {
-      id: 7,
-      icon: 'ScanFace',
-      title: 'Diagnostika pleti pomocou AI',
-      description: 'Analyzujte svoju pleť v reálnom čase a získajte personalizované odporúčania pre krásu a starostlivosť o pleť pomocou AI.',
-    },
-    {
-      id: 8,
-      icon: 'Activity',
-      title: 'Monitorovanie stresu a zdravia',
-      description: 'Spekulus hodnotí váš emocionálny a fyzický stav a poskytuje vám spätnú väzbu, ktorá vám pomôže znížiť stres a únavu.',
-    },
-    {
-      id: 9,
-      icon: 'Home',
-      title: 'Synchronizácia s inteligentným prostredím',
-      description: 'Integruje sa s vaším inteligentným domom, čo umožňuje ovládanie osvetlenia, hudby, kalendárov, počasia a ďalších funkcií.',
-    },
+    { id: 7, icon: 'ScanFace', title: 'Diagnostika pleti pomocou AI', description: 'Analyzujte svoju pleť v reálnom čase a získajte personalizované odporúčania pre krásu a starostlivosť o pleť pomocou AI.'},
+    { id: 8, icon: 'Activity', title: 'Monitorovanie stresu a zdravia', description: 'Spekulus hodnotí váš emocionálny a fyzický stav a poskytuje vám spätnú väzbu, ktorá vám pomôže znížiť stres a únavu.'},
+    { id: 9, icon: 'Home', title: 'Synchronizácia s inteligentným prostredím', description: 'Integruje sa s vaším inteligentným domom, čo umožňuje ovládanie osvetlenia, hudby, kalendárov, počasia a ďalších funkcií.'},
   ]
 };
 
@@ -452,7 +414,29 @@ const rawActionSectionData: Record<Language, Omit<ActionSectionData, 'id'>> = {
   }
 };
 
-const rawHeroSectionData: Record<Language, Omit<HeroSectionData, 'id'>> = {
+const rawHeroFeaturesData: Record<Language, Omit<HeroFeature, 'id'>[]> = {
+  en: [
+    { text: 'Skin & Health Analysis', icon: 'CheckCircle' },
+    { text: 'Stress Detection', icon: 'CheckCircle' },
+    { text: 'Weather Awareness', icon: 'CheckCircle' },
+    { text: 'Smart-Home Hub', icon: 'CheckCircle' },
+  ],
+  uk: [
+    { text: 'Аналіз шкіри та здоров\'я', icon: 'CheckCircle' },
+    { text: 'Виявлення стресу', icon: 'CheckCircle' },
+    { text: 'Інформація про погоду', icon: 'CheckCircle' },
+    { text: 'Центр розумного будинку', icon: 'CheckCircle' },
+  ],
+  sk: [
+    { text: 'Analýza pleti a zdravia', icon: 'CheckCircle' },
+    { text: 'Detekcia stresu', icon: 'CheckCircle' },
+    { text: 'Informácie o počasí', icon: 'CheckCircle' },
+    { text: 'Centrum inteligentnej domácnosti', icon: 'CheckCircle' },
+  ],
+};
+
+
+const rawHeroSectionData: Record<Language, Omit<HeroSectionData, 'id' | 'features'>> = {
   en: {
     title: 'Spekulus: Reflect Smarter, Live Better.',
     subtitle: 'The world\'s most advanced smart mirror, designed to be the center of your wellness and daily routine.',
@@ -588,10 +572,16 @@ const actionSectionData: Record<Language, Omit<ActionSectionData, 'id'>> = {
     sk: { ...rawActionSectionData.en, ...rawActionSectionData.sk },
 }
 
-const heroSectionData: Record<Language, Omit<HeroSectionData, 'id'>> = {
+const heroSectionData: Record<Language, Omit<HeroSectionData, 'id' | 'features'>> = {
     en: rawHeroSectionData.en,
     uk: { ...rawHeroSectionData.en, ...rawHeroSectionData.uk },
     sk: { ...rawHeroSectionData.en, ...rawHeroSectionData.sk },
+};
+
+const heroFeaturesData: Record<Language, Omit<HeroFeature, 'id'>[]> = {
+    en: rawHeroFeaturesData.en,
+    uk: rawHeroFeaturesData.uk,
+    sk: rawHeroFeaturesData.sk,
 };
 
 const mergeProductData = (lang: Language): ProductSectionData => {
@@ -621,6 +611,6 @@ export const initialData = {
     advantagesData,
     actionSectionData,
     heroSectionData,
+    heroFeaturesData,
     productSectionData,
 };
-

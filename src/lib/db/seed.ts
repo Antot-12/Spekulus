@@ -19,6 +19,7 @@ async function main() {
   await db.delete(schema.actionSections);
   await db.delete(schema.advantages);
   await db.delete(schema.productComponents);
+  await db.delete(schema.heroFeatures);
   await db.delete(schema.heroSections);
   await db.delete(schema.languages);
   await db.delete(schema.images);
@@ -31,11 +32,15 @@ async function main() {
   ]).onConflictDoNothing();
   console.log("Languages seeded.");
 
-  // Seed hero sections
+  // Seed hero sections and features
   for (const lang of ['en', 'uk', 'sk'] as const) {
       await db.insert(schema.heroSections).values({ ...initialData.heroSectionData[lang], lang, imageId: null }).onConflictDoNothing();
+      const features = initialData.heroFeaturesData[lang].map(f => ({ ...f, lang }));
+      if (features.length > 0) {
+        await db.insert(schema.heroFeatures).values(features);
+      }
   }
-  console.log("Hero sections seeded.");
+  console.log("Hero sections and features seeded.");
 
   // Seed product components
   for (const lang of ['en', 'uk', 'sk'] as const) {

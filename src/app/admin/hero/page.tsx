@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import type { HeroSectionData, Language } from "@/lib/data";
+import type { HeroSectionData, Language, HeroFeature } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,6 +17,9 @@ import {
   Upload,
   Loader2,
   Image as ImageIcon,
+  PlusCircle,
+  Trash2,
+  Sparkles,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -31,6 +34,9 @@ import {
 import { logAction } from "@/lib/logger";
 import { getHeroData, updateHeroData } from "@/lib/db/actions";
 import NextImage from "next/image";
+import { initialData } from "@/lib/data";
+import { AdvantageIcon } from "@/components/AdvantageIcon";
+import { Separator } from "@/components/ui/separator";
 
 type AllHeroData = Record<Language, HeroSectionData>;
 
@@ -54,6 +60,7 @@ const createDefaultHeroData = (lang: Language): HeroSectionData => ({
   title: `Title for ${languageNames[lang]}`,
   subtitle: `Subtitle for ${languageNames[lang]}`,
   imageId: null,
+  features: initialData.heroFeaturesData[lang].map((f, i) => ({ ...f, id: i + 1 })),
 });
 
 export default function HeroSectionAdminPage() {
@@ -63,7 +70,6 @@ export default function HeroSectionAdminPage() {
   const [selectedLang, setSelectedLang] = useState<Language>("en");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const data = allData?.[selectedLang] ?? null;
@@ -82,14 +88,7 @@ export default function HeroSectionAdminPage() {
     })();
   }, []);
 
-  useEffect(() => {
-    setPreviewImageUrl(data?.imageId ? `/api/images/${data.imageId}` : null);
-  }, [data]);
-
-  const handleChange = <K extends keyof HeroSectionData>(
-    field: K,
-    value: HeroSectionData[K]
-  ) =>
+  const handleChange = (field: keyof HeroSectionData, value: any) => {
     setAllData((prev) =>
       prev
         ? {
@@ -98,6 +97,25 @@ export default function HeroSectionAdminPage() {
           }
         : prev
     );
+  };
+  
+  const handleFeatureChange = (id: number, field: keyof HeroFeature, value: string) => {
+      if (!data) return;
+      const updatedFeatures = data.features.map(f => f.id === id ? {...f, [field]: value} : f);
+      handleChange('features', updatedFeatures);
+  }
+  
+  const handleAddFeature = () => {
+      if (!data) return;
+      const newFeature = { id: Date.now(), text: 'New Feature', icon: 'CheckCircle' };
+      handleChange('features', [...data.features, newFeature]);
+  }
+  
+  const handleDeleteFeature = (id: number) => {
+      if (!data) return;
+      handleChange('features', data.features.filter(f => f.id !== id));
+  }
+
 
   const handleImageUpload = async (
     e: React.ChangeEvent<HTMLInputElement>
@@ -126,8 +144,7 @@ export default function HeroSectionAdminPage() {
       }
 
       handleChange("imageId", json.id);
-      setPreviewImageUrl(`/api/images/${json.id}`);
-
+      
       toast({
         title: "Image uploaded",
         description: "Click “Save Changes” to persist.",
@@ -243,11 +260,11 @@ export default function HeroSectionAdminPage() {
               <Label>Background Image</Label>
               <Card>
                 <CardContent className="flex flex-col items-center gap-4 p-4">
-                  {previewImageUrl ? (
+                  {data.imageId ? (
                     <div className="relative w-full overflow-hidden rounded-md aspect-video">
                       <NextImage
-                        key={previewImageUrl}
-                        src={previewImageUrl}
+                        key={data.imageId}
+                        src={`/api/images/${data.imageId}`}
                         alt="Hero background"
                         fill
                         style={{ objectFit: "cover" }}
@@ -278,9 +295,45 @@ export default function HeroSectionAdminPage() {
                 </CardContent>
               </Card>
             </div>
+            
+            <Separator />
+
+            <div>
+              <Label className="text-lg font-semibold">Features</Label>
+              <p className="text-sm text-muted-foreground mb-4">Manage the list of features shown in the hero section.</p>
+              <div className="space-y-4">
+                {data.features.map(feature => (
+                  <div key={feature.id} className="flex items-center gap-2 p-2 border rounded-md">
+                    <AdvantageIcon name={feature.icon} className="h-5 w-5 text-muted-foreground"/>
+                    <Input
+                      value={feature.icon}
+                      onChange={(e) => handleFeatureChange(feature.id, 'icon', e.target.value)}
+                      placeholder="Icon Name"
+                      className="w-32"
+                    />
+                    <Input
+                      value={feature.text}
+                      onChange={(e) => handleFeatureChange(feature.id, 'text', e.target.value)}
+                      placeholder="Feature Text"
+                      className="flex-grow"
+                    />
+                    <Button variant="ghost" size="icon" onClick={() => handleDeleteFeature(feature.id)}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                ))}
+                <Button variant="outline" onClick={handleAddFeature}>
+                  <PlusCircle className="mr-2 h-4 w-4" /> Add Feature
+                </Button>
+              </div>
+            </div>
+             <div className="text-sm text-muted-foreground p-4 border-dashed border-2 rounded-md">
+                <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2"><Sparkles className="h-4 w-4"/>Icon Tip</h4>
+                <p>Enter the name of a `lucide-react` icon (e.g., `CheckCircle`, `ShieldCheck`). The icon preview will update automatically. Case matters!</p>
+            </div>
 
             <p className="pt-4 text-sm text-muted-foreground">
-              Note: The call-to-action text lives in
+              Note: The call-to-action button text lives in
               <code className="ml-1 font-mono">src/lib/translations.ts</code>.
             </p>
           </>

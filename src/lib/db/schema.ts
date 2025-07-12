@@ -1,3 +1,4 @@
+
 import {
   pgTable,
   text,
@@ -8,8 +9,8 @@ import {
   jsonb,
   serial,
   customType,
-  primaryKey,
-  unique
+  unique,
+  primaryKey
 } from 'drizzle-orm/pg-core';
 
 const bytea = customType<{ data: Buffer; driverData: string }>({
@@ -50,6 +51,13 @@ export const heroSections = pgTable('hero_sections', {
   title: text('title').notNull(),
   subtitle: text('subtitle').notNull(),
   imageId: integer('image_id').references(() => images.id, { onDelete: 'set null' })
+});
+
+export const heroFeatures = pgTable('hero_features', {
+    id: serial('id').primaryKey(),
+    lang: varchar('lang', { length: 2 }).notNull().references(() => languages.code),
+    text: text('text').notNull(),
+    icon: text('icon').notNull().default('CheckCircle'),
 });
 
 export const productComponents = pgTable('product_components', {
@@ -117,7 +125,6 @@ export const devNotes = pgTable('dev_notes', {
 export const creators = pgTable(
   'creators',
   {
-    id: serial('id').primaryKey(),
     slug: text('slug').notNull(),
     lang: varchar('lang', { length: 2 }).notNull().references(() => languages.code),
     name: text('name').notNull(),
@@ -162,7 +169,7 @@ export const creators = pgTable(
       url: string;
     }>()
   },
-  table => ({
-    slugLangUnique: unique('creators_slug_lang_unique').on(table.slug, table.lang)
+  (table) => ({
+    pk: primaryKey({ columns: [table.slug, table.lang] }),
   })
 );
