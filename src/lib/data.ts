@@ -382,19 +382,19 @@ const rawAdvantagesData: Record<Language, Advantage[]> = {
   ],
   uk: [
     {
-        id: 1,
-        icon: 'ScanFace',
-        title: 'Діагностика шкіри за допомогою ШІ',
-        description: 'Аналізуйте свою шкіру в реальному часі та отримуйте персоналізовані рекомендації щодо краси та догляду за шкірою за допомогою ШІ.',
+      id: 4,
+      icon: 'ScanFace',
+      title: 'Діагностика шкіри за допомогою ШІ',
+      description: 'Аналізуйте свою шкіру в реальному часі та отримуйте персоналізовані рекомендації щодо краси та догляду за шкірою за допомогою ШІ.',
     },
      {
-      id: 2,
+      id: 5,
       icon: 'Activity',
       title: 'Моніторинг стресу та здоров\'я',
       description: 'Spekulus оцінює ваш емоційний та фізичний стан і дає вам зворотний зв\'язок, щоб допомогти зменшити стрес і втому.',
     },
     {
-      id: 3,
+      id: 6,
       icon: 'Home',
       title: 'Синхронізація з розумним середовищем',
       description: 'Інтегрується з вашим розумним будинком, дозволяючи керувати освітленням, музикою, календарями, погодою та іншим.',
@@ -402,19 +402,19 @@ const rawAdvantagesData: Record<Language, Advantage[]> = {
   ],
   sk: [
     {
-        id: 1,
-        icon: 'ScanFace',
-        title: 'Diagnostika pleti pomocou AI',
-        description: 'Analyzujte svoju pleť v reálnom čase a získajte personalizované odporúčania pre krásu a starostlivosť o pleť pomocou AI.',
+      id: 7,
+      icon: 'ScanFace',
+      title: 'Diagnostika pleti pomocou AI',
+      description: 'Analyzujte svoju pleť v reálnom čase a získajte personalizované odporúčania pre krásu a starostlivosť o pleť pomocou AI.',
     },
     {
-      id: 2,
+      id: 8,
       icon: 'Activity',
       title: 'Monitorovanie stresu a zdravia',
       description: 'Spekulus hodnotí váš emocionálny a fyzický stav a poskytuje vám spätnú väzbu, ktorá vám pomôže znížiť stres a únavu.',
     },
     {
-      id: 3,
+      id: 9,
       icon: 'Home',
       title: 'Synchronizácia s inteligentným prostredím',
       description: 'Integruje sa s vaším inteligentným domom, čo umožňuje ovládanie osvetlenia, hudby, kalendárov, počasia a ďalších funkcií.',
@@ -623,3 +623,4 @@ export const initialData = {
     heroSectionData,
     productSectionData,
 };
+
