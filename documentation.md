@@ -225,46 +225,53 @@ The admin panel is a protected section for managing all dynamic site content.
 
 ### 6.1. Admin Panel Iconography
 
-The admin panel uses icons from the `lucide-react` library to provide quick, intuitive visual cues for actions and navigation.
+The admin panel uses icons from the `lucide-react` library to provide quick, intuitive visual cues for actions and navigation. All icons are SVGs, ensuring they are sharp at any resolution.
 
 #### **Common Actions**
 
-- **`Save`**: Persists all changes made on the current page to the database.
-- **`Loader2` (spinning)**: Indicates that an action (like saving or uploading) is in progress. The button is disabled during this state.
-- **`PlusCircle`**: Adds a new item to a list (e.g., a new FAQ, a new roadmap event).
-- **`Trash2`**: Deletes an item. This action is often irreversible and may be placed inside a confirmation dialog.
-- **`Upload` / `UploadCloud`**: Opens a file dialog to upload an image or file.
-- **`Eye` / `EyeOff`**: Toggles the public visibility of an item (e.g., a dev note or creator profile).
-- **`Copy`**: Copies an item's ID or URL to the clipboard.
-- **`LinkIcon`**: Copies an item's full public URL to the clipboard.
-- **`Search`**: Indicates a search input field.
-- **`Expand`**: Opens a larger preview of an image.
+| Icon (Name) | Description & Functionality | Behavior Notes | Location |
+| :--- | :--- | :--- | :--- |
+| **`Save`** | Persists all changes made on the current page to the database. | The button is disabled while saving. | Top-right corner of most admin pages. |
+| **`Loader2`** | A spinning indicator shown inside a button when an action (like saving or uploading) is in progress. | The button is disabled and the icon spins. | Replaces other icons inside buttons during processing. |
+| **`PlusCircle`** | Adds a new item to a list (e.g., a new FAQ, a new roadmap event, a new creator profile). | Immediately adds a new, editable item to the list in the UI. Requires saving to persist. | Top-right of list-based admin pages (FAQ, Roadmap, etc.). |
+| **`Trash2`** | Deletes an item. | This action is often irreversible and placed inside a confirmation dialog to prevent accidental deletion. | Next to individual items in a list or form. |
+| **`Upload` / `UploadCloud`** | Opens a file dialog to upload an image or file. | Triggers the browser's file selector. An `UploadCloud` is used for the main uploads page button. | Next to image input fields; main button on Uploads page. |
+| **`Eye` / `EyeOff`** | Toggles the public visibility of an item (e.g., a dev note or creator profile). | The icon state changes on click to reflect the new visibility status. Requires saving. | Appears in visibility toggles on Notes and Creators pages. |
+| **`Copy`** | Copies an item's ID or URL to the clipboard. | Displays a toast notification on success. | Appears in the Uploads manager. |
+| **`LinkIcon`** | Copies an item's full public URL to the clipboard. | Displays a toast notification on success. | Appears in the Uploads manager. |
+| **`Search`** | Indicates a search input field. | Purely decorative; placed inside the search input. | Appears on pages with search functionality (Logs, Uploads). |
+| **`Expand`** | Opens a larger preview of an image. | Triggers a modal/dialog to show the image at a larger scale. | Appears on image cards in the Uploads manager. |
 
 #### **Navigation & Layout**
 
-- **`LayoutDashboard`**: Navigates to the main admin dashboard.
-- **`PanelLeft`**: Toggles the mobile sidebar navigation.
-- **`LogOut`**: Logs the current user out of the admin panel.
-- **`ChevronsLeft` / `ChevronLeft` / `ChevronRight` / `ChevronsRight`**: Used for pagination controls to navigate through pages of items.
-- **`LayoutGrid` / `List`**: Toggles between grid and list views in the Uploads manager.
+| Icon (Name) | Description & Functionality | Behavior Notes | Location |
+| :--- | :--- | :--- | :--- |
+| **`LayoutDashboard`** | Navigates to the main admin dashboard. | Sidebar link. | Admin Sidebar |
+| **`PanelLeft`** | Toggles the mobile sidebar navigation. | Appears only on smaller screens. | Top of the main content area on mobile. |
+| **`LogOut`** | Logs the current user out of the admin panel. | Removes the auth token and redirects to the login page. | Bottom of the Admin Sidebar. |
+| **`ChevronsLeft` / `ChevronLeft` / `ChevronRight` / `ChevronsRight`** | Used for pagination controls. | Navigates to the first, previous, next, or last page of items. Buttons are disabled when not applicable. | Bottom of paginated tables (Logs, Uploads). |
+| **`LayoutGrid` / `List`** | Toggles between grid and list views for displaying items. | The active view's icon is highlighted. | Appears on the Uploads manager page. |
+| **`ArrowUpDown`** | Indicates a sortable table column. | Clicking the header sorts the table by that column; the icon direction reflects the sort order. | Table headers on the Logs page. |
 
 #### **Content-Specific Icons**
 
-- **`Home`**: Manages the Hero section.
-- **`Cpu`**: Manages the Product "Anatomy" section.
-- **`Sparkles`**: Manages the Advantages section.
-- **`Camera`**: Manages the "In Action" or Gallery sections.
-- **`FileText`**: Manages Dev Notes.
-- **`Users`**: Manages Creator profiles.
-- **`Calendar`**: Manages the Roadmap or date-related fields.
-- **`HelpCircle`**: Manages the FAQ section.
-- **`History`**: Navigates to the Action Logs page.
-- **`ImageIcon`**: A placeholder for where an image will appear.
-- **`Music`**: Manages music/playlist information.
-- **`Briefcase`**: Manages featured project information.
-- **`GraduationCap`**: Manages education history.
-- **`Award`**: Manages certifications or achievements.
-- **`Heart`**: Manages personal details (hobbies, quotes).
+| Icon (Name) | Description & Functionality | Location |
+| :--- | :--- | :--- |
+| **`Home`** | Sidebar link to manage the Hero section. | Admin Sidebar, Dashboard |
+| **`Cpu`** | Sidebar link to manage the Product "Anatomy" section. | Admin Sidebar, Dashboard |
+| **`Sparkles`** | Sidebar link to manage the Advantages section. | Admin Sidebar, Dashboard |
+| **`Camera`** | Sidebar link to manage the "In Action" or Gallery sections. | Admin Sidebar, Dashboard; Creators Page |
+| **`FileText`** | Sidebar link to manage Dev Notes. | Admin Sidebar, Dashboard; Creators Page |
+| **`Users`** | Sidebar link to manage Creator profiles. | Admin Sidebar, Dashboard; Creators Page |
+| **`Calendar`** | Sidebar link to manage the Roadmap or date-related fields. | Admin Sidebar, Dashboard |
+| **`HelpCircle`** | Sidebar link to manage the FAQ section. | Admin Sidebar, Dashboard |
+| **`History`** | Sidebar link to navigates to the Action Logs page. | Admin Sidebar, Dashboard |
+| **`ImageIcon`** | A placeholder for where an image will appear. | Hero, Product, Action Section pages when no image is selected. |
+| **`Music`** | Section icon for managing music/playlist information. | Creators Page |
+| **`Briefcase`** | Section icon for managing featured project information. | Creators Page |
+| **`GraduationCap`** | Section icon for managing education history. | Creators Page |
+| **`Award`** | Section icon for managing certifications or achievements. | Creators Page |
+| **`Heart`** | Section icon for managing personal details (hobbies, quotes). | Creators Page |
 
 ---
 
