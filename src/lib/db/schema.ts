@@ -1,4 +1,3 @@
-
 import {
   pgTable,
   text,
@@ -9,30 +8,28 @@ import {
   jsonb,
   serial,
   customType,
-  unique,
-  primaryKey
-} from 'drizzle-orm/pg-core';
+  primaryKey,
+  unique
+} from 'drizzle-orm/pg-core'
 
 const bytea = customType<{ data: Buffer; driverData: string }>({
   dataType() {
-    return 'bytea';
+    return 'bytea'
   },
-  toDriver(value: Buffer): string {
-    return '\\x' + value.toString('hex');
+  toDriver(v: Buffer) {
+    return '\\x' + v.toString('hex')
   },
-  fromDriver(value: string | Buffer): Buffer {
-    if (Buffer.isBuffer(value)) return value;
-    if (typeof value === 'string' && value.startsWith('\\x')) {
-      return Buffer.from(value.slice(2), 'hex');
-    }
-    return Buffer.from(value as string, 'hex');
+  fromDriver(v: string | Buffer) {
+    if (Buffer.isBuffer(v)) return v
+    if (typeof v === 'string' && v.startsWith('\\x')) return Buffer.from(v.slice(2), 'hex')
+    return Buffer.from(v as string, 'hex')
   }
-});
+})
 
 export const languages = pgTable('languages', {
   code: varchar('code', { length: 2 }).primaryKey(),
   name: text('name').notNull()
-});
+})
 
 export const images = pgTable('images', {
   id: serial('id').primaryKey(),
@@ -40,25 +37,22 @@ export const images = pgTable('images', {
   mimeType: text('mime_type'),
   data: bytea('data').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull()
-});
+})
 
 export const heroSections = pgTable('hero_sections', {
   id: serial('id').primaryKey(),
-  lang: varchar('lang', { length: 2 })
-    .notNull()
-    .references(() => languages.code)
-    .unique(),
+  lang: varchar('lang', { length: 2 }).notNull().references(() => languages.code).unique(),
   title: text('title').notNull(),
   subtitle: text('subtitle').notNull(),
   imageId: integer('image_id').references(() => images.id, { onDelete: 'set null' })
-});
+})
 
 export const heroFeatures = pgTable('hero_features', {
-    id: serial('id').primaryKey(),
-    lang: varchar('lang', { length: 2 }).notNull().references(() => languages.code),
-    text: text('text').notNull(),
-    icon: text('icon').notNull().default('CheckCircle'),
-});
+  id: serial('id').primaryKey(),
+  lang: varchar('lang', { length: 2 }).notNull().references(() => languages.code),
+  icon: text('icon').notNull(),
+  text: text('text').notNull()
+})
 
 export const productComponents = pgTable('product_components', {
   id: serial('id').primaryKey(),
@@ -67,7 +61,7 @@ export const productComponents = pgTable('product_components', {
   title: text('title').notNull(),
   description: text('description').notNull(),
   imageId: integer('image_id').references(() => images.id, { onDelete: 'set null' })
-});
+})
 
 export const advantages = pgTable('advantages', {
   id: serial('id').primaryKey(),
@@ -75,14 +69,11 @@ export const advantages = pgTable('advantages', {
   icon: text('icon').notNull(),
   title: text('title').notNull(),
   description: text('description').notNull()
-});
+})
 
 export const actionSections = pgTable('action_sections', {
   id: serial('id').primaryKey(),
-  lang: varchar('lang', { length: 2 })
-    .notNull()
-    .references(() => languages.code)
-    .unique(),
+  lang: varchar('lang', { length: 2 }).notNull().references(() => languages.code).unique(),
   title: text('title').notNull(),
   subtitle: text('subtitle').notNull(),
   description: text('description').notNull(),
@@ -91,7 +82,7 @@ export const actionSections = pgTable('action_sections', {
   buttonUrl: text('button_url').notNull(),
   buttonVisible: boolean('button_visible').default(true).notNull(),
   imageId: integer('image_id').references(() => images.id, { onDelete: 'set null' })
-});
+})
 
 export const roadmapEvents = pgTable('roadmap_events', {
   id: serial('id').primaryKey(),
@@ -99,14 +90,14 @@ export const roadmapEvents = pgTable('roadmap_events', {
   date: text('date').notNull(),
   title: text('title').notNull(),
   description: text('description').notNull()
-});
+})
 
 export const faqItems = pgTable('faq_items', {
   id: serial('id').primaryKey(),
   lang: varchar('lang', { length: 2 }).notNull().references(() => languages.code),
   question: text('question').notNull(),
   answer: text('answer').notNull()
-});
+})
 
 export const devNotes = pgTable('dev_notes', {
   id: serial('id').primaryKey(),
@@ -120,11 +111,12 @@ export const devNotes = pgTable('dev_notes', {
   isVisible: boolean('is_visible').default(true).notNull(),
   reactionCounts: jsonb('reaction_counts').$type<Record<string, number>>(),
   imageId: integer('image_id').references(() => images.id, { onDelete: 'set null' })
-});
+})
 
 export const creators = pgTable(
   'creators',
   {
+    id: serial('id').primaryKey(),
     slug: text('slug').notNull(),
     lang: varchar('lang', { length: 2 }).notNull().references(() => languages.code),
     name: text('name').notNull(),
@@ -139,37 +131,21 @@ export const creators = pgTable(
     quote: text('quote'),
     quoteAuthor: text('quote_author'),
     isVisible: boolean('is_visible').default(true).notNull(),
-    socials: jsonb('socials').$type<{
-      twitter?: string;
-      github?: string;
-      linkedin?: string;
-    }>(),
-    music: jsonb('music').$type<{
-      spotify?: string;
-      appleMusic?: string;
-      youtubeMusic?: string;
-    }>(),
-    education: jsonb('education').$type<
-      { institution: string; degree: string; year: string }[]
-    >(),
-    certifications: jsonb('certifications').$type<
-      { name: string; authority: string; year: string }[]
-    >(),
+    socials: jsonb('socials').$type<{ twitter?: string; github?: string; linkedin?: string }>(),
+    music: jsonb('music').$type<{ spotify?: string; appleMusic?: string; youtubeMusic?: string }>(),
+    education: jsonb('education').$type<{ institution: string; degree: string; year: string }[]>(),
+    certifications: jsonb('certifications').$type<{ name: string; authority: string; year: string }[]>(),
     gallery: jsonb('gallery').$type<{ imageId: number; description: string }[]>(),
-    achievements: jsonb('achievements').$type<
-      { icon: string; name: string; description: string }[]
-    >(),
+    achievements: jsonb('achievements').$type<{ icon: string; name: string; description: string }[]>(),
     imageId: integer('image_id').references(() => images.id, { onDelete: 'set null' }),
     featuredProjectImageId: integer('featured_project_image_id').references(() => images.id, {
       onDelete: 'set null'
     }),
     featuredProject: jsonb('featured_project').$type<{
-      title: string;
-      description: string;
-      url: string;
+      title: string
+      description: string
+      url: string
     }>()
   },
-  (table) => ({
-    pk: primaryKey({ columns: [table.slug, table.lang] }),
-  })
-);
+  t => ({ slugLangUnique: unique().on(t.slug, t.lang) })
+)

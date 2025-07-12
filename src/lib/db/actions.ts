@@ -7,7 +7,6 @@ import * as schema from './schema'
 import {
   Language,
   HeroSectionData,
-  HeroFeature,
   ActionSectionData,
   ProductComponent,
   Creator,
@@ -23,10 +22,10 @@ const sql = neon(process.env.DATABASE_URL!)
 const db = drizzle(sql, { schema })
 
 export async function getHeroData(lang: Language): Promise<HeroSectionData | null> {
-  const hero = await db.query.heroSections.findFirst({ where: eq(schema.heroSections.lang, lang) });
-  if (!hero) return null;
-  const features = await db.query.heroFeatures.findMany({ where: eq(schema.heroFeatures.lang, lang) });
-  return { ...hero, features };
+  const hero = await db.query.heroSections.findFirst({ where: eq(schema.heroSections.lang, lang) })
+  if (!hero) return null
+  const features = await db.query.heroFeatures.findMany({ where: eq(schema.heroFeatures.lang, lang) })
+  return { ...hero, features }
 }
 
 export async function updateHeroData(lang: Language, data: Omit<HeroSectionData, 'id'>) {
@@ -35,48 +34,46 @@ export async function updateHeroData(lang: Language, data: Omit<HeroSectionData,
     target: schema.heroSections.lang,
     set: payload
   })
-  
-  // Update features
-  await db.delete(schema.heroFeatures).where(eq(schema.heroFeatures.lang, lang));
-  if (data.features.length > 0) {
-    const featureValues = data.features.map(f => ({ text: f.text, icon: f.icon, lang }));
-    await db.insert(schema.heroFeatures).values(featureValues);
+  await db.delete(schema.heroFeatures).where(eq(schema.heroFeatures.lang, lang))
+  if (data.features.length) {
+    const rows = data.features.map(f => ({ icon: f.icon, text: f.text, lang }))
+    await db.insert(schema.heroFeatures).values(rows)
   }
 }
 
 export async function getProductData(lang: Language) {
   const components = await db.query.productComponents.findMany({
     where: eq(schema.productComponents.lang, lang),
-    orderBy: (productComponents, { asc }) => [asc(productComponents.id)]
+    orderBy: (p, { asc }) => [asc(p.id)]
   })
   return { components }
 }
 
 export async function updateProductComponents(lang: Language, components: ProductComponent[]) {
   await db.delete(schema.productComponents).where(eq(schema.productComponents.lang, lang))
-  if (components.length > 0) {
-    const values = components.map(({ id, ...rest }) => ({ ...rest, lang }))
-    await db.insert(schema.productComponents).values(values)
+  if (components.length) {
+    const rows = components.map(({ id, ...rest }) => ({ ...rest, lang }))
+    await db.insert(schema.productComponents).values(rows)
   }
 }
 
 export async function getAdvantagesData(lang: Language) {
   return await db.query.advantages.findMany({
     where: eq(schema.advantages.lang, lang),
-    orderBy: (advantages, { asc }) => [asc(advantages.id)]
+    orderBy: (a, { asc }) => [asc(a.id)]
   })
 }
 
 export async function createAdvantage(lang: Language, advantage: Omit<Advantage, 'id'>) {
-  const [newAdvantage] = await db.insert(schema.advantages).values({ ...advantage, lang }).returning()
-  return newAdvantage
+  const [row] = await db.insert(schema.advantages).values({ ...advantage, lang }).returning()
+  return row
 }
 
 export async function updateAdvantagesData(lang: Language, advantages: Advantage[]) {
   await db.delete(schema.advantages).where(eq(schema.advantages.lang, lang))
-  if (advantages.length > 0) {
-    const values = advantages.map(({ id, ...rest }) => ({ ...rest, lang }))
-    await db.insert(schema.advantages).values(values)
+  if (advantages.length) {
+    const rows = advantages.map(({ id, ...rest }) => ({ ...rest, lang }))
+    await db.insert(schema.advantages).values(rows)
   }
 }
 
@@ -84,7 +81,10 @@ export async function getActionSectionData(lang: Language) {
   return await db.query.actionSections.findFirst({ where: eq(schema.actionSections.lang, lang) })
 }
 
-export async function updateActionSectionData(lang: Language, data: Omit<ActionSectionData, 'id'>) {
+export async function updateActionSectionData(
+  lang: Language,
+  data: Omit<ActionSectionData, 'id'>
+) {
   const payload = {
     title: data.title,
     subtitle: data.subtitle,
@@ -104,40 +104,40 @@ export async function updateActionSectionData(lang: Language, data: Omit<ActionS
 export async function getRoadmapEvents(lang: Language) {
   return await db.query.roadmapEvents.findMany({
     where: eq(schema.roadmapEvents.lang, lang),
-    orderBy: (roadmapEvents, { asc }) => [asc(roadmapEvents.date)]
+    orderBy: (r, { asc }) => [asc(r.date)]
   })
 }
 
-export async function createRoadmapEvent(lang: Language, event: Omit<RoadmapEvent, 'id'>) {
-  const [newEvent] = await db.insert(schema.roadmapEvents).values({ ...event, lang }).returning()
-  return newEvent
+export async function createRoadmapEvent(lang: Language, e: Omit<RoadmapEvent, 'id'>) {
+  const [row] = await db.insert(schema.roadmapEvents).values({ ...e, lang }).returning()
+  return row
 }
 
 export async function updateRoadmapEvents(lang: Language, events: Omit<RoadmapEvent, 'id'>[]) {
   await db.delete(schema.roadmapEvents).where(eq(schema.roadmapEvents.lang, lang))
-  if (events.length > 0) {
-    const values = events.map(e => ({ ...e, lang }))
-    await db.insert(schema.roadmapEvents).values(values)
+  if (events.length) {
+    const rows = events.map(r => ({ ...r, lang }))
+    await db.insert(schema.roadmapEvents).values(rows)
   }
 }
 
 export async function getFaqs(lang: Language) {
   return await db.query.faqItems.findMany({
     where: eq(schema.faqItems.lang, lang),
-    orderBy: (faqItems, { asc }) => [asc(faqItems.id)]
+    orderBy: (f, { asc }) => [asc(f.id)]
   })
 }
 
 export async function createFaq(lang: Language, faq: Omit<FaqItem, 'id'>) {
-  const [newFaq] = await db.insert(schema.faqItems).values({ ...faq, lang }).returning()
-  return newFaq
+  const [row] = await db.insert(schema.faqItems).values({ ...faq, lang }).returning()
+  return row
 }
 
 export async function updateFaqs(lang: Language, faqs: FaqItem[]) {
   await db.delete(schema.faqItems).where(eq(schema.faqItems.lang, lang))
-  if (faqs.length > 0) {
-    const values = faqs.map(({ id, ...rest }) => ({ ...rest, lang }))
-    await db.insert(schema.faqItems).values(values)
+  if (faqs.length) {
+    const rows = faqs.map(({ id, ...rest }) => ({ ...rest, lang }))
+    await db.insert(schema.faqItems).values(rows)
   }
 }
 
@@ -152,65 +152,57 @@ export async function getCreatorBySlug(lang: Language, slug: string) {
 }
 
 export async function createCreator(lang: Language, data: Creator) {
-    const payload = {
-        ...data,
-        lang,
-        imageId: data.imageId ?? null,
-        featuredProjectImageId: data.featuredProjectImageId ?? null
-    };
-    const [newCreator] = await db.insert(schema.creators).values(payload).returning();
-    return newCreator;
+  const payload = {
+    ...data,
+    lang,
+    imageId: data.imageId ?? null,
+    featuredProjectImageId: data.featuredProjectImageId ?? null
+  }
+  const [row] = await db.insert(schema.creators).values(payload).returning()
+  return row
 }
 
 export async function updateCreators(lang: Language, creatorsData: Creator[]) {
-  try {
-    const safe = creatorsData.map(c => ({
-      ...c,
-      lang,
-      imageId: c.imageId ?? null,
-      featuredProjectImageId: c.featuredProjectImageId ?? null,
-      gallery: c.gallery ?? [],
-      skills: c.skills ?? [],
-      languages: c.languages ?? [],
-      contributions: c.contributions ?? [],
-      hobbies: c.hobbies ?? [],
-      music: c.music ?? {},
-      socials: c.socials ?? {},
-      education: c.education ?? [],
-      certifications: c.certifications ?? [],
-      achievements: c.achievements ?? [],
-      featuredProject: c.featuredProject ?? { title: '', description: '', url: '' },
-      cvUrl: c.cvUrl ?? "",
-      quote: c.quote ?? "",
-      quoteAuthor: c.quoteAuthor ?? "",
-      isVisible: c.isVisible ?? true
-    }));
-
-    for (const creator of safe) {
-      await db.insert(schema.creators).values(creator).onConflictDoUpdate({
-        target: [schema.creators.slug, schema.creators.lang],
-        set: creator
-      });
-    }
-
-    const slugs = creatorsData.map(c => c.slug);
-    if (slugs.length > 0) {
-      await db.delete(schema.creators).where(
-        and(eq(schema.creators.lang, lang), notInArray(schema.creators.slug, slugs))
-      );
-    } else {
-      await db.delete(schema.creators).where(eq(schema.creators.lang, lang));
-    }
-  } catch (error: any) {
-    const msg = error?.message || "Unknown error in updateCreators";
-    console.error("❌ updateCreators error:", msg);
-    throw new Error("[updateCreators] " + msg);
+  const rows = creatorsData.map(c => ({
+    ...c,
+    lang,
+    imageId: c.imageId ?? null,
+    featuredProjectImageId: c.featuredProjectImageId ?? null,
+    gallery: c.gallery ?? [],
+    skills: c.skills ?? [],
+    languages: c.languages ?? [],
+    contributions: c.contributions ?? [],
+    hobbies: c.hobbies ?? [],
+    music: c.music ?? {},
+    socials: c.socials ?? {},
+    education: c.education ?? [],
+    certifications: c.certifications ?? [],
+    achievements: c.achievements ?? [],
+    featuredProject: c.featuredProject ?? { title: '', description: '', url: '' },
+    cvUrl: c.cvUrl ?? '',
+    quote: c.quote ?? '',
+    quoteAuthor: c.quoteAuthor ?? '',
+    isVisible: c.isVisible ?? true
+  }))
+  for (const r of rows) {
+    await db.insert(schema.creators).values(r).onConflictDoUpdate({
+      target: [schema.creators.slug, schema.creators.lang],
+      set: r
+    })
+  }
+  const slugs = creatorsData.map(c => c.slug)
+  if (slugs.length) {
+    await db.delete(schema.creators).where(
+      and(eq(schema.creators.lang, lang), notInArray(schema.creators.slug, slugs))
+    )
+  } else {
+    await db.delete(schema.creators).where(eq(schema.creators.lang, lang))
   }
 }
 
 export async function getDevNotes() {
   return await db.query.devNotes.findMany({
-    orderBy: (notes, { desc }) => [desc(notes.date)]
+    orderBy: (n, { desc }) => [desc(n.date)]
   })
 }
 
@@ -219,8 +211,8 @@ export async function getDevNoteBySlug(slug: string) {
 }
 
 export async function createDevNote(note: Omit<DevNote, 'id'>) {
-  const [newNote] = await db.insert(schema.devNotes).values(note).returning()
-  return newNote
+  const [row] = await db.insert(schema.devNotes).values(note).returning()
+  return row
 }
 
 export async function updateDevNote(id: number, note: Partial<Omit<DevNote, 'id'>>) {
@@ -237,9 +229,9 @@ export async function getImage(id: number) {
 }
 
 export async function uploadImage(fileBuffer: Buffer, filename: string, mimeType: string) {
-  const [inserted] = await db
+  const [row] = await db
     .insert(schema.images)
     .values({ data: fileBuffer, filename, mimeType })
     .returning({ id: schema.images.id })
-  return inserted
+  return row
 }

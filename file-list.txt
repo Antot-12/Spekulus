@@ -57,13 +57,9 @@
 ./src/app/dev-notes/[slug]/page.tsx
 ./src/app/maintenance/page.tsx
 ./src/app/api/upload/route.ts
-./src/app/api/content/route.ts
 ./src/app/api/images/[id]/route.ts
 ./src/app/api/auth/login/route.ts
-./src/app/api/faq/route.ts
-./src/app/api/creators/route.ts
 ./src/app/api/contact/route.ts
-./src/app/api/dev-notes/route.ts
 ./src/app/api/upload-image/route.ts
 ./src/app/favicon.ico
 ./src/contexts/LanguageContext.tsx
@@ -128,9 +124,8 @@
 ./src/ai/dev.ts
 ./src/ai/flows/mirror-simulator-flow.ts
 ./src/ai/flows/creator-chat-flow.ts
+./src/api/upload/route.ts
 ./src/api/auth/login/route.ts
-./src/api/creators/route.ts
-./src/api/dev-notes/route.ts
 ./apphosting.yaml
 ./env.txt
 ./tailwind.config.ts
