@@ -12,7 +12,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { getLogs, type LogEntry, type LogActionType } from '@/lib/logger';
+import { getLogs, type LogEntry } from '@/lib/logger';
 import { format } from 'date-fns';
 import { DateRange } from 'react-day-picker';
 import { Search, Calendar as CalendarIcon, Download, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, ArrowUpDown, History } from 'lucide-react';
@@ -23,6 +23,30 @@ type SortConfig = {
     key: keyof LogEntry | 'timestamp';
     direction: 'asc' | 'desc';
 };
+
+const SortableHeader = ({
+    children,
+    sortKey,
+    sortConfig,
+    onSort,
+}: {
+    children: React.ReactNode;
+    sortKey: SortConfig['key'];
+    sortConfig: SortConfig;
+    onSort: (key: SortConfig['key']) => void;
+}) => (
+    <TableHead className="cursor-pointer" onClick={() => onSort(sortKey)}>
+        <div className="flex items-center gap-2">
+            {children}
+            {sortConfig.key === sortKey ? (
+                sortConfig.direction === 'asc' ? <ArrowUpDown className="h-3 w-3" /> : <ArrowUpDown className="h-3 w-3" />
+            ) : (
+                <ArrowUpDown className="h-3 w-3 opacity-30" />
+            )}
+        </div>
+    </TableHead>
+);
+
 
 export default function LogsAdminPage() {
     const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -165,12 +189,10 @@ export default function LogsAdminPage() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead className="cursor-pointer" onClick={() => handleSort('timestamp')}>
-                                    <div className="flex items-center gap-2">Timestamp <ArrowUpDown className="h-3 w-3" /></div>
-                                </TableHead>
-                                <TableHead>User</TableHead>
-                                <TableHead>Action</TableHead>
-                                <TableHead>Status</TableHead>
+                                <SortableHeader sortKey="timestamp" sortConfig={sortConfig} onSort={handleSort}>Timestamp</SortableHeader>
+                                <SortableHeader sortKey="user" sortConfig={sortConfig} onSort={handleSort}>User</SortableHeader>
+                                <SortableHeader sortKey="action" sortConfig={sortConfig} onSort={handleSort}>Action</SortableHeader>
+                                <SortableHeader sortKey="status" sortConfig={sortConfig} onSort={handleSort}>Status</SortableHeader>
                                 <TableHead>Details</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -213,3 +235,5 @@ export default function LogsAdminPage() {
         </Card>
     );
 }
+
+    
