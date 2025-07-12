@@ -75,10 +75,7 @@ export default function DevNotesPage() {
 
   return (
     <div className="container mx-auto px-4 py-12 md:py-20">
-      <div className="text-center mb-8">
-        <h1 className="text-4xl md:text-5xl font-bold font-headline">{translations.devNotes.title}</h1>
-        <p className="text-xl text-foreground/70 mt-3">{translations.devNotes.subtitle}</p>
-         <div className="mt-8">
+        <div className="mb-8">
           <Button asChild variant="outline">
             <Link href="/" className="inline-flex items-center gap-2">
               <ArrowLeft className="w-4 h-4" />
@@ -86,6 +83,9 @@ export default function DevNotesPage() {
             </Link>
           </Button>
         </div>
+      <div className="text-center mb-8">
+        <h1 className="text-4xl md:text-5xl font-bold font-headline">{translations.devNotes.title}</h1>
+        <p className="text-xl text-foreground/70 mt-3">{translations.devNotes.subtitle}</p>
       </div>
       
       <div className="flex flex-col md:flex-row gap-4 mb-8 justify-center items-center max-w-2xl mx-auto">
