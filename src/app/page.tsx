@@ -42,7 +42,10 @@ export default async function Home() {
   }
 
   if (!productData || !productData.components || productData.components.length === 0) {
-    productData = initialData.productSectionData[lang];
+    productData = {
+        ...initialData.productSectionData[lang],
+        components: initialData.productSectionData[lang].components.map(c => ({...c, imageId: null})),
+    }
   }
 
   if (!advantagesData || advantagesData.length === 0) {
@@ -64,7 +67,7 @@ export default async function Home() {
   return (
     <>
       <HeroSection data={heroData} lang={lang} />
-      <ProductSection data={productData} />
+      <ProductSection data={productData} lang={lang} />
       <AdvantagesSection data={advantagesData} lang={lang} />
       <ActionSection data={actionSectionData} />
       <RoadmapSection data={roadmapEvents} lang={lang} />

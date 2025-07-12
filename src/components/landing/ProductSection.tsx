@@ -27,13 +27,15 @@ export function ProductSection({ data, lang }: { data: ProductSectionData; lang:
               </CardHeader>
               <CardContent className="p-0">
                 <div className="relative h-48 w-full">
-                  {component.imageId && (
+                  {component.imageId ? (
                     <Image
                       src={`/api/images/${component.imageId}`}
                       alt={component.title}
                       layout="fill"
                       objectFit="cover"
                     />
+                  ): (
+                    <div className="w-full h-full bg-muted" />
                   )}
                 </div>
                 <p className="p-4 text-foreground/80">{component.description}</p>
