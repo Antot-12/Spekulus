@@ -117,7 +117,7 @@ export function DevNotesSection() {
             <div className="text-center mt-12">
                 <Link href="/dev-notes" passHref>
                     <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 text-lg font-semibold px-8 py-6 rounded-full shadow-lg transition-transform hover:scale-105">
-                        {translations.devNotes.allNotes}
+                        {translations.devNotes.allNotes} <ArrowRight className="ml-2 h-5 w-5"/>
                     </Button>
                 </Link>
             </div>
@@ -131,5 +131,3 @@ export function DevNotesSection() {
     </section>
   );
 }
-
-    
