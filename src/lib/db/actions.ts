@@ -2,7 +2,7 @@
 'use server'
 
 import 'server-only'
-import { neon } from '@neondatabase/serverless'
+import { neon, neonConfig } from '@neondatabase/serverless'
 import { drizzle } from 'drizzle-orm/neon-http'
 import * as schema from './schema'
 import {
@@ -16,7 +16,7 @@ import {
   Advantage,
   FaqItem
 } from '../data'
-import { eq, and, notInArray } from 'drizzle-orm'
+import { eq, and, notInArray, sql as sqlBuilder } from 'drizzle-orm'
 import 'dotenv/config'
 
 const sql = neon(process.env.DATABASE_URL!)
@@ -230,12 +230,13 @@ export async function getImageData(id: number) {
 }
 
 export async function getImages() {
-  return await db.query.images.findMany({
-    columns: {
-      data: false // Exclude the large binary data
-    },
-    orderBy: (i, { desc }) => [desc(i.createdAt)]
-  });
+  return db.select({
+      id: schema.images.id,
+      filename: schema.images.filename,
+      mimeType: schema.images.mimeType,
+      createdAt: schema.images.createdAt,
+      size: sqlBuilder<number>`octet_length(data)`.mapWith(Number),
+    }).from(schema.images).orderBy(sqlBuilder`${schema.images.createdAt} desc`);
 }
 
 export async function deleteImage(id: number) {

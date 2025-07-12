@@ -17,11 +17,11 @@ import {
   Link as LinkIcon,
   LayoutGrid,
   List,
-  ArrowUpDown,
   ChevronsLeft,
   ChevronLeft,
   ChevronRight,
-  ChevronsRight
+  ChevronsRight,
+  Expand
 } from 'lucide-react'
 import {
   AlertDialog,
@@ -34,24 +34,35 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { getImages, deleteImage } from '@/lib/db/actions'
 import { logAction } from '@/lib/logger'
 import { format } from 'date-fns'
-import { cn } from '@/lib/utils'
 
 type ImageInfo = {
   id: number
   filename: string | null
   mimeType: string | null
   createdAt: Date
+  size: number | null
 }
 
 type ViewMode = 'grid' | 'list';
 type SortMode = 'newest' | 'oldest' | 'name';
 
 const IMAGES_PER_PAGE = 12;
+
+function formatFileSize(bytes: number | null | undefined): string {
+    if (bytes === null || bytes === undefined) return 'N/A';
+    if (bytes === 0) return '0 KB';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
 
 export default function UploadsAdminPage() {
   const { toast } = useToast()
@@ -274,17 +285,28 @@ export default function UploadsAdminPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {paginatedImages.map((image) => (
                   <Card key={image.id} className="group relative overflow-hidden">
-                    <div className="aspect-square w-full bg-muted">
-                        <img
-                            src={`/api/images/${image.id}`}
-                            alt={image.filename || `Image ${image.id}`}
-                            className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                            loading="lazy"
-                        />
-                    </div>
+                    <Dialog>
+                       <DialogTrigger asChild>
+                         <div className="aspect-square w-full bg-muted cursor-pointer">
+                            <img
+                                src={`/api/images/${image.id}`}
+                                alt={image.filename || `Image ${image.id}`}
+                                className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                                loading="lazy"
+                            />
+                             <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                               <Expand className="w-8 h-8 text-white drop-shadow-lg" />
+                             </div>
+                         </div>
+                       </DialogTrigger>
+                       <DialogContent className="max-w-4xl p-2 bg-transparent border-none shadow-none">
+                            <img src={`/api/images/${image.id}`} alt={image.filename || ''} className="max-h-[90vh] w-auto h-auto rounded-lg mx-auto" />
+                       </DialogContent>
+                    </Dialog>
                     <div className="p-4 border-t">
                         <p className="text-sm font-semibold truncate" title={image.filename || ''}>{image.filename || 'Untitled'}</p>
                         <p className="text-xs text-muted-foreground">ID: {image.id}</p>
+                        <p className="text-xs text-muted-foreground">Size: {formatFileSize(image.size)}</p>
                         <p className="text-xs text-muted-foreground">Uploaded: {format(new Date(image.createdAt), 'MMM d, yyyy')}</p>
                         <div className="flex gap-2 mt-3">
                             <Button variant="outline" size="sm" className="flex-1" onClick={() => copyToClipboard(String(image.id), 'ID')}>
@@ -325,6 +347,7 @@ export default function UploadsAdminPage() {
                                 <TableHead className="w-[80px]">Preview</TableHead>
                                 <TableHead>Filename</TableHead>
                                 <TableHead>Type</TableHead>
+                                <TableHead>Size</TableHead>
                                 <TableHead>Uploaded</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
@@ -333,15 +356,23 @@ export default function UploadsAdminPage() {
                             {paginatedImages.map(image => (
                                 <TableRow key={image.id}>
                                     <TableCell>
-                                        <div className="w-16 h-16 bg-muted rounded-md overflow-hidden">
-                                          <img src={`/api/images/${image.id}`} alt={image.filename || ''} className="h-full w-full object-cover"/>
-                                        </div>
+                                      <Dialog>
+                                        <DialogTrigger asChild>
+                                          <div className="w-16 h-16 bg-muted rounded-md overflow-hidden cursor-pointer">
+                                            <img src={`/api/images/${image.id}`} alt={image.filename || ''} className="h-full w-full object-cover"/>
+                                          </div>
+                                        </DialogTrigger>
+                                        <DialogContent className="max-w-4xl p-2 bg-transparent border-none shadow-none">
+                                            <img src={`/api/images/${image.id}`} alt={image.filename || ''} className="max-h-[90vh] w-auto h-auto rounded-lg mx-auto" />
+                                        </DialogContent>
+                                      </Dialog>
                                     </TableCell>
                                     <TableCell>
                                         <p className="font-medium truncate" title={image.filename || ''}>{image.filename || 'Untitled'}</p>
                                         <p className="text-xs text-muted-foreground">ID: {image.id}</p>
                                     </TableCell>
                                     <TableCell className="text-muted-foreground">{image.mimeType || 'N/A'}</TableCell>
+                                    <TableCell className="text-muted-foreground">{formatFileSize(image.size)}</TableCell>
                                     <TableCell className="text-muted-foreground">{format(new Date(image.createdAt), 'yyyy-MM-dd')}</TableCell>
                                     <TableCell className="text-right">
                                          <div className="flex gap-2 justify-end">
