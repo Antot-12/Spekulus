@@ -174,7 +174,10 @@ const MusicSection = ({ music, style }: { music?: Creator['music'], style?: CSSP
                 case 'spotify':
                     return `https://open.spotify.com/embed/playlist/${idOrUrl}`;
                 case 'appleMusic':
-                    // Expects a full URL and we'll transform it to the embed URL.
+                    if (!idOrUrl.startsWith('http')) {
+                        console.warn(`Invalid Apple Music URL provided: ${idOrUrl}`);
+                        return null;
+                    }
                     const url = new URL(idOrUrl);
                     return `https://embed.music.apple.com${url.pathname}${url.search}`;
                 case 'youtubeMusic':
