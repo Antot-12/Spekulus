@@ -26,6 +26,8 @@ import { MusicIcon } from './MusicIcon';
 import { cn } from '@/lib/utils';
 import { getCreatorBySlug } from '@/lib/db/actions';
 
+export const revalidate = 60; // Revalidate every 60 seconds
+
 // Helper component for consistent section styling
 const ProfileSection = ({ icon, title, children, className, style }: { icon: ReactNode, title: string, children: ReactNode, className?: string, style?: CSSProperties }) => (
     <Card className={cn("bg-card border-border/50 shadow-lg hover:shadow-primary/20 transition-shadow duration-300 opacity-0 animate-fade-in-up", className)} style={style}>

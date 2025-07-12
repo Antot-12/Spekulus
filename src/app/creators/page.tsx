@@ -11,6 +11,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Github, Twitter, Linkedin } from 'lucide-react';
 import { getCreators } from '@/lib/db/actions';
 
+export const revalidate = 60; // Revalidate every 60 seconds
+
 export default function CreatorsPage() {
   const { language, translations } = useLanguage();
   const [creators, setCreators] = useState<Creator[]>([]);
