@@ -176,35 +176,49 @@ export default function CreatorsAdminPage() {
   const handleImageUpload = async (creatorId: number, field: 'imageId' | 'featuredProjectImageId' | `gallery.${number}`, event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    const creator = creators.find(c => c.id === creatorId);
-    if (!creator) return;
+
     toast({ title: "Uploading...", description: "Uploading image." });
     const formData = new FormData();
     formData.append('file', file);
+
     try {
       const res = await fetch('/api/upload', { method: 'POST', body: formData });
       const result = await res.json();
-      if (result.success) {
-        if (field === 'featuredProjectImageId') handleFieldChange(creatorId, 'featuredProjectImageId', result.id);
-        else if (field.startsWith('gallery.')) {
-          const idx = parseInt(field.split('.')[1], 10);
-          const gallery = [...(creator.gallery ?? [])];
-          gallery[idx] = { ...gallery[idx], imageId: result.id };
-          handleFieldChange(creatorId, 'gallery', gallery);
-        } else handleFieldChange(creatorId, 'imageId', result.id);
+      
+      if (result.success && result.id) {
+        setCreators(prev => prev.map(c => {
+          if (c.id === creatorId) {
+            if (field === 'imageId') {
+              return { ...c, imageId: result.id };
+            }
+            if (field === 'featuredProjectImageId') {
+              return { ...c, featuredProjectImageId: result.id };
+            }
+            if (field.startsWith('gallery.')) {
+              const idx = parseInt(field.split('.')[1], 10);
+              const newGallery = [...(c.gallery ?? [])];
+              if (newGallery[idx]) {
+                  newGallery[idx] = { ...newGallery[idx], imageId: result.id };
+              }
+              return { ...c, gallery: newGallery };
+            }
+          }
+          return c;
+        }));
         toast({ title: "Uploaded", description: "Image uploaded. Save to persist." });
-        logAction('File Upload', 'Success', `Uploaded image for creator ${creator.name}.`);
+        logAction('File Upload', 'Success', `Uploaded image for creator ID ${creatorId}.`);
       } else {
         toast({ title: "Upload Failed", description: result.error, variant: 'destructive' });
-        logAction('File Upload', 'Failure', `Failed upload for ${creator.name}.`);
+        logAction('File Upload', 'Failure', `Failed upload for creator ID ${creatorId}.`);
       }
     } catch {
       toast({ title: "Upload Failed", description: "Error uploading image.", variant: 'destructive' });
-      logAction('File Upload', 'Failure', `Error uploading for ${creator.name}.`);
+      logAction('File Upload', 'Failure', `Error uploading for creator ID ${creatorId}.`);
     } finally {
       if (event.target) event.target.value = '';
     }
   };
+
 
   const handleArrayChange = (id: number, field: 'skills' | 'languages' | 'hobbies' | 'contributions', value: string) => {
     const arr = value.split(',').map(s => s.trim()).filter(Boolean);

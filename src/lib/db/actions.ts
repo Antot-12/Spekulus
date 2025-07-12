@@ -210,14 +210,13 @@ export async function updateCreators(lang: Language, creatorsData: Creator[]) {
   try {
     for (let i = 0; i < safeCreators.length; i++) {
       const creator = safeCreators[i];
-      const id = creatorsData[i].id;
-      const { id: _omitId, ...creatorWithoutId } = creator;
+      const { id, ...creatorWithoutId } = creator;
 
       await db
         .insert(schema.creators)
-        .values({ ...creator, id })
+        .values({ ...creator })
         .onConflictDoUpdate({
-          target: schema.creators.id,
+          target: [schema.creators.id, schema.creators.lang],
           set: creatorWithoutId,
         });
     }
