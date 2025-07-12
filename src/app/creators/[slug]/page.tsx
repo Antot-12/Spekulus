@@ -25,7 +25,7 @@ import { AchievementIcon } from '@/components/AchievementIcon';
 import { MusicIcon } from './MusicIcon';
 import { cn } from '@/lib/utils';
 import { getCreatorBySlug } from '@/lib/db/actions';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 // Helper component for consistent section styling
 const ProfileSection = ({ icon, title, children, className, style }: { icon: ReactNode, title: string, children: ReactNode, className?: string, style?: CSSProperties }) => (
@@ -176,7 +176,7 @@ const MusicSection = ({ music, style }: { music?: Creator['music'], style?: CSSP
                     return `https://open.spotify.com/embed/playlist/${idOrUrl}`;
                 case 'appleMusic':
                     if (!idOrUrl.startsWith('http')) {
-                        console.warn(`Invalid Apple Music URL provided: ${idOrUrl}`);
+                        console.warn(`Invalid Apple Music URL provided (must start with http): ${idOrUrl}`);
                         return null;
                     }
                     const url = new URL(idOrUrl);
@@ -399,6 +399,9 @@ const GallerySection = ({ gallery, style }: { gallery?: GalleryImage[], style?: 
                             </div>
                         </DialogTrigger>
                         <DialogContent className="max-w-4xl p-2 bg-transparent border-none shadow-none">
+                            <DialogHeader>
+                                <DialogTitle className="sr-only">{image.description}</DialogTitle>
+                            </DialogHeader>
                             <img src={`/api/images/${image.imageId}`} alt={image.description} className="max-h-[90vh] w-auto h-auto rounded-lg" />
                         </DialogContent>
                     </Dialog>
