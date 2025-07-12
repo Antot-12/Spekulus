@@ -1,8 +1,8 @@
-# Spekulus Vision Project: Comprehensive Technical Documentation
+# Spekulus Project: Comprehensive Technical Documentation
 
 ## 1. Project Overview
 
-Spekulus Vision is a dynamic, multi-language marketing and informational website for a conceptual smart mirror product. The site is designed to be fully manageable through a custom admin panel, allowing content editors to update most public-facing content without requiring code changes.
+Spekulus is a dynamic, multi-language marketing and informational website for a conceptual smart mirror product. The site is designed to be fully manageable through a custom admin panel, allowing content editors to update most public-facing content without requiring code changes.
 
 This document serves as a complete technical guide for developers.
 

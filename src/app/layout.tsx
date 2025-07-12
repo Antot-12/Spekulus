@@ -4,7 +4,7 @@ import { Toaster } from '@/components/ui/toaster';
 import AppWrapper from '@/components/AppWrapper';
 
 export const metadata: Metadata = {
-  title: 'Spekulus Vision',
+  title: 'Spekulus',
   description: 'Reflect smarter, live better.',
 };
 

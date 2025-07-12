@@ -1,4 +1,4 @@
-# **App Name**: Spekulus Vision
+# **App Name**: Spekulus
 
 ## Core Features:
 

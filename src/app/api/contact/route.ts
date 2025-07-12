@@ -41,9 +41,9 @@ export async function POST(request: NextRequest) {
     const { name, email, message } = parsed.data;
 
     const { data, error } = await resend.emails.send({
-        from: 'Spekulus Vision <onboarding@resend.dev>',
+        from: 'Spekulus <onboarding@resend.dev>',
         to: [RESEND_RECIPIENT_EMAIL],
-        subject: `New Message from ${name} via SpekulusVision.com`,
+        subject: `New Message from ${name} via Spekulus.vercel.app`,
         reply_to: email,
         html: `
             <p>You have received a new message from your website contact form.</p>
