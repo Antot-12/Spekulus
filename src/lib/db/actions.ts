@@ -1,4 +1,3 @@
-
 'use server';
 
 import 'server-only';
@@ -156,17 +155,19 @@ export async function updateFaqs(lang: Language, faqs: FaqItem[]) {
 
 
 // Creator Actions
-export async function getCreators(lang: Language) {
-  return await db.query.creators.findMany({
+export async function getCreators(lang: Language): Promise<Creator[]> {
+  const results = await db.query.creators.findMany({
     where: eq(schema.creators.lang, lang),
-    orderBy: (creators, { asc }) => [asc(creators.id)],
   });
+  return results.map(r => ({ ...r, id: 0 })); // Add a dummy id for client-side key prop
 }
 
-export async function getCreatorBySlug(lang: Language, slug: string) {
-  return await db.query.creators.findFirst({
+export async function getCreatorBySlug(lang: Language, slug: string): Promise<Creator | null> {
+  const result = await db.query.creators.findFirst({
     where: and(eq(schema.creators.slug, slug), eq(schema.creators.lang, lang)),
   });
+  if (!result) return null;
+  return { ...result, id: 0 }; // Add a dummy id
 }
 
 export async function createCreator(lang: Language, data: Omit<Creator, 'id'>) {
@@ -177,12 +178,12 @@ export async function createCreator(lang: Language, data: Omit<Creator, 'id'>) {
     featuredProjectImageId: data.featuredProjectImageId || null,
   };
   const [newCreator] = await db.insert(schema.creators).values(payload).returning();
-  return newCreator;
+  return { ...newCreator, id: 0 }; // Add dummy id
 }
 
 export async function updateCreators(lang: Language, creatorsData: Creator[]) {
   const safeCreators = creatorsData.map((c) => {
-    const { ...rest } = c;
+    const { id, ...rest } = c; // remove dummy id
     return {
       ...rest,
       lang,
@@ -208,13 +209,12 @@ export async function updateCreators(lang: Language, creatorsData: Creator[]) {
 
   try {
     for (const creator of safeCreators) {
-      const { id, ...creatorWithoutId } = creator;
       await db
         .insert(schema.creators)
         .values(creator)
         .onConflictDoUpdate({
           target: [schema.creators.slug, schema.creators.lang],
-          set: creatorWithoutId,
+          set: creator,
         });
     }
 

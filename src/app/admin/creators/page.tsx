@@ -109,30 +109,31 @@ export default function CreatorsAdminPage() {
   };
   
 
-  const handleFieldChange = (id: number, field: keyof Creator, value: any) => {
-    setCreators(prev => prev.map(c => c.id === id ? { ...c, [field]: value } : c));
+  const handleFieldChange = (slug: string, field: keyof Creator, value: any) => {
+    setCreators(prev => prev.map(c => c.slug === slug ? { ...c, [field]: value } : c));
   };
 
-  const handleSocialChange = (id: number, platform: 'github' | 'twitter' | 'linkedin', value: string) => {
-    const creator = creators.find(c => c.id === id);
-    if (creator) handleFieldChange(id, 'socials', { ...creator.socials, [platform]: value });
+  const handleSocialChange = (slug: string, platform: 'github' | 'twitter' | 'linkedin', value: string) => {
+    const creator = creators.find(c => c.slug === slug);
+    if (creator) handleFieldChange(slug, 'socials', { ...creator.socials, [platform]: value });
   };
 
-  const handleMusicChange = (id: number, platform: keyof NonNullable<Creator['music']>, value: string) => {
-    const creator = creators.find(c => c.id === id);
-    if (creator) handleFieldChange(id, 'music', { ...(creator.music ?? {}), [platform]: value });
+  const handleMusicChange = (slug: string, platform: keyof NonNullable<Creator['music']>, value: string) => {
+    const creator = creators.find(c => c.slug === slug);
+    if (creator) handleFieldChange(slug, 'music', { ...(creator.music ?? {}), [platform]: value });
   };
 
-  const handleProjectChange = (id: number, field: keyof FeaturedProject, value: string) => {
-    const creator = creators.find(c => c.id === id);
+  const handleProjectChange = (slug: string, field: keyof FeaturedProject, value: string) => {
+    const creator = creators.find(c => c.slug === slug);
     const updated = { ...(creator?.featuredProject || { title: '', url: '', description: '' }), [field]: value };
-    handleFieldChange(id, 'featuredProject', updated);
+    handleFieldChange(slug, 'featuredProject', updated);
   };
   
   const handleCreatorAdd = async () => {
+    const newSlug = `new-creator-${Date.now()}`;
     const newCreatorData: Omit<Creator, 'id'> = {
       name: 'New Creator',
-      slug: `new-creator-${Date.now()}`,
+      slug: newSlug,
       role: 'Team Member',
       bio: newCreatorBioExample,
       quote: '',
@@ -156,7 +157,7 @@ export default function CreatorsAdminPage() {
 
     try {
       const newCreator = await createCreator(selectedLang, newCreatorData);
-      if (newCreator?.id) {
+      if (newCreator?.slug) {
         setCreators(prev => [...prev, newCreator]);
         toast({ title: "Creator Added", description: "New profile added. Save to persist." });
       } else {
@@ -167,13 +168,13 @@ export default function CreatorsAdminPage() {
     }
   };
 
-  const handleCreatorDelete = (idToDelete: number) => {
-    const creator = creators.find(c => c.id === idToDelete);
-    setCreators(prev => prev.filter(c => c.id !== idToDelete));
+  const handleCreatorDelete = (slugToDelete: string) => {
+    const creator = creators.find(c => c.slug === slugToDelete);
+    setCreators(prev => prev.filter(c => c.slug !== slugToDelete));
     toast({ title: "Creator Removed", description: `${creator?.name} removed. Save to confirm.`, variant: 'destructive' });
   };
 
-  const handleImageUpload = async (creatorId: number, field: 'imageId' | 'featuredProjectImageId' | `gallery.${number}`, event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (creatorSlug: string, field: 'imageId' | 'featuredProjectImageId' | `gallery.${number}`, event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -187,7 +188,7 @@ export default function CreatorsAdminPage() {
       
       if (result.success && result.id) {
         setCreators(prev => prev.map(c => {
-          if (c.id === creatorId) {
+          if (c.slug === creatorSlug) {
             if (field === 'imageId') {
               return { ...c, imageId: result.id };
             }
@@ -206,42 +207,42 @@ export default function CreatorsAdminPage() {
           return c;
         }));
         toast({ title: "Uploaded", description: "Image uploaded. Save to persist." });
-        logAction('File Upload', 'Success', `Uploaded image for creator ID ${creatorId}.`);
+        logAction('File Upload', 'Success', `Uploaded image for creator slug ${creatorSlug}.`);
       } else {
         toast({ title: "Upload Failed", description: result.error, variant: 'destructive' });
-        logAction('File Upload', 'Failure', `Failed upload for creator ID ${creatorId}.`);
+        logAction('File Upload', 'Failure', `Failed upload for creator slug ${creatorSlug}.`);
       }
     } catch {
       toast({ title: "Upload Failed", description: "Error uploading image.", variant: 'destructive' });
-      logAction('File Upload', 'Failure', `Error uploading for creator ID ${creatorId}.`);
+      logAction('File Upload', 'Failure', `Error uploading for creator slug ${creatorSlug}.`);
     } finally {
       if (event.target) event.target.value = '';
     }
   };
 
 
-  const handleArrayChange = (id: number, field: 'skills' | 'languages' | 'hobbies' | 'contributions', value: string) => {
+  const handleArrayChange = (slug: string, field: 'skills' | 'languages' | 'hobbies' | 'contributions', value: string) => {
     const arr = value.split(',').map(s => s.trim()).filter(Boolean);
-    handleFieldChange(id, field, arr);
+    handleFieldChange(slug, field, arr);
   };
   
   const handleComplexArrayChange = <T extends Education | Certification | Achievement>(
-    creatorId: number, 
+    creatorSlug: string, 
     field: 'education' | 'certifications' | 'achievements',
     idx: number,
     prop: keyof T,
     value: string
   ) => {
-    const creator = creators.find(c => c.id === creatorId);
+    const creator = creators.find(c => c.slug === creatorSlug);
     if (!creator) return;
 
     const array = [...(creator[field] as T[] ?? [])];
     array[idx] = { ...array[idx], [prop]: value };
-    handleFieldChange(creatorId, field, array);
+    handleFieldChange(creatorSlug, field, array);
   };
 
-  const handleComplexArrayAdd = (creatorId: number, field: 'education' | 'certifications' | 'achievements') => {
-    const creator = creators.find(c => c.id === creatorId);
+  const handleComplexArrayAdd = (creatorSlug: string, field: 'education' | 'certifications' | 'achievements') => {
+    const creator = creators.find(c => c.slug === creatorSlug);
     if (!creator) return;
 
     let newItem;
@@ -251,38 +252,38 @@ export default function CreatorsAdminPage() {
 
     if (newItem) {
         const array = [...(creator[field] as any[] ?? []), newItem];
-        handleFieldChange(creatorId, field, array);
+        handleFieldChange(creatorSlug, field, array);
     }
   };
 
-  const handleComplexArrayDelete = (creatorId: number, field: 'education' | 'certifications' | 'achievements', idx: number) => {
-    const creator = creators.find(c => c.id === creatorId);
+  const handleComplexArrayDelete = (creatorSlug: string, field: 'education' | 'certifications' | 'achievements', idx: number) => {
+    const creator = creators.find(c => c.slug === creatorSlug);
     if (!creator) return;
     const array = (creator[field] as any[])?.filter((_, i) => i !== idx);
-    handleFieldChange(creatorId, field, array);
+    handleFieldChange(creatorSlug, field, array);
   };
 
-  const handleGalleryChange = (creatorId: number, idx: number, value: string) => {
-    const creator = creators.find(c => c.id === creatorId);
+  const handleGalleryChange = (creatorSlug: string, idx: number, value: string) => {
+    const creator = creators.find(c => c.slug === creatorSlug);
     if (!creator) return;
     const gallery = [...(creator.gallery ?? [])];
     gallery[idx] = { ...gallery[idx], description: value };
-    handleFieldChange(creatorId, 'gallery', gallery);
+    handleFieldChange(creatorSlug, 'gallery', gallery);
   };
 
-  const handleGalleryAdd = (creatorId: number) => {
-    const creator = creators.find(c => c.id === creatorId);
+  const handleGalleryAdd = (creatorSlug: string) => {
+    const creator = creators.find(c => c.slug === creatorSlug);
     if (!creator) return;
     const gallery = [...(creator.gallery ?? []), { imageId: 0, description: 'New Image' }];
-    handleFieldChange(creatorId, 'gallery', gallery);
+    handleFieldChange(creatorSlug, 'gallery', gallery);
     toast({ title: "Gallery Image Added" });
   };
 
-  const handleGalleryDelete = (creatorId: number, idx: number) => {
-    const creator = creators.find(c => c.id === creatorId);
+  const handleGalleryDelete = (creatorSlug: string, idx: number) => {
+    const creator = creators.find(c => c.slug === creatorSlug);
     if (!creator) return;
     const gallery = creator.gallery?.filter((_, i) => i !== idx);
-    handleFieldChange(creatorId, 'gallery', gallery);
+    handleFieldChange(creatorSlug, 'gallery', gallery);
     toast({ title: "Gallery Image Deleted", variant: 'destructive' });
   };
 
@@ -325,22 +326,22 @@ export default function CreatorsAdminPage() {
           </div>
         ) : (
           creators.map(creator => (
-            <div key={`${creator.slug}-${creator.id}`} className="space-y-6 p-4 border rounded-md">
+            <div key={creator.slug} className="space-y-6 p-4 border rounded-md">
               <div className="flex items-center justify-between rounded-lg border p-4 bg-muted/20">
-                <Label htmlFor={`visible-${creator.id}`} className="text-base flex items-center gap-2">
+                <Label htmlFor={`visible-${creator.slug}`} className="text-base flex items-center gap-2">
                   {creator.isVisible ? <Eye className="w-5 h-5 text-primary" /> : <EyeOff className="w-5 h-5 text-muted-foreground" />} Profile Visibility
                 </Label>
-                <Switch id={`visible-${creator.id}`} checked={!!creator.isVisible} onCheckedChange={v => handleFieldChange(creator.id, 'isVisible', v)} />
+                <Switch id={`visible-${creator.slug}`} checked={!!creator.isVisible} onCheckedChange={v => handleFieldChange(creator.slug, 'isVisible', v)} />
               </div>
 
               <Card>
                 <CardHeader><CardTitle className="font-headline flex items-center gap-2"><Users className="w-6 h-6" />Core Info</CardTitle></CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div><Label htmlFor={`name-${creator.id}`}>Name</Label><Input id={`name-${creator.id}`} value={creator.name} onChange={e => handleFieldChange(creator.id, 'name', e.target.value)} /></div>
-                  <div><Label htmlFor={`role-${creator.id}`}>Role</Label><Input id={`role-${creator.id}`} value={creator.role} onChange={e => handleFieldChange(creator.id, 'role', e.target.value)} /></div>
-                  <div><Label htmlFor={`slug-${creator.id}`}>Slug</Label><Input id={`slug-${creator.id}`} value={creator.slug} onChange={e => handleFieldChange(creator.id, 'slug', e.target.value)} /></div>
-                  <div><Label htmlFor={`location-${creator.id}`}>Location</Label><Input id={`location-${creator.id}`} value={creator.location ?? ''} onChange={e => handleFieldChange(creator.id, 'location', e.target.value)} /></div>
-                  <div className="md:col-span-2"><Label htmlFor={`cvUrl-${creator.id}`}>CV URL</Label><Input id={`cvUrl-${creator.id}`} value={creator.cvUrl ?? ''} onChange={e => handleFieldChange(creator.id, 'cvUrl', e.target.value)} /></div>
+                  <div><Label htmlFor={`name-${creator.slug}`}>Name</Label><Input id={`name-${creator.slug}`} value={creator.name} onChange={e => handleFieldChange(creator.slug, 'name', e.target.value)} /></div>
+                  <div><Label htmlFor={`role-${creator.slug}`}>Role</Label><Input id={`role-${creator.slug}`} value={creator.role} onChange={e => handleFieldChange(creator.slug, 'role', e.target.value)} /></div>
+                  <div><Label htmlFor={`slug-${creator.slug}`}>Slug</Label><Input id={`slug-${creator.slug}`} value={creator.slug} onChange={e => handleFieldChange(creator.slug, 'slug', e.target.value)} /></div>
+                  <div><Label htmlFor={`location-${creator.slug}`}>Location</Label><Input id={`location-${creator.slug}`} value={creator.location ?? ''} onChange={e => handleFieldChange(creator.slug, 'location', e.target.value)} /></div>
+                  <div className="md:col-span-2"><Label htmlFor={`cvUrl-${creator.slug}`}>CV URL</Label><Input id={`cvUrl-${creator.slug}`} value={creator.cvUrl ?? ''} onChange={e => handleFieldChange(creator.slug, 'cvUrl', e.target.value)} /></div>
                 </CardContent>
               </Card>
 
@@ -349,8 +350,8 @@ export default function CreatorsAdminPage() {
                 <CardContent>
                   <div className="flex gap-2">
                     <Input value={creator.imageId ?? ''} disabled placeholder="Upload an image to get an ID"/>
-                    <Button variant="outline" size="icon" onClick={() => fileInputRefs.current[`creator-${creator.id}`]?.click()}><Upload className="h-4 w-4"/></Button>
-                    <input type="file" ref={el => (fileInputRefs.current[`creator-${creator.id}`] = el)} accept="image/*" onChange={e => handleImageUpload(creator.id, 'imageId', e)} className="hidden" />
+                    <Button variant="outline" size="icon" onClick={() => fileInputRefs.current[`creator-${creator.slug}`]?.click()}><Upload className="h-4 w-4"/></Button>
+                    <input type="file" ref={el => (fileInputRefs.current[`creator-${creator.slug}`] = el)} accept="image/*" onChange={e => handleImageUpload(creator.slug, 'imageId', e)} className="hidden" />
                   </div>
                 </CardContent>
               </Card>
@@ -358,27 +359,27 @@ export default function CreatorsAdminPage() {
               <Card>
                 <CardHeader><CardTitle className="font-headline flex items-center gap-2"><Heart className="w-6 h-6" />Details</CardTitle></CardHeader>
                 <CardContent className="space-y-2">
-                  <Label>Quote</Label><Textarea value={creator.quote ?? ''} onChange={e => handleFieldChange(creator.id, 'quote', e.target.value)} rows={2} />
-                  <Label>Quote Author</Label><Input value={creator.quoteAuthor ?? ''} onChange={e => handleFieldChange(creator.id, 'quoteAuthor', e.target.value)} />
-                  <Label>Skills (comma-separated)</Label><Input value={creator.skills?.join(', ') ?? ''} onChange={e => handleArrayChange(creator.id, 'skills', e.target.value)} />
-                  <Label>Languages (comma-separated)</Label><Input value={creator.languages?.join(', ') ?? ''} onChange={e => handleArrayChange(creator.id, 'languages', e.target.value)} />
-                  <Label>Contributions (comma-separated)</Label><Textarea value={creator.contributions?.join(', ') ?? ''} onChange={e => handleArrayChange(creator.id, 'contributions', e.target.value)} rows={3} />
-                  <Label>Hobbies (comma-separated)</Label><Input value={creator.hobbies?.join(', ') ?? ''} onChange={e => handleArrayChange(creator.id, 'hobbies', e.target.value)} />
+                  <Label>Quote</Label><Textarea value={creator.quote ?? ''} onChange={e => handleFieldChange(creator.slug, 'quote', e.target.value)} rows={2} />
+                  <Label>Quote Author</Label><Input value={creator.quoteAuthor ?? ''} onChange={e => handleFieldChange(creator.slug, 'quoteAuthor', e.target.value)} />
+                  <Label>Skills (comma-separated)</Label><Input value={creator.skills?.join(', ') ?? ''} onChange={e => handleArrayChange(creator.slug, 'skills', e.target.value)} />
+                  <Label>Languages (comma-separated)</Label><Input value={creator.languages?.join(', ') ?? ''} onChange={e => handleArrayChange(creator.slug, 'languages', e.target.value)} />
+                  <Label>Contributions (comma-separated)</Label><Textarea value={creator.contributions?.join(', ') ?? ''} onChange={e => handleArrayChange(creator.slug, 'contributions', e.target.value)} rows={3} />
+                  <Label>Hobbies (comma-separated)</Label><Input value={creator.hobbies?.join(', ') ?? ''} onChange={e => handleArrayChange(creator.slug, 'hobbies', e.target.value)} />
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader><CardTitle className="font-headline flex items-center gap-2"><LinkIcon className="w-6 h-6" />Social</CardTitle></CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                  <Input placeholder="GitHub" value={creator.socials.github ?? ''} onChange={e => handleSocialChange(creator.id, 'github', e.target.value)} />
-                  <Input placeholder="Twitter" value={creator.socials.twitter ?? ''} onChange={e => handleSocialChange(creator.id, 'twitter', e.target.value)} />
-                  <Input placeholder="LinkedIn" value={creator.socials.linkedin ?? ''} onChange={e => handleSocialChange(creator.id, 'linkedin', e.target.value)} />
+                  <Input placeholder="GitHub" value={creator.socials.github ?? ''} onChange={e => handleSocialChange(creator.slug, 'github', e.target.value)} />
+                  <Input placeholder="Twitter" value={creator.socials.twitter ?? ''} onChange={e => handleSocialChange(creator.slug, 'twitter', e.target.value)} />
+                  <Input placeholder="LinkedIn" value={creator.socials.linkedin ?? ''} onChange={e => handleSocialChange(creator.slug, 'linkedin', e.target.value)} />
                 </CardContent>
               </Card>
 
               <Card className="bg-muted/30">
                 <CardHeader><CardTitle className="font-headline flex items-center gap-2"><FileText className="w-6 h-6" />Bio</CardTitle></CardHeader>
-                <CardContent><MarkdownEditor value={creator.bio} onChange={v => handleFieldChange(creator.id, 'bio', v)} rows={10} /></CardContent>
+                <CardContent><MarkdownEditor value={creator.bio} onChange={v => handleFieldChange(creator.slug, 'bio', v)} rows={10} /></CardContent>
               </Card>
               
               <Card>
@@ -387,14 +388,14 @@ export default function CreatorsAdminPage() {
                   {creator.education?.map((edu, idx) => (
                     <div key={idx} className="flex gap-2 items-end p-2 border rounded-md">
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 flex-grow">
-                          <Input placeholder="Institution" value={edu.institution} onChange={e => handleComplexArrayChange(creator.id, 'education', idx, 'institution', e.target.value)} />
-                          <Input placeholder="Degree" value={edu.degree} onChange={e => handleComplexArrayChange(creator.id, 'education', idx, 'degree', e.target.value)} />
-                          <Input placeholder="Year" value={edu.year} onChange={e => handleComplexArrayChange(creator.id, 'education', idx, 'year', e.target.value)} />
+                          <Input placeholder="Institution" value={edu.institution} onChange={e => handleComplexArrayChange(creator.slug, 'education', idx, 'institution', e.target.value)} />
+                          <Input placeholder="Degree" value={edu.degree} onChange={e => handleComplexArrayChange(creator.slug, 'education', idx, 'degree', e.target.value)} />
+                          <Input placeholder="Year" value={edu.year} onChange={e => handleComplexArrayChange(creator.slug, 'education', idx, 'year', e.target.value)} />
                       </div>
-                      <Button variant="ghost" size="icon" onClick={() => handleComplexArrayDelete(creator.id, 'education', idx)}><Trash2 className="w-4 h-4 text-destructive"/></Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleComplexArrayDelete(creator.slug, 'education', idx)}><Trash2 className="w-4 h-4 text-destructive"/></Button>
                     </div>
                   ))}
-                   <Button variant="outline" size="sm" onClick={() => handleComplexArrayAdd(creator.id, 'education')}><PlusCircle className="mr-2 h-4 w-4"/>Add Education</Button>
+                   <Button variant="outline" size="sm" onClick={() => handleComplexArrayAdd(creator.slug, 'education')}><PlusCircle className="mr-2 h-4 w-4"/>Add Education</Button>
                 </CardContent>
               </Card>
 
@@ -404,14 +405,14 @@ export default function CreatorsAdminPage() {
                   {creator.certifications?.map((cert, idx) => (
                     <div key={idx} className="flex gap-2 items-end p-2 border rounded-md">
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 flex-grow">
-                          <Input placeholder="Certification Name" value={cert.name} onChange={e => handleComplexArrayChange(creator.id, 'certifications', idx, 'name', e.target.value)} />
-                          <Input placeholder="Issuing Authority" value={cert.authority} onChange={e => handleComplexArrayChange(creator.id, 'certifications', idx, 'authority', e.target.value)} />
-                          <Input placeholder="Year" value={cert.year} onChange={e => handleComplexArrayChange(creator.id, 'certifications', idx, 'year', e.target.value)} />
+                          <Input placeholder="Certification Name" value={cert.name} onChange={e => handleComplexArrayChange(creator.slug, 'certifications', idx, 'name', e.target.value)} />
+                          <Input placeholder="Issuing Authority" value={cert.authority} onChange={e => handleComplexArrayChange(creator.slug, 'certifications', idx, 'authority', e.target.value)} />
+                          <Input placeholder="Year" value={cert.year} onChange={e => handleComplexArrayChange(creator.slug, 'certifications', idx, 'year', e.target.value)} />
                       </div>
-                      <Button variant="ghost" size="icon" onClick={() => handleComplexArrayDelete(creator.id, 'certifications', idx)}><Trash2 className="w-4 h-4 text-destructive"/></Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleComplexArrayDelete(creator.slug, 'certifications', idx)}><Trash2 className="w-4 h-4 text-destructive"/></Button>
                     </div>
                   ))}
-                   <Button variant="outline" size="sm" onClick={() => handleComplexArrayAdd(creator.id, 'certifications')}><PlusCircle className="mr-2 h-4 w-4"/>Add Certification</Button>
+                   <Button variant="outline" size="sm" onClick={() => handleComplexArrayAdd(creator.slug, 'certifications')}><PlusCircle className="mr-2 h-4 w-4"/>Add Certification</Button>
                 </CardContent>
               </Card>
               
@@ -421,14 +422,14 @@ export default function CreatorsAdminPage() {
                   {creator.achievements?.map((ach, idx) => (
                     <div key={idx} className="flex gap-2 items-end p-2 border rounded-md">
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 flex-grow">
-                          <Input placeholder="Icon (e.g., Star)" value={ach.icon} onChange={e => handleComplexArrayChange(creator.id, 'achievements', idx, 'icon', e.target.value)} />
-                          <Input placeholder="Achievement Name" value={ach.name} onChange={e => handleComplexArrayChange(creator.id, 'achievements', idx, 'name', e.target.value)} />
-                          <Textarea placeholder="Description..." value={ach.description} onChange={e => handleComplexArrayChange(creator.id, 'achievements', idx, 'description', e.target.value)} className="sm:col-span-3"/>
+                          <Input placeholder="Icon (e.g., Star)" value={ach.icon} onChange={e => handleComplexArrayChange(creator.slug, 'achievements', idx, 'icon', e.target.value)} />
+                          <Input placeholder="Achievement Name" value={ach.name} onChange={e => handleComplexArrayChange(creator.slug, 'achievements', idx, 'name', e.target.value)} />
+                          <Textarea placeholder="Description..." value={ach.description} onChange={e => handleComplexArrayChange(creator.slug, 'achievements', idx, 'description', e.target.value)} className="sm:col-span-3"/>
                       </div>
-                      <Button variant="ghost" size="icon" onClick={() => handleComplexArrayDelete(creator.id, 'achievements', idx)}><Trash2 className="w-4 h-4 text-destructive"/></Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleComplexArrayDelete(creator.slug, 'achievements', idx)}><Trash2 className="w-4 h-4 text-destructive"/></Button>
                     </div>
                   ))}
-                   <Button variant="outline" size="sm" onClick={() => handleComplexArrayAdd(creator.id, 'achievements')}><PlusCircle className="mr-2 h-4 w-4"/>Add Achievement</Button>
+                   <Button variant="outline" size="sm" onClick={() => handleComplexArrayAdd(creator.slug, 'achievements')}><PlusCircle className="mr-2 h-4 w-4"/>Add Achievement</Button>
                 </CardContent>
               </Card>
 
@@ -436,16 +437,16 @@ export default function CreatorsAdminPage() {
                 <CardHeader><CardTitle className="font-headline flex items-center gap-2"><Music className="w-6 h-6" />Music & Playlists</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label htmlFor={`spotify-${creator.id}`}>Spotify Playlist ID</Label>
-                    <Input id={`spotify-${creator.id}`} value={creator.music?.spotify ?? ''} onChange={e => handleMusicChange(creator.id, 'spotify', e.target.value)} />
+                    <Label htmlFor={`spotify-${creator.slug}`}>Spotify Playlist ID</Label>
+                    <Input id={`spotify-${creator.slug}`} value={creator.music?.spotify ?? ''} onChange={e => handleMusicChange(creator.slug, 'spotify', e.target.value)} />
                   </div>
                   <div>
-                    <Label htmlFor={`apple-${creator.id}`}>Apple Music Playlist URL</Label>
-                    <Input id={`apple-${creator.id}`} value={creator.music?.appleMusic ?? ''} onChange={e => handleMusicChange(creator.id, 'appleMusic', e.target.value)} />
+                    <Label htmlFor={`apple-${creator.slug}`}>Apple Music Playlist URL</Label>
+                    <Input id={`apple-${creator.slug}`} value={creator.music?.appleMusic ?? ''} onChange={e => handleMusicChange(creator.slug, 'appleMusic', e.target.value)} />
                   </div>
                   <div>
-                    <Label htmlFor={`youtube-${creator.id}`}>YouTube Music Playlist ID</Label>
-                    <Input id={`youtube-${creator.id}`} value={creator.music?.youtubeMusic ?? ''} onChange={e => handleMusicChange(creator.id, 'youtubeMusic', e.target.value)} />
+                    <Label htmlFor={`youtube-${creator.slug}`}>YouTube Music Playlist ID</Label>
+                    <Input id={`youtube-${creator.slug}`} value={creator.music?.youtubeMusic ?? ''} onChange={e => handleMusicChange(creator.slug, 'youtubeMusic', e.target.value)} />
                   </div>
                 </CardContent>
               </Card>
@@ -453,15 +454,15 @@ export default function CreatorsAdminPage() {
               <Card>
                 <CardHeader><CardTitle className="font-headline flex items-center gap-2"><Briefcase className="w-6 h-6" />Featured Project</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
-                  <div><Label>Project Title</Label><Input value={creator.featuredProject?.title ?? ''} onChange={e => handleProjectChange(creator.id, 'title', e.target.value)} /></div>
-                  <div><Label>Project URL</Label><Input value={creator.featuredProject?.url ?? ''} onChange={e => handleProjectChange(creator.id, 'url', e.target.value)} /></div>
-                  <div><Label>Project Description</Label><Textarea value={creator.featuredProject?.description ?? ''} onChange={e => handleProjectChange(creator.id, 'description', e.target.value)} rows={3}/></div>
+                  <div><Label>Project Title</Label><Input value={creator.featuredProject?.title ?? ''} onChange={e => handleProjectChange(creator.slug, 'title', e.target.value)} /></div>
+                  <div><Label>Project URL</Label><Input value={creator.featuredProject?.url ?? ''} onChange={e => handleProjectChange(creator.slug, 'url', e.target.value)} /></div>
+                  <div><Label>Project Description</Label><Textarea value={creator.featuredProject?.description ?? ''} onChange={e => handleProjectChange(creator.slug, 'description', e.target.value)} rows={3}/></div>
                   <div>
                     <Label>Project Image</Label>
                     <div className="flex gap-2">
                         <Input value={creator.featuredProjectImageId ?? ''} disabled placeholder="Upload an image to get an ID"/>
-                        <Button variant="outline" size="icon" onClick={() => fileInputRefs.current[`project-${creator.id}`]?.click()}><Upload className="h-4 w-4" /></Button>
-                        <input type="file" ref={el => fileInputRefs.current[`project-${creator.id}`] = el} accept="image/*" onChange={e => handleImageUpload(creator.id, 'featuredProjectImageId', e)} className="hidden" />
+                        <Button variant="outline" size="icon" onClick={() => fileInputRefs.current[`project-${creator.slug}`]?.click()}><Upload className="h-4 w-4" /></Button>
+                        <input type="file" ref={el => fileInputRefs.current[`project-${creator.slug}`] = el} accept="image/*" onChange={e => handleImageUpload(creator.slug, 'featuredProjectImageId', e)} className="hidden" />
                     </div>
                   </div>
                 </CardContent>
@@ -471,7 +472,7 @@ export default function CreatorsAdminPage() {
                 <CardHeader>
                     <div className="flex justify-between items-center">
                         <CardTitle className="font-headline flex items-center gap-2"><Camera className="w-6 h-6" />Gallery</CardTitle>
-                        <Button size="sm" onClick={() => handleGalleryAdd(creator.id)}><PlusCircle className="mr-2 h-4 w-4" />Add Image</Button>
+                        <Button size="sm" onClick={() => handleGalleryAdd(creator.slug)}><PlusCircle className="mr-2 h-4 w-4" />Add Image</Button>
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -479,15 +480,15 @@ export default function CreatorsAdminPage() {
                         <div key={idx} className="flex gap-4 p-4 border rounded-md bg-muted/20">
                             <div className="flex-grow space-y-2">
                                 <Label>Image Description</Label>
-                                <Input value={img.description} onChange={e => handleGalleryChange(creator.id, idx, e.target.value)} />
+                                <Input value={img.description} onChange={e => handleGalleryChange(creator.slug, idx, e.target.value)} />
                                 <Label>Image</Label>
                                 <div className="flex gap-2">
                                     <Input value={img.imageId || ''} disabled placeholder="Upload an image to get an ID"/>
-                                    <Button variant="outline" size="icon" onClick={() => fileInputRefs.current[`gallery-${creator.id}-${idx}`]?.click()}><Upload className="h-4 w-4" /></Button>
-                                    <input type="file" ref={el => fileInputRefs.current[`gallery-${creator.id}-${idx}`] = el} accept="image/*" onChange={e => handleImageUpload(creator.id, `gallery.${idx}`, e)} className="hidden" />
+                                    <Button variant="outline" size="icon" onClick={() => fileInputRefs.current[`gallery-${creator.slug}-${idx}`]?.click()}><Upload className="h-4 w-4" /></Button>
+                                    <input type="file" ref={el => fileInputRefs.current[`gallery-${creator.slug}-${idx}`] = el} accept="image/*" onChange={e => handleImageUpload(creator.slug, `gallery.${idx}`, e)} className="hidden" />
                                 </div>
                             </div>
-                            <Button variant="destructive" size="icon" onClick={() => handleGalleryDelete(creator.id, idx)} className="shrink-0 self-end"><Trash2 className="w-4 h-4"/></Button>
+                            <Button variant="destructive" size="icon" onClick={() => handleGalleryDelete(creator.slug, idx)} className="shrink-0 self-end"><Trash2 className="w-4 h-4"/></Button>
                         </div>
                     ))}
                     {!creator.gallery || creator.gallery.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">No gallery images yet.</p>}
@@ -505,7 +506,7 @@ export default function CreatorsAdminPage() {
                     <AlertDialogDescription>This deletes "{creator.name}" after saving changes.</AlertDialogDescription>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => handleCreatorDelete(creator.id)}>Remove</AlertDialogAction>
+                      <AlertDialogAction onClick={() => handleCreatorDelete(creator.slug)}>Remove</AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
