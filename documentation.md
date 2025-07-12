@@ -223,6 +223,49 @@ The admin panel is a protected section for managing all dynamic site content.
   3. When an admin makes a change (e.g., types in an input), the component's React state is updated.
   4. Clicking "Save" calls the corresponding `update...` server action, passing the current state to the server, which then writes it to the database.
 
+### 6.1. Admin Panel Iconography
+
+The admin panel uses icons from the `lucide-react` library to provide quick, intuitive visual cues for actions and navigation.
+
+#### **Common Actions**
+
+- **`Save`**: Persists all changes made on the current page to the database.
+- **`Loader2` (spinning)**: Indicates that an action (like saving or uploading) is in progress. The button is disabled during this state.
+- **`PlusCircle`**: Adds a new item to a list (e.g., a new FAQ, a new roadmap event).
+- **`Trash2`**: Deletes an item. This action is often irreversible and may be placed inside a confirmation dialog.
+- **`Upload` / `UploadCloud`**: Opens a file dialog to upload an image or file.
+- **`Eye` / `EyeOff`**: Toggles the public visibility of an item (e.g., a dev note or creator profile).
+- **`Copy`**: Copies an item's ID or URL to the clipboard.
+- **`LinkIcon`**: Copies an item's full public URL to the clipboard.
+- **`Search`**: Indicates a search input field.
+- **`Expand`**: Opens a larger preview of an image.
+
+#### **Navigation & Layout**
+
+- **`LayoutDashboard`**: Navigates to the main admin dashboard.
+- **`PanelLeft`**: Toggles the mobile sidebar navigation.
+- **`LogOut`**: Logs the current user out of the admin panel.
+- **`ChevronsLeft` / `ChevronLeft` / `ChevronRight` / `ChevronsRight`**: Used for pagination controls to navigate through pages of items.
+- **`LayoutGrid` / `List`**: Toggles between grid and list views in the Uploads manager.
+
+#### **Content-Specific Icons**
+
+- **`Home`**: Manages the Hero section.
+- **`Cpu`**: Manages the Product "Anatomy" section.
+- **`Sparkles`**: Manages the Advantages section.
+- **`Camera`**: Manages the "In Action" or Gallery sections.
+- **`FileText`**: Manages Dev Notes.
+- **`Users`**: Manages Creator profiles.
+- **`Calendar`**: Manages the Roadmap or date-related fields.
+- **`HelpCircle`**: Manages the FAQ section.
+- **`History`**: Navigates to the Action Logs page.
+- **`ImageIcon`**: A placeholder for where an image will appear.
+- **`Music`**: Manages music/playlist information.
+- **`Briefcase`**: Manages featured project information.
+- **`GraduationCap`**: Manages education history.
+- **`Award`**: Manages certifications or achievements.
+- **`Heart`**: Manages personal details (hobbies, quotes).
+
 ---
 
 ## 7. AI Integration (Genkit)
