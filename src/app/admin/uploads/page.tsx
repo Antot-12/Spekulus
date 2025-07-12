@@ -192,6 +192,11 @@ export default function UploadsAdminPage() {
     navigator.clipboard.writeText(text)
     toast({ description: `Copied image ${type} to clipboard.` })
   }
+  
+  const copyFullUrl = (imageId: number) => {
+    const url = `${window.location.origin}/api/images/${imageId}`;
+    copyToClipboard(url, 'URL');
+  }
 
   const renderPagination = () => (
      totalPages > 1 && (
@@ -315,7 +320,7 @@ export default function UploadsAdminPage() {
                             <Button variant="outline" size="sm" className="flex-1" onClick={() => copyToClipboard(String(image.id), 'ID')}>
                                 <Copy className="mr-2 h-4 w-4" /> ID
                             </Button>
-                            <Button variant="outline" size="sm" className="flex-1" onClick={() => copyToClipboard(`/api/images/${image.id}`, 'URL')}>
+                            <Button variant="outline" size="sm" className="flex-1" onClick={() => copyFullUrl(image.id)}>
                                 <LinkIcon className="mr-2 h-4 w-4" /> URL
                             </Button>
                             <AlertDialog>
@@ -383,7 +388,7 @@ export default function UploadsAdminPage() {
                                     <TableCell className="text-right">
                                          <div className="flex gap-2 justify-end">
                                             <Button variant="ghost" size="icon" onClick={() => copyToClipboard(String(image.id), 'ID')}><Copy className="h-4 w-4"/></Button>
-                                            <Button variant="ghost" size="icon" onClick={() => copyToClipboard(`/api/images/${image.id}`, 'URL')}><LinkIcon className="h-4 w-4"/></Button>
+                                            <Button variant="ghost" size="icon" onClick={() => copyFullUrl(image.id)}><LinkIcon className="h-4 w-4"/></Button>
                                             <AlertDialog>
                                               <AlertDialogTrigger asChild>
                                                   <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4"/></Button>
