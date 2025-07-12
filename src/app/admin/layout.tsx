@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarContent, SidebarInset, SidebarTrigger, SidebarFooter } from '@/components/ui/sidebar';
 import Link from 'next/link';
-import { LayoutDashboard, FileText, Calendar, HelpCircle, LogOut, Loader2, Users, LayoutGrid, Sparkles, Camera, Home, Cpu, History } from 'lucide-react';
+import { LayoutDashboard, FileText, Calendar, HelpCircle, LogOut, Loader2, Users, LayoutGrid, Sparkles, Camera, Home, Cpu, History, UploadCloud } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { logAction } from '@/lib/logger';
 
@@ -132,6 +132,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/pages')}>
                     <Link href="/admin/pages"><LayoutGrid />Pages</Link>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/uploads')}>
+                    <Link href="/admin/uploads"><UploadCloud />Uploads</Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
              <SidebarMenuItem>

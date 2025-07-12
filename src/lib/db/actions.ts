@@ -1,3 +1,4 @@
+
 'use server'
 
 import 'server-only'
@@ -223,10 +224,24 @@ export async function deleteDevNote(id: number) {
   await db.delete(schema.devNotes).where(eq(schema.devNotes.id, id))
 }
 
-export async function getImage(id: number) {
+export async function getImageData(id: number) {
   if (isNaN(id)) return null
   return await db.query.images.findFirst({ where: eq(schema.images.id, id) })
 }
+
+export async function getImages() {
+  return await db.query.images.findMany({
+    columns: {
+      data: false // Exclude the large binary data
+    },
+    orderBy: (i, { desc }) => [desc(i.createdAt)]
+  });
+}
+
+export async function deleteImage(id: number) {
+    await db.delete(schema.images).where(eq(schema.images.id, id));
+}
+
 
 export async function uploadImage(fileBuffer: Buffer, filename: string, mimeType: string) {
   const [row] = await db

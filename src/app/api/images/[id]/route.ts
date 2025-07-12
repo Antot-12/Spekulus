@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getImage } from '@/lib/db/actions';
+import { getImageData } from '@/lib/db/actions';
 
 export async function GET(request: NextRequest, context: { params: { id: string } }) {
   const { id } = context.params;
@@ -10,7 +10,7 @@ export async function GET(request: NextRequest, context: { params: { id: string 
   }
 
   try {
-    const image = await getImage(imageId);
+    const image = await getImageData(imageId);
 
     if (!image || !image.data) {
       return new NextResponse('Image not found', { status: 404 });
