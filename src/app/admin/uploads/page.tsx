@@ -290,9 +290,10 @@ export default function UploadsAdminPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {paginatedImages.map((image) => (
                   <Card key={image.id} className="group relative overflow-hidden flex flex-col">
-                    <Dialog>
+                     <div className="flex flex-col flex-grow">
+                      <Dialog>
                        <DialogTrigger asChild>
-                         <div className="aspect-square w-full bg-muted cursor-pointer resize overflow-auto relative">
+                         <div className="aspect-square w-full bg-muted cursor-pointer resize overflow-hidden relative">
                             <img
                                 src={`/api/images/${image.id}`}
                                 alt={image.filename || `Image ${image.id}`}
@@ -345,6 +346,7 @@ export default function UploadsAdminPage() {
                               </AlertDialogContent>
                             </AlertDialog>
                         </div>
+                    </div>
                     </div>
                   </Card>
                 ))}
