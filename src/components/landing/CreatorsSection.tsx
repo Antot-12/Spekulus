@@ -82,17 +82,17 @@ export function CreatorsSection() {
                   <CardContent className="flex-grow flex items-end p-0">
                     <div className="flex gap-4 text-muted-foreground z-10">
                       {creator.socials.github && (
-                        <a href={`https://github.com/${creator.socials.github}`} target="_blank" rel="noopener noreferrer" aria-label="GitHub Profile" className="hover:text-primary transition-colors">
+                        <a href={`https://github.com/${creator.socials.github}`} target="_blank" rel="noopener noreferrer" aria-label="GitHub Profile" className="hover:text-primary transition-colors" onClick={(e) => e.stopPropagation()}>
                           <Github className="h-5 w-5"/>
                         </a>
                       )}
                       {creator.socials.twitter && (
-                        <a href={creator.socials.twitter} target="_blank" rel="noopener noreferrer" aria-label="Twitter Profile" className="hover:text-primary transition-colors">
+                        <a href={creator.socials.twitter} target="_blank" rel="noopener noreferrer" aria-label="Twitter Profile" className="hover:text-primary transition-colors" onClick={(e) => e.stopPropagation()}>
                           <Twitter className="h-5 w-5"/>
                         </a>
                       )}
                       {creator.socials.linkedin && (
-                        <a href={creator.socials.linkedin} target="_blank" rel="noopener noreferrer" aria-label="LinkedIn Profile" className="hover:text-primary transition-colors">
+                        <a href={creator.socials.linkedin} target="_blank" rel="noopener noreferrer" aria-label="LinkedIn Profile" className="hover:text-primary transition-colors" onClick={(e) => e.stopPropagation()}>
                            <Linkedin className="h-5 w-5"/>
                         </a>
                       )}
