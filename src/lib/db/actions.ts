@@ -1,3 +1,4 @@
+
 'use server';
 
 import 'server-only';
@@ -17,11 +18,19 @@ export async function getHeroData(lang: Language) {
 }
 
 export async function updateHeroData(lang: Language, data: Omit<HeroSectionData, 'id'>) {
-  const { title, subtitle, imageId } = data;
-  await db.update(schema.heroSections)
-    .set({ title, subtitle, imageId })
-    .where(eq(schema.heroSections.lang, lang));
+    const payload = {
+        title: data.title,
+        subtitle: data.subtitle,
+        imageId: data.imageId ?? null,
+    };
+    await db.insert(schema.heroSections)
+        .values({ lang, ...payload })
+        .onConflictDoUpdate({
+            target: schema.heroSections.lang,
+            set: payload,
+        });
 }
+
 
 // Product Section Actions
 export async function getProductData(lang: Language) {
