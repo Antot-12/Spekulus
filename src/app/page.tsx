@@ -1,4 +1,3 @@
-
 import { HeroSection } from '@/components/landing/HeroSection';
 import { ProductSection } from '@/components/landing/ProductSection';
 import { RoadmapSection } from '@/components/landing/RoadmapSection';
@@ -9,20 +8,26 @@ import { AdvantagesSection } from '@/components/landing/AdvantagesSection';
 import { ContactSection } from '@/components/landing/ContactSection';
 import { ActionSection } from '@/components/landing/ActionSection';
 import { getLanguage } from '@/lib/getLanguage';
-import { getHeroData, getProductData, getAdvantagesData, getActionSectionData, getRoadmapEvents, getFaqs } from '@/lib/db/actions';
+import {
+  getHeroData,
+  getProductData,
+  getAdvantagesData,
+  getActionSectionData,
+  getRoadmapEvents,
+  getFaqs,
+} from '@/lib/db/actions';
 import { initialData } from '@/lib/data';
 
 export default async function Home() {
-  const lang = getLanguage();
-  
-  // Fetch all data in parallel for performance
+  const lang = await getLanguage();
+
   let [
-    heroData, 
-    productData, 
-    advantagesData, 
-    actionSectionData, 
+    heroData,
+    productData,
+    advantagesData,
+    actionSectionData,
     roadmapEvents,
-    faqs
+    faqs,
   ] = await Promise.all([
     getHeroData(lang),
     getProductData(lang),
@@ -32,24 +37,37 @@ export default async function Home() {
     getFaqs(lang),
   ]);
 
-  // Fallback to initial data if database is empty
-  if (!heroData) heroData = initialData.heroSectionData[lang];
+  if (!heroData) {
+    heroData = initialData.heroSectionData[lang];
+  }
+
   if (!productData || !productData.components || productData.components.length === 0) {
     productData = initialData.productSectionData[lang];
   }
-  if (!advantagesData || advantagesData.length === 0) advantagesData = initialData.advantagesData[lang];
-  if (!actionSectionData) actionSectionData = initialData.actionSectionData[lang];
-  if (!roadmapEvents || roadmapEvents.length === 0) roadmapEvents = initialData.roadmapEvents[lang];
-  if (!faqs || faqs.length === 0) faqs = initialData.faqData[lang].map((faq, index) => ({...faq, id: index + 1}));
 
+  if (!advantagesData || advantagesData.length === 0) {
+    advantagesData = initialData.advantagesData[lang];
+  }
+
+  if (!actionSectionData) {
+    actionSectionData = initialData.actionSectionData[lang];
+  }
+
+  if (!roadmapEvents || roadmapEvents.length === 0) {
+    roadmapEvents = initialData.roadmapEvents[lang];
+  }
+
+  if (!faqs || faqs.length === 0) {
+    faqs = initialData.faqData[lang].map((faq, index) => ({ ...faq, id: index + 1 }));
+  }
 
   return (
     <>
-      <HeroSection data={heroData} />
+      <HeroSection data={heroData} lang={lang} />
       <ProductSection data={productData} />
-      <AdvantagesSection data={advantagesData} />
+      <AdvantagesSection data={advantagesData} lang={lang} />
       <ActionSection data={actionSectionData} />
-      <RoadmapSection data={roadmapEvents} />
+      <RoadmapSection data={roadmapEvents} lang={lang} />
       <FaqSection initialFaqs={faqs} />
       <DevNotesSection />
       <CreatorsSection />

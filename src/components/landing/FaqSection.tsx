@@ -1,17 +1,22 @@
-
 import { FaqClient } from './FaqClient';
-import type { FaqItem as FaqItemType } from '@/lib/data';
-import { getLanguage } from '@/lib/getLanguage';
+import type { FaqItem } from '@/lib/data';
 import { getFaqs } from '@/lib/db/actions';
+import { getLanguage } from '@/lib/getLanguage';
+import { initialData } from '@/lib/data';
 
-export async function FaqSection({initialFaqs}: {initialFaqs: FaqItemType[] | null}){
-  const lang = getLanguage();
+export async function FaqSection({ initialFaqs }: { initialFaqs: FaqItem[] | null }) {
+  const lang = await getLanguage();
 
-  // The initialFaqs are passed from the parent page component to avoid waterfalls
-  // but if this component were used on its own, it could fetch its own data.
-  const faqs = initialFaqs || await getFaqs(lang);
+  let faqs = initialFaqs;
 
-  if(!faqs || faqs.length === 0) {
+  if (!faqs || faqs.length === 0) {
+    const fetchedFaqs = await getFaqs(lang);
+    faqs = fetchedFaqs && fetchedFaqs.length > 0
+      ? fetchedFaqs
+      : initialData.faqData[lang].map((faq, index) => ({ ...faq, id: index + 1 }));
+  }
+
+  if (!faqs || faqs.length === 0) {
     return null;
   }
 

@@ -1,18 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getImage } from '@/lib/db/actions';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  const id = Number(params.id);
+export async function GET(request: NextRequest, context: { params: { id: string } }) {
+  const { id } = context.params;
 
-  if (!id || isNaN(id)) {
+  const imageId = Number(id);
+  if (!imageId || isNaN(imageId)) {
     return new NextResponse('Invalid image ID', { status: 400 });
   }
 
   try {
-    const image = await getImage(id);
+    const image = await getImage(imageId);
 
     if (!image || !image.data) {
       return new NextResponse('Image not found', { status: 404 });
@@ -27,7 +25,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error(`Failed to fetch image with ID ${id}:`, error);
+    console.error(`Failed to fetch image with ID ${imageId}:`, error);
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }

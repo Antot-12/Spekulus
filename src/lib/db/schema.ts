@@ -20,14 +20,16 @@ import {
     toDriver(value: Buffer): string {
       return "\\x" + value.toString("hex");
     },
-    fromDriver(value: string): Buffer {
-      if (value.startsWith("\\x")) {
-        return Buffer.from(value.slice(2), "hex");
+    fromDriver(value: string | Buffer): Buffer {
+      if (Buffer.isBuffer(value)) return value;
+  
+      if (typeof value === 'string' && value.startsWith('\\x')) {
+        return Buffer.from(value.slice(2), 'hex');
       }
-      return Buffer.from(value, "hex");
+  
+      return Buffer.from(value as string, 'hex');
     },
   });
-  
   /*─────────────────────────────────────────────────────
     Languages
   ─────────────────────────────────────────────────────*/
@@ -176,7 +178,9 @@ import {
     certifications: jsonb("certifications").$type<
       { name: string; authority: string; year: string }[]
     >(),
-    gallery: jsonb("gallery").$type<{ imageId: number; description: string }>(),
+    gallery: jsonb("gallery").$type<
+      { imageId: number; description: string }[]
+    >(),
     achievements: jsonb("achievements").$type<
       { icon: string; name: string; description: string }[]
     >(),
@@ -190,4 +194,3 @@ import {
       url: string;
     }>(),
   });
-  

@@ -69,14 +69,36 @@ export async function updateAdvantagesData(lang: Language, advantages: Advantage
 
 // Action Section Actions
 export async function getActionSectionData(lang: Language) {
-  return await db.query.actionSections.findFirst({ where: eq(schema.actionSections.lang, lang) });
+  return db.query.actionSections.findFirst({
+    where: eq(schema.actionSections.lang, lang),
+  });
 }
 
-export async function updateActionSectionData(lang: Language, data: Omit<ActionSectionData, 'id'>) {
-   await db.update(schema.actionSections)
-      .set(data)
-      .where(eq(schema.actionSections.lang, lang));
+export async function updateActionSectionData(
+  lang: Language,
+  data: Omit<ActionSectionData, 'id'>,
+) {
+  // приводимо undefined → null, аби drizzle не викидав «invalid input»
+  const payload = {
+    title: data.title,
+    subtitle: data.subtitle,
+    description: data.description,
+    visible: data.visible ?? true,
+    buttonText: data.buttonText ?? '',
+    buttonUrl: data.buttonUrl ?? '',
+    buttonVisible: data.buttonVisible ?? true,
+    imageId: data.imageId ?? null,
+  };
+
+  await db
+    .insert(schema.actionSections)
+    .values({ lang, ...payload })
+    .onConflictDoUpdate({
+      target: schema.actionSections.lang,
+      set: payload,
+    });
 }
+
 
 // Roadmap Actions
 export async function getRoadmapEvents(lang: Language) {
@@ -138,20 +160,45 @@ export async function getCreatorBySlug(lang: Language, slug: string) {
   });
 }
 
-export async function createCreator(lang: Language, creatorData: Omit<Creator, 'id'>) {
-  const [newCreator] = await db.insert(schema.creators).values({ ...creatorData, lang }).returning();
+export async function createCreator(lang: Language, data: Omit<Creator, 'id'>) {
+  const payload = {
+    ...data,
+    lang,
+    imageId: data.imageId || null,
+    featuredProjectImageId: data.featuredProjectImageId || null,
+  };
+  const [newCreator] = await db.insert(schema.creators).values(payload).returning();
   return newCreator;
 }
 
+
 export async function updateCreators(lang: Language, creatorsData: Creator[]) {
+  const safeCreators = creatorsData.map((c) => ({
+    ...c,
+    lang,
+    imageId: c.imageId || null,
+    featuredProjectImageId: c.featuredProjectImageId || null,
+    gallery: c.gallery ?? [],
+    skills: c.skills ?? [],
+    languages: c.languages ?? [],
+    contributions: c.contributions ?? [],
+    hobbies: c.hobbies ?? [],
+    music: c.music ?? {},
+    socials: c.socials ?? {},
+    education: c.education ?? [],
+    certifications: c.certifications ?? [],
+    achievements: c.achievements ?? [],
+    featuredProject: c.featuredProject ?? { title: '', description: '', url: '' },
+  }));
+
   await db.transaction(async (tx) => {
     await tx.delete(schema.creators).where(eq(schema.creators.lang, lang));
-    if (creatorsData.length > 0) {
-      const creatorsToInsert = creatorsData.map(({ id, ...rest }) => ({ ...rest, lang }));
-      await tx.insert(schema.creators).values(creatorsToInsert);
+    if (safeCreators.length) {
+      await tx.insert(schema.creators).values(safeCreators);
     }
   });
 }
+
 
 // Dev Notes Actions
 export async function getDevNotes() {
