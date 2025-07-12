@@ -34,7 +34,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle as RDialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { getImages, deleteImage } from '@/lib/db/actions'
@@ -300,6 +300,9 @@ export default function UploadsAdminPage() {
                          </div>
                        </DialogTrigger>
                        <DialogContent className="max-w-4xl p-2 bg-transparent border-none shadow-none">
+                            <DialogHeader>
+                              <RDialogTitle className="sr-only">Image Preview: {image.filename || `Image ${image.id}`}</RDialogTitle>
+                            </DialogHeader>
                             <img src={`/api/images/${image.id}`} alt={image.filename || ''} className="max-h-[90vh] w-auto h-auto rounded-lg mx-auto" />
                        </DialogContent>
                     </Dialog>
@@ -363,6 +366,9 @@ export default function UploadsAdminPage() {
                                           </div>
                                         </DialogTrigger>
                                         <DialogContent className="max-w-4xl p-2 bg-transparent border-none shadow-none">
+                                            <DialogHeader>
+                                              <RDialogTitle className="sr-only">Image Preview: {image.filename || `Image ${image.id}`}</RDialogTitle>
+                                            </DialogHeader>
                                             <img src={`/api/images/${image.id}`} alt={image.filename || ''} className="max-h-[90vh] w-auto h-auto rounded-lg mx-auto" />
                                         </DialogContent>
                                       </Dialog>
