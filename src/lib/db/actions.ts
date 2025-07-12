@@ -6,7 +6,7 @@ import { neon } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
 import * as schema from './schema';
 import type { Language, HeroSectionData, ActionSectionData, ProductComponent, Creator, DevNote, RoadmapEvent, Advantage, FaqItem } from '../data';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, notInArray } from 'drizzle-orm';
 import 'dotenv/config';
 
 const sql = neon(process.env.DATABASE_URL!);
@@ -180,11 +180,16 @@ export async function createCreator(lang: Language, data: Omit<Creator, 'id'>) {
   return newCreator;
 }
 
-
 export async function updateCreators(lang: Language, creatorsData: Creator[]) {
   const safeCreators = creatorsData.map((c) => ({
-    ...c,
+    id: c.id,
     lang,
+    slug: c.slug,
+    name: c.name,
+    role: c.role,
+    bio: c.bio,
+    location: c.location ?? undefined,
+    isVisible: c.isVisible ?? true,
     imageId: c.imageId || null,
     featuredProjectImageId: c.featuredProjectImageId || null,
     gallery: c.gallery ?? [],
@@ -198,12 +203,35 @@ export async function updateCreators(lang: Language, creatorsData: Creator[]) {
     certifications: c.certifications ?? [],
     achievements: c.achievements ?? [],
     featuredProject: c.featuredProject ?? { title: '', description: '', url: '' },
+    cvUrl: c.cvUrl ?? undefined,
+    quote: c.quote ?? undefined,
+    quoteAuthor: c.quoteAuthor ?? undefined,
   }));
 
   await db.transaction(async (tx) => {
-    await tx.delete(schema.creators).where(eq(schema.creators.lang, lang));
-    if (safeCreators.length) {
-      await tx.insert(schema.creators).values(safeCreators);
+    for (const creator of safeCreators) {
+      await tx
+        .insert(schema.creators)
+        .values(creator)
+        .onConflictDoUpdate({
+          target: [schema.creators.id, schema.creators.lang],
+          set: {
+            ...creator,
+            id: undefined, // Don't update the ID
+          },
+        });
+    }
+
+    const currentIds = safeCreators.map(c => c.id);
+    if (currentIds.length > 0) {
+      await tx.delete(schema.creators).where(
+          and(
+              eq(schema.creators.lang, lang), 
+              notInArray(schema.creators.id, currentIds)
+          )
+      );
+    } else {
+        await tx.delete(schema.creators).where(eq(schema.creators.lang, lang));
     }
   });
 }

@@ -8,6 +8,7 @@ import {
     jsonb,
     serial,
     customType,
+    primaryKey,
   } from "drizzle-orm/pg-core";
   
   /*─────────────────────────────────────────────────────
@@ -193,4 +194,8 @@ import {
       description: string;
       url: string;
     }>(),
+  }, (table) => {
+    return {
+      pk: primaryKey({ columns: [table.id, table.lang] }),
+    }
   });
