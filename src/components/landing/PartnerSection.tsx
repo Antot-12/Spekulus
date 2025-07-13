@@ -1,10 +1,8 @@
-
 'use client';
 import { Button } from '@/components/ui/button';
 import type { PartnerSectionData } from '@/lib/data';
 import { ArrowRight, Handshake } from 'lucide-react';
 import NextImage from 'next/image';
-import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 export function PartnerSection({ data }: { data: PartnerSectionData | null }) {
   if (!data) return null;
@@ -29,24 +27,14 @@ export function PartnerSection({ data }: { data: PartnerSectionData | null }) {
           </div>
           <div className="relative aspect-square max-w-md mx-auto w-full opacity-0 animate-fade-in-up" style={{ animationDelay: '400ms' }}>
             {data.imageId && (
-               <Dialog>
-                 <DialogTrigger asChild>
-                    <div className="cursor-pointer overflow-hidden rounded-lg">
-                      <NextImage
-                        src={`/api/images/${data.imageId}`}
-                        alt={data.title}
-                        fill
-                        className="object-contain"
-                      />
-                    </div>
-                 </DialogTrigger>
-                 <DialogContent className="max-w-4xl p-2 bg-transparent border-none shadow-none">
-                    <DialogHeader>
-                        <DialogTitle className="sr-only">{data.title}</DialogTitle>
-                    </DialogHeader>
-                     <img src={`/api/images/${data.imageId}`} alt={data.title} className="max-h-[90vh] w-auto h-auto rounded-lg mx-auto" />
-                 </DialogContent>
-               </Dialog>
+              <div className="overflow-hidden rounded-lg h-full w-full">
+                <NextImage
+                  src={`/api/images/${data.imageId}`}
+                  alt={data.title}
+                  fill
+                  className="object-contain"
+                />
+              </div>
             )}
           </div>
         </div>
