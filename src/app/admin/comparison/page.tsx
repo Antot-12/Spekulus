@@ -66,8 +66,14 @@ export default function ComparisonAdminPage() {
         if (!sectionData) return;
         setIsSaving(true);
         try {
+            // Filter out new items with negative IDs before sending to DB
+            const featuresToSave = features.map(({ id, ...rest }) => ({
+                id: id > 0 ? id : undefined, // Omit temp negative IDs
+                ...rest,
+            }));
+
             await Promise.all([
-                updateCompetitorFeatures(selectedLang, features),
+                updateCompetitorFeatures(selectedLang, featuresToSave),
                 updateComparisonSectionData(selectedLang, sectionData)
             ]);
             toast({ title: "Saved!", description: `Comparison table for ${languageNames[selectedLang]} has been saved.`});

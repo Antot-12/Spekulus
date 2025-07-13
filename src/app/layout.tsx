@@ -33,18 +33,17 @@ export default async function RootLayout({
     maintenanceSettings = { isActive: false, message: 'Maintenance mode check failed.', endsAt: null };
   }
   
-  if (maintenanceSettings.isActive) {
-    // Check if the timer has expired
-    const isExpired = maintenanceSettings.endsAt && new Date() > new Date(maintenanceSettings.endsAt);
-    if (!isExpired) {
-      return (
-         <html lang="en" className="dark">
-           <body>
-             <MaintenancePage message={maintenanceSettings.message} endsAt={maintenanceSettings.endsAt ? new Date(maintenanceSettings.endsAt) : null} />
-           </body>
-         </html>
-      )
-    }
+  // This check MUST be here to handle the automatic deactivation after a timer.
+  const isMaintenanceActive = maintenanceSettings.isActive && (!maintenanceSettings.endsAt || new Date() < new Date(maintenanceSettings.endsAt));
+  
+  if (isMaintenanceActive) {
+    return (
+        <html lang="en" className="dark">
+          <body>
+            <MaintenancePage message={maintenanceSettings.message} endsAt={maintenanceSettings.endsAt ? new Date(maintenanceSettings.endsAt) : null} />
+          </body>
+        </html>
+    )
   }
 
   return (
