@@ -1,3 +1,4 @@
+
 'use client';
 import { Button } from '@/components/ui/button';
 import type { PartnerSectionData } from '@/lib/data';
@@ -25,13 +26,13 @@ export function PartnerSection({ data }: { data: PartnerSectionData | null }) {
               </Button>
             )}
           </div>
-          <div className="relative aspect-square max-w-md mx-auto w-full opacity-0 animate-fade-in-up" style={{ animationDelay: '400ms' }}>
+          <div className="relative aspect-square max-w-md mx-auto w-full opacity-0 animate-fade-in-up group" style={{ animationDelay: '400ms' }}>
             {data.imageId && (
               <NextImage
                 src={`/api/images/${data.imageId}`}
                 alt={data.title}
                 fill
-                className="object-contain drop-shadow-2xl"
+                className="object-contain drop-shadow-2xl group-hover:scale-105 transition-transform duration-500"
               />
             )}
           </div>
