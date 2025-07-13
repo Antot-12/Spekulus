@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
@@ -17,6 +18,7 @@ import {
   Upload,
   Loader2,
   Image as ImageIcon,
+  FolderSearch
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -35,6 +37,8 @@ import {
   getActionSectionData,
   updateActionSectionData,
 } from '@/lib/db/actions'
+import { FilePickerDialog } from '../creators/FilePickerDialog'
+
 
 const LanguageFlag = ({ lang }: { lang: Language }) => {
   const flags: Record<string, string> = {
@@ -105,6 +109,11 @@ export default function ActionSectionAdminPage() {
         },
       }
     })
+  }
+
+  const handleFileSelect = (fileId: number) => {
+    updateLocalData({ imageId: fileId });
+    toast({ title: 'Image Selected', description: `File ID ${fileId} assigned. Remember to save.`})
   }
 
   const handleSave = async () => {
@@ -272,10 +281,18 @@ export default function ActionSectionAdminPage() {
                       <ImageIcon className="w-16 h-16 text-muted-foreground" />
                     </div>
                   )}
-                  <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="w-full">
-                    <Upload className="mr-2 h-4 w-4" />
-                    Upload New Image
-                  </Button>
+                  <div className="flex w-full gap-2">
+                    <FilePickerDialog onFileSelect={handleFileSelect}>
+                      <Button variant="outline" className="w-full">
+                        <FolderSearch className="mr-2 h-4 w-4" />
+                        Choose Existing
+                      </Button>
+                    </FilePickerDialog>
+                    <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="w-full">
+                      <Upload className="mr-2 h-4 w-4" />
+                      Upload New
+                    </Button>
+                  </div>
                   <input
                     type="file"
                     ref={fileInputRef}

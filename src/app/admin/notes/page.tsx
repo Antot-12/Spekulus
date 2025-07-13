@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Trash2, PlusCircle, Upload, Loader2, Eye, EyeOff, Save } from 'lucide-react';
+import { Trash2, PlusCircle, Upload, Loader2, Eye, EyeOff, Save, FolderSearch } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MarkdownEditor } from '@/components/ui/markdown-editor';
@@ -18,6 +18,7 @@ import { logAction } from '@/lib/logger';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from '@/components/ui/badge';
 import { getDevNotes, createDevNote, updateDevNote, deleteDevNote } from '@/lib/db/actions';
+import { FilePickerDialog } from '../creators/FilePickerDialog';
 
 const newNoteContentExample = `### This is a Subheading
 
@@ -46,7 +47,7 @@ export default function NotesAdminPage() {
     const [activeNote, setActiveNote] = useState<DevNote | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
-    const fileInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const fetchNotes = useCallback(async () => {
         setIsLoading(true);
@@ -126,8 +127,8 @@ export default function NotesAdminPage() {
         try {
             const newNote = await createDevNote(newNoteData);
             if (newNote) {
-                setActiveNote(newNote);
                 await fetchNotes(); // Refetch to include the new note in the list
+                setActiveNote(newNote);
                 toast({ title: "Note Created", description: "You are now editing a new note." });
             } else {
                 toast({ title: "Creation Failed", description: "Could not create a new note.", variant: 'destructive' });
@@ -151,9 +152,14 @@ export default function NotesAdminPage() {
         }
     };
     
-    const handleHeaderImageUpload = async (note: DevNote, event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileSelect = (fileId: number) => {
+        handleFieldChange('imageId', fileId);
+        toast({ title: 'Image Selected', description: `File ID ${fileId} assigned. Remember to save.`})
+    }
+
+    const handleHeaderImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
-        if (!file) return;
+        if (!file || !activeNote) return;
 
         const formData = new FormData();
         formData.append('file', file);
@@ -169,15 +175,15 @@ export default function NotesAdminPage() {
             if (result.success) {
                 handleFieldChange('imageId', result.id);
                 toast({ title: "Image Uploaded", description: "Header image has been updated. Save the note to persist this change." });
-                logAction('File Upload', 'Success', `Uploaded image for note '${note.title}': ID ${result.id}`);
+                logAction('File Upload', 'Success', `Uploaded image for note '${activeNote.title}': ID ${result.id}`);
             } else {
                 toast({ title: "Upload Failed", description: result.error || "Could not upload image.", variant: 'destructive' });
-                logAction('File Upload', 'Failure', `Failed to upload image for note '${note.title}'. Reason: ${result.error}`);
+                logAction('File Upload', 'Failure', `Failed to upload image for note '${activeNote.title}'. Reason: ${result.error}`);
             }
         } catch (error: any) {
             console.error("Header image upload error:", error);
             toast({ title: "Upload Failed", description: "An error occurred during upload.", variant: 'destructive' });
-            logAction('File Upload', 'Failure', `Failed to upload image for note '${note.title}'. Reason: ${error.message}`);
+            logAction('File Upload', 'Failure', `Failed to upload image for note '${activeNote.title}'. Reason: ${error.message}`);
         } finally {
              if (event.target) event.target.value = '';
         }
@@ -296,11 +302,14 @@ export default function NotesAdminPage() {
                             <Separator />
 
                             <div className="space-y-2">
-                                <Label htmlFor="imageId">Header Image ID</Label>
+                                <Label htmlFor="imageId">Header Image</Label>
                                 <div className="flex gap-2">
-                                    <Input id="imageId" value={activeNote.imageId || ''} disabled placeholder="Upload an image to see its ID"/>
-                                    <Button variant="outline" size="icon" onClick={() => fileInputRefs.current[activeNote.id]?.click()}><Upload className="h-4 w-4" /></Button>
-                                    <input type="file" ref={(el) => (fileInputRefs.current[activeNote.id] = el)} onChange={(e) => handleHeaderImageUpload(activeNote, e)} accept="image/*" className="hidden" />
+                                    <Input id="imageId" value={activeNote.imageId || ''} disabled placeholder="Upload or choose an image"/>
+                                    <FilePickerDialog onFileSelect={handleFileSelect}>
+                                        <Button variant="outline" size="icon"><FolderSearch className="h-4 w-4"/></Button>
+                                    </FilePickerDialog>
+                                    <Button variant="outline" size="icon" onClick={() => fileInputRef.current?.click()}><Upload className="h-4 w-4" /></Button>
+                                    <input type="file" ref={fileInputRef} onChange={handleHeaderImageUpload} accept="image/*" className="hidden" />
                                 </div>
                             </div>
                             

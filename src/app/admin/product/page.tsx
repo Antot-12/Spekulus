@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Save, Sparkles, Upload, Loader2, Image as ImageIcon } from 'lucide-react';
+import { Save, Sparkles, Upload, Loader2, Image as ImageIcon, FolderSearch } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from '@/components/ui/label';
@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { logAction } from '@/lib/logger';
 import { getProductData, updateProductComponents } from '@/lib/db/actions';
 import NextImage from 'next/image';
+import { FilePickerDialog } from '../creators/FilePickerDialog';
 
 const defaultData = initialData.productSectionData;
 
@@ -62,10 +63,8 @@ export default function ProductSectionAdminPage() {
             const newAllData = languages.reduce((acc, lang, index) => {
                 const resultData = results[index];
                 if (resultData && resultData.components.length > 0) {
-                    // This assumes title/subtitle might come from elsewhere in a real app
-                    // For now, we use defaults from the translations file or data file
                     acc[lang] = {
-                        ...defaultData[lang], // Use default title/subtitle
+                        ...defaultData[lang], 
                         components: resultData.components
                     };
                 } else {
@@ -84,8 +83,6 @@ export default function ProductSectionAdminPage() {
         if (!data) return;
         setIsSaving(true);
         try {
-            // Here we would also save the title and subtitle if they were in the DB
-            // For now, we only save the components which are in the DB.
             await updateProductComponents(selectedLang, data.components);
 
             toast({ title: "Saved!", description: `Changes to the Product section for ${languageNames[selectedLang]} have been saved.`});
@@ -114,6 +111,11 @@ export default function ProductSectionAdminPage() {
         updateState({...data, components: updatedComponents});
     };
     
+    const handleFileSelect = (id: number, fileId: number) => {
+        handleComponentChange(id, 'imageId', fileId);
+        toast({ title: 'Image Selected', description: `File ID ${fileId} assigned. Remember to save.`})
+    }
+
     const handleImageUpload = async (id: number, event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
@@ -200,7 +202,7 @@ export default function ProductSectionAdminPage() {
 
                         <div className="space-y-6 pt-4">
                             {data.components.map((component) => (
-                              <div key={component.id} className="space-y-4 p-4 border rounded-md relative">
+                              <Card key={component.id} className="p-4 relative">
                                 <div className="flex items-start gap-4">
                                     <div className="flex flex-col items-center gap-2">
                                         <div className="rounded-lg bg-primary/10 p-3">
@@ -224,7 +226,7 @@ export default function ProductSectionAdminPage() {
                                         />
                                     </div>
                                 </div>
-                                <div className="space-y-2">
+                                <div className="space-y-2 mt-4">
                                     <Label>Image</Label>
                                     <Card>
                                         <CardContent className="p-4 flex flex-col items-center gap-4">
@@ -237,10 +239,15 @@ export default function ProductSectionAdminPage() {
                                                     <ImageIcon className="w-16 h-16 text-muted-foreground" />
                                                 </div>
                                             )}
-                                            <Button variant="outline" onClick={() => fileInputRefs.current[component.id]?.click()} className="w-full">
-                                                <Upload className="mr-2 h-4 w-4" />
-                                                Upload New Image
-                                            </Button>
+                                            <div className="flex gap-2 w-full">
+                                                <FilePickerDialog onFileSelect={(fileId) => handleFileSelect(component.id, fileId)}>
+                                                    <Button variant="outline" className="w-full"><FolderSearch className="mr-2 h-4 w-4" /> Choose</Button>
+                                                </FilePickerDialog>
+                                                <Button variant="outline" onClick={() => fileInputRefs.current[component.id]?.click()} className="w-full">
+                                                    <Upload className="mr-2 h-4 w-4" />
+                                                    Upload
+                                                </Button>
+                                            </div>
                                             <input
                                                 type="file"
                                                 ref={(el) => (fileInputRefs.current[component.id] = el)}
@@ -251,7 +258,7 @@ export default function ProductSectionAdminPage() {
                                         </CardContent>
                                     </Card>
                                 </div>
-                              </div>
+                              </Card>
                             ))}
                         </div>
                          <div className="text-sm text-muted-foreground p-4 border-dashed border-2 rounded-md">

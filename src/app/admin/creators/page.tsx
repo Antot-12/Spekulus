@@ -6,36 +6,22 @@ import type { Creator, FeaturedProject, Language, GalleryImage, Education, Certi
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  Trash2,
-  PlusCircle,
-  Upload,
-  Loader2,
-  Eye,
-  EyeOff,
-  Users,
-  Heart,
-  Camera,
-  FileText,
-  Link as LinkIcon,
-  Image as ImageIcon,
-  Save,
-  Music,
-  Briefcase,
-  GraduationCap,
-  Award,
+  Trash2, PlusCircle, Upload, Loader2, Eye, EyeOff, Users, Heart, Camera, FileText, Link as LinkIcon, Save, Music, Briefcase, GraduationCap, Award, FolderSearch, ChevronDown
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Skeleton } from '@/components/ui/skeleton';
 import { MarkdownEditor } from '@/components/ui/markdown-editor';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from '@/components/ui/switch';
 import { logAction } from '@/lib/logger';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { getCreators, updateCreators, createCreator } from '@/lib/db/actions';
 import { initialData } from '@/lib/data';
+import { Badge } from '@/components/ui/badge';
+import { FilePickerDialog } from './FilePickerDialog';
 
 const newCreatorBioExample = `### About Me
 
@@ -68,13 +54,15 @@ export default function CreatorsAdminPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [selectedLang, setSelectedLang] = useState<Language>('en');
+  const [activeAccordionItem, setActiveAccordionItem] = useState<string | undefined>();
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const fetchCreators = useCallback(async (lang: Language) => {
     setIsLoading(true);
     try {
       const data = await getCreators(lang);
-      setCreators(data.length > 0 ? data : initialData.creatorsData[lang]);
+      const sorted = data.sort((a,b) => a.name.localeCompare(b.name));
+      setCreators(sorted.length > 0 ? sorted : initialData.creatorsData[lang]);
     } catch {
       toast({ title: "Network Error", description: "Failed to connect to the server.", variant: 'destructive' });
       setCreators(initialData.creatorsData[lang]);
@@ -107,26 +95,42 @@ export default function CreatorsAdminPage() {
       setIsSaving(false);
     }
   };
+
+  const handleFieldChange = (id: number, field: keyof Creator, value: any) => {
+    setCreators(prev => prev.map(c => c.id === id ? { ...c, [field]: value } : c));
+  };
   
+  const handleFileSelect = (id: number, field: keyof Creator, fileId: number) => {
+    handleFieldChange(id, field, fileId);
+    toast({ title: 'File Selected', description: `File ID ${fileId} assigned. Remember to save your changes.`})
+  }
+  
+  const handleGalleryFileSelect = (creatorId: number, galleryIndex: number, fileId: number) => {
+    const creator = creators.find(c => c.id === creatorId);
+    if (!creator) return;
 
-  const handleFieldChange = (slug: string, field: keyof Creator, value: any) => {
-    setCreators(prev => prev.map(c => c.slug === slug ? { ...c, [field]: value } : c));
+    const newGallery = [...(creator.gallery ?? [])];
+    if (newGallery[galleryIndex]) {
+        newGallery[galleryIndex] = { ...newGallery[galleryIndex], imageId: fileId };
+    }
+    handleFieldChange(creatorId, 'gallery', newGallery);
+    toast({ title: 'Gallery Image Selected', description: `File ID ${fileId} assigned. Remember to save.`})
+  }
+
+  const handleSocialChange = (id: number, platform: 'github' | 'twitter' | 'linkedin', value: string) => {
+    const creator = creators.find(c => c.id === id);
+    if (creator) handleFieldChange(id, 'socials', { ...creator.socials, [platform]: value });
   };
 
-  const handleSocialChange = (slug: string, platform: 'github' | 'twitter' | 'linkedin', value: string) => {
-    const creator = creators.find(c => c.slug === slug);
-    if (creator) handleFieldChange(slug, 'socials', { ...creator.socials, [platform]: value });
+  const handleMusicChange = (id: number, platform: keyof NonNullable<Creator['music']>, value: string) => {
+    const creator = creators.find(c => c.id === id);
+    if (creator) handleFieldChange(id, 'music', { ...(creator.music ?? {}), [platform]: value });
   };
 
-  const handleMusicChange = (slug: string, platform: keyof NonNullable<Creator['music']>, value: string) => {
-    const creator = creators.find(c => c.slug === slug);
-    if (creator) handleFieldChange(slug, 'music', { ...(creator.music ?? {}), [platform]: value });
-  };
-
-  const handleProjectChange = (slug: string, field: keyof FeaturedProject, value: string) => {
-    const creator = creators.find(c => c.slug === slug);
+  const handleProjectChange = (id: number, field: keyof FeaturedProject, value: string) => {
+    const creator = creators.find(c => c.id === id);
     const updated = { ...(creator?.featuredProject || { title: '', url: '', description: '' }), [field]: value };
-    handleFieldChange(slug, 'featuredProject', updated);
+    handleFieldChange(id, 'featuredProject', updated);
   };
   
   const handleCreatorAdd = async () => {
@@ -159,6 +163,7 @@ export default function CreatorsAdminPage() {
       const newCreator = await createCreator(selectedLang, newCreatorData);
       if (newCreator?.slug) {
         setCreators(prev => [...prev, newCreator]);
+        setActiveAccordionItem(String(newCreator.id));
         toast({ title: "Creator Added", description: "New profile added. Save to persist." });
       } else {
         toast({ title: "Add Failed", description: "Could not add creator.", variant: 'destructive' });
@@ -168,13 +173,13 @@ export default function CreatorsAdminPage() {
     }
   };
 
-  const handleCreatorDelete = (slugToDelete: string) => {
-    const creator = creators.find(c => c.slug === slugToDelete);
-    setCreators(prev => prev.filter(c => c.slug !== slugToDelete));
+  const handleCreatorDelete = (idToDelete: number) => {
+    const creator = creators.find(c => c.id === idToDelete);
+    setCreators(prev => prev.filter(c => c.id !== idToDelete));
     toast({ title: "Creator Removed", description: `${creator?.name} removed. Save to confirm.`, variant: 'destructive' });
   };
 
-  const handleImageUpload = async (creatorSlug: string, field: 'imageId' | 'featuredProjectImageId' | `gallery.${number}` | 'cvUrl', event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (creatorId: number, field: 'imageId' | 'featuredProjectImageId' | `gallery.${number}` | 'cvUrl', event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -187,59 +192,56 @@ export default function CreatorsAdminPage() {
       const result = await res.json();
       
       if (result.success && result.id) {
-        setCreators(prev => prev.map(c => {
-          if (c.slug === creatorSlug) {
-            if (field === 'imageId') return { ...c, imageId: result.id };
-            if (field === 'featuredProjectImageId') return { ...c, featuredProjectImageId: result.id };
-            if (field === 'cvUrl') return { ...c, cvUrl: `/api/images/${result.id}`};
-            if (field.startsWith('gallery.')) {
+        if (field === 'imageId' || field === 'featuredProjectImageId') {
+            handleFieldChange(creatorId, field, result.id);
+        } else if (field === 'cvUrl') {
+            handleFieldChange(creatorId, 'cvUrl', `/api/images/${result.id}`);
+        } else if (field.startsWith('gallery.')) {
               const idx = parseInt(field.split('.')[1], 10);
-              const newGallery = [...(c.gallery ?? [])];
+              const creator = creators.find(c => c.id === creatorId);
+              if (!creator) return;
+              const newGallery = [...(creator.gallery ?? [])];
               if (newGallery[idx]) {
                   newGallery[idx] = { ...newGallery[idx], imageId: result.id };
               }
-              return { ...c, gallery: newGallery };
-            }
-          }
-          return c;
-        }));
+              handleFieldChange(creatorId, 'gallery', newGallery);
+        }
         toast({ title: "Uploaded", description: "File uploaded. Save to persist." });
-        logAction('File Upload', 'Success', `Uploaded file for creator slug ${creatorSlug}.`);
+        logAction('File Upload', 'Success', `Uploaded file for creator ID ${creatorId}.`);
       } else {
         toast({ title: "Upload Failed", description: result.error, variant: 'destructive' });
-        logAction('File Upload', 'Failure', `Failed upload for creator slug ${creatorSlug}.`);
+        logAction('File Upload', 'Failure', `Failed upload for creator ID ${creatorId}.`);
       }
     } catch {
       toast({ title: "Upload Failed", description: "Error uploading file.", variant: 'destructive' });
-      logAction('File Upload', 'Failure', `Error uploading for creator slug ${creatorSlug}.`);
+      logAction('File Upload', 'Failure', `Error uploading for creator ID ${creatorId}.`);
     } finally {
       if (event.target) event.target.value = '';
     }
   };
 
-
-  const handleArrayChange = (slug: string, field: 'skills' | 'languages' | 'hobbies' | 'contributions', value: string) => {
+  const handleArrayChange = (id: number, field: 'skills' | 'languages' | 'hobbies' | 'contributions', value: string) => {
     const arr = value.split(',').map(s => s.trim()).filter(Boolean);
-    handleFieldChange(slug, field, arr);
+    handleFieldChange(id, field, arr);
   };
   
   const handleComplexArrayChange = <T extends Education | Certification | Achievement>(
-    creatorSlug: string, 
+    creatorId: number, 
     field: 'education' | 'certifications' | 'achievements',
     idx: number,
     prop: keyof T,
     value: string
   ) => {
-    const creator = creators.find(c => c.slug === creatorSlug);
+    const creator = creators.find(c => c.id === creatorId);
     if (!creator) return;
 
     const array = [...(creator[field] as T[] ?? [])];
     array[idx] = { ...array[idx], [prop]: value };
-    handleFieldChange(creatorSlug, field, array);
+    handleFieldChange(creatorId, field, array);
   };
 
-  const handleComplexArrayAdd = (creatorSlug: string, field: 'education' | 'certifications' | 'achievements') => {
-    const creator = creators.find(c => c.slug === creatorSlug);
+  const handleComplexArrayAdd = (creatorId: number, field: 'education' | 'certifications' | 'achievements') => {
+    const creator = creators.find(c => c.id === creatorId);
     if (!creator) return;
 
     let newItem;
@@ -249,276 +251,298 @@ export default function CreatorsAdminPage() {
 
     if (newItem) {
         const array = [...(creator[field] as any[] ?? []), newItem];
-        handleFieldChange(creatorSlug, field, array);
+        handleFieldChange(creatorId, field, array);
     }
   };
 
-  const handleComplexArrayDelete = (creatorSlug: string, field: 'education' | 'certifications' | 'achievements', idx: number) => {
-    const creator = creators.find(c => c.slug === creatorSlug);
+  const handleComplexArrayDelete = (creatorId: number, field: 'education' | 'certifications' | 'achievements', idx: number) => {
+    const creator = creators.find(c => c.id === creatorId);
     if (!creator) return;
     const array = (creator[field] as any[])?.filter((_, i) => i !== idx);
-    handleFieldChange(creatorSlug, field, array);
+    handleFieldChange(creatorId, field, array);
   };
 
-  const handleGalleryChange = (creatorSlug: string, idx: number, value: string) => {
-    const creator = creators.find(c => c.slug === creatorSlug);
+  const handleGalleryChange = (creatorId: number, idx: number, value: string) => {
+    const creator = creators.find(c => c.id === creatorId);
     if (!creator) return;
     const gallery = [...(creator.gallery ?? [])];
     gallery[idx] = { ...gallery[idx], description: value };
-    handleFieldChange(creatorSlug, 'gallery', gallery);
+    handleFieldChange(creatorId, 'gallery', gallery);
   };
 
-  const handleGalleryAdd = (creatorSlug: string) => {
-    const creator = creators.find(c => c.slug === creatorSlug);
+  const handleGalleryAdd = (creatorId: number) => {
+    const creator = creators.find(c => c.id === creatorId);
     if (!creator) return;
     const gallery = [...(creator.gallery ?? []), { imageId: 0, description: 'New Image' }];
-    handleFieldChange(creatorSlug, 'gallery', gallery);
+    handleFieldChange(creatorId, 'gallery', gallery);
     toast({ title: "Gallery Image Added" });
   };
 
-  const handleGalleryDelete = (creatorSlug: string, idx: number) => {
-    const creator = creators.find(c => c.slug === creatorSlug);
+  const handleGalleryDelete = (creatorId: number, idx: number) => {
+    const creator = creators.find(c => c.id === creatorId);
     if (!creator) return;
     const gallery = creator.gallery?.filter((_, i) => i !== idx);
-    handleFieldChange(creatorSlug, 'gallery', gallery);
+    handleFieldChange(creatorId, 'gallery', gallery);
     toast({ title: "Gallery Image Deleted", variant: 'destructive' });
   };
 
   return (
-    <Card className="opacity-0 animate-fade-in-up">
-      <CardHeader>
-        <div className="flex flex-wrap gap-4 justify-between items-center">
-          <div>
-            <CardTitle>Manage Creators</CardTitle>
-            <CardDescription>Press Save to persist changes.</CardDescription>
+    <div className="opacity-0 animate-fade-in-up">
+      <Card>
+        <CardHeader>
+          <div className="flex flex-wrap gap-4 justify-between items-center">
+            <div>
+              <CardTitle>Manage Creators</CardTitle>
+            </div>
+            <div className="flex gap-2">
+              <Select value={selectedLang} onValueChange={v => setSelectedLang(v as Language)}>
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue><LanguageFlag lang={selectedLang} />{languageNames[selectedLang]}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="en"><LanguageFlag lang="en" /> English</SelectItem>
+                  <SelectItem value="uk"><LanguageFlag lang="uk" /> Ukrainian</SelectItem>
+                  <SelectItem value="sk"><LanguageFlag lang="sk" /> Slovak</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button onClick={handleCreatorAdd}><PlusCircle className="mr-2 h-4 w-4" />Add Creator</Button>
+              <Button onClick={handleSave} disabled={isSaving}>
+                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}Save Changes
+              </Button>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <Select value={selectedLang} onValueChange={v => setSelectedLang(v as Language)}>
-              <SelectTrigger className="w-[150px]">
-                <SelectValue><LanguageFlag lang={selectedLang} />{languageNames[selectedLang]}</SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="en"><LanguageFlag lang="en" /> English</SelectItem>
-                <SelectItem value="uk"><LanguageFlag lang="uk" /> Ukrainian</SelectItem>
-                <SelectItem value="sk"><LanguageFlag lang="sk" /> Slovak</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button onClick={handleCreatorAdd}><PlusCircle className="mr-2 h-4 w-4" />Add Creator</Button>
-            <Button onClick={handleSave} disabled={isSaving}>
-              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}Save Changes
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-6">
+        </CardHeader>
+      </Card>
+      
+      <Accordion 
+        type="single" 
+        collapsible 
+        className="w-full mt-6 space-y-4"
+        value={activeAccordionItem}
+        onValueChange={setActiveAccordionItem}
+       >
         {isLoading ? (
-          <div className="space-y-6">
-            {[...Array(2)].map((_, i) => (
-              <div key={i} className="space-y-4 p-4 border rounded-md">
-                <Skeleton className="h-10 w-1/3" />
-                <Skeleton className="h-10 w-1/2" />
-                <Skeleton className="h-40 w-full" />
-              </div>
-            ))}
-          </div>
+            <p>Loading profiles...</p>
         ) : (
           creators.map(creator => (
-            <div key={creator.slug} className="space-y-6 p-4 border rounded-md">
-              <div className="flex items-center justify-between rounded-lg border p-4 bg-muted/20">
-                <Label htmlFor={`visible-${creator.slug}`} className="text-base flex items-center gap-2">
-                  {creator.isVisible ? <Eye className="w-5 h-5 text-primary" /> : <EyeOff className="w-5 h-5 text-muted-foreground" />} Profile Visibility
-                </Label>
-                <Switch id={`visible-${creator.slug}`} checked={!!creator.isVisible} onCheckedChange={v => handleFieldChange(creator.slug, 'isVisible', v)} />
-              </div>
+            <AccordionItem value={String(creator.id)} key={creator.id} className="border rounded-md bg-card">
+              <AccordionTrigger className="p-4 hover:no-underline">
+                  <div className="flex items-center gap-4 text-left">
+                     <ChevronDown className="h-5 w-5 shrink-0 transition-transform duration-200 text-primary" />
+                     <div className="flex-grow">
+                        <h3 className="font-semibold text-lg">{creator.name}</h3>
+                        <p className="text-sm text-muted-foreground">{creator.role}</p>
+                     </div>
+                  </div>
+                   <div className="flex items-center gap-2">
+                     <Badge variant={creator.isVisible ? "default" : "secondary"}>
+                        {creator.isVisible ? "Visible" : "Hidden"}
+                     </Badge>
+                     <AlertDialog onOpenChange={e => e.stopPropagation()}>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()} className="hover:bg-destructive/10 text-destructive/70 hover:text-destructive"><Trash2 className="w-4 h-4" /></Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle></AlertDialogHeader>
+                            <AlertDialogDescription>This deletes "{creator.name}" from this language after saving changes. This action is not reversible.</AlertDialogDescription>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleCreatorDelete(creator.id)}>Delete Profile</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                   </div>
+              </AccordionTrigger>
+              <AccordionContent className="p-6 pt-0 space-y-6">
+                <div className="flex items-center justify-between rounded-lg border p-4 bg-muted/20">
+                    <Label htmlFor={`visible-${creator.id}`} className="text-base flex items-center gap-2">
+                    {creator.isVisible ? <Eye className="w-5 h-5 text-primary" /> : <EyeOff className="w-5 h-5 text-muted-foreground" />} Profile Visibility
+                    </Label>
+                    <Switch id={`visible-${creator.id}`} checked={!!creator.isVisible} onCheckedChange={v => handleFieldChange(creator.id, 'isVisible', v)} />
+                </div>
 
-              <Card>
-                <CardHeader><CardTitle className="font-headline flex items-center gap-2"><Users className="w-6 h-6" />Core Info</CardTitle></CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div><Label htmlFor={`name-${creator.slug}`}>Name</Label><Input id={`name-${creator.slug}`} value={creator.name} onChange={e => handleFieldChange(creator.slug, 'name', e.target.value)} /></div>
-                  <div><Label htmlFor={`role-${creator.slug}`}>Role</Label><Input id={`role-${creator.slug}`} value={creator.role} onChange={e => handleFieldChange(creator.slug, 'role', e.target.value)} /></div>
-                  <div><Label htmlFor={`slug-${creator.slug}`}>Slug</Label><Input id={`slug-${creator.slug}`} value={creator.slug} onChange={e => handleFieldChange(creator.slug, 'slug', e.target.value)} /></div>
-                  <div><Label htmlFor={`location-${creator.slug}`}>Location</Label><Input id={`location-${creator.slug}`} value={creator.location ?? ''} onChange={e => handleFieldChange(creator.slug, 'location', e.target.value)} /></div>
-                  <div className="md:col-span-2">
-                      <Label htmlFor={`cvUrl-${creator.slug}`}>CV File</Label>
-                      <div className="flex gap-2">
-                        <Input id={`cvUrl-${creator.slug}`} value={creator.cvUrl ?? ''} disabled placeholder="Upload a file to get a URL"/>
-                        <Button variant="outline" size="icon" onClick={() => fileInputRefs.current[`cv-${creator.slug}`]?.click()}><Upload className="h-4 w-4"/></Button>
-                        <input type="file" ref={el => (fileInputRefs.current[`cv-${creator.slug}`] = el)} accept=".pdf,.doc,.docx" onChange={e => handleImageUpload(creator.slug, 'cvUrl', e)} className="hidden" />
+                <Card>
+                    <CardHeader><CardTitle className="font-headline flex items-center gap-2 text-xl"><Users className="w-5 h-5" />Core Info</CardTitle></CardHeader>
+                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div><Label htmlFor={`name-${creator.id}`}>Name</Label><Input id={`name-${creator.id}`} value={creator.name} onChange={e => handleFieldChange(creator.id, 'name', e.target.value)} /></div>
+                    <div><Label htmlFor={`role-${creator.id}`}>Role</Label><Input id={`role-${creator.id}`} value={creator.role} onChange={e => handleFieldChange(creator.id, 'role', e.target.value)} /></div>
+                    <div><Label htmlFor={`slug-${creator.id}`}>Slug</Label><Input id={`slug-${creator.id}`} value={creator.slug} onChange={e => handleFieldChange(creator.id, 'slug', e.target.value)} /></div>
+                    <div><Label htmlFor={`location-${creator.id}`}>Location</Label><Input id={`location-${creator.id}`} value={creator.location ?? ''} onChange={e => handleFieldChange(creator.id, 'location', e.target.value)} /></div>
+                    <div className="md:col-span-2">
+                        <Label>Profile Image</Label>
+                        <div className="flex gap-2">
+                            <Input value={creator.imageId ?? ''} disabled placeholder="Upload or choose an image"/>
+                             <FilePickerDialog onFileSelect={(fileId) => handleFileSelect(creator.id, 'imageId', fileId)}>
+                                <Button variant="outline" size="icon"><FolderSearch className="h-4 w-4"/></Button>
+                            </FilePickerDialog>
+                            <Button variant="outline" size="icon" onClick={() => fileInputRefs.current[`creator-${creator.id}`]?.click()}><Upload className="h-4 w-4"/></Button>
+                            <input type="file" ref={el => (fileInputRefs.current[`creator-${creator.id}`] = el)} accept="image/*" onChange={e => handleImageUpload(creator.id, 'imageId', e)} className="hidden" />
+                        </div>
+                    </div>
+                    <div className="md:col-span-2">
+                        <Label>CV File</Label>
+                        <div className="flex gap-2">
+                            <Input value={creator.cvUrl ?? ''} disabled placeholder="Upload or choose a file"/>
+                             <FilePickerDialog onFileSelect={(fileId) => handleFieldChange(creator.id, 'cvUrl', `/api/images/${fileId}`)} fileTypes={['application/pdf']}>
+                                <Button variant="outline" size="icon"><FolderSearch className="h-4 w-4"/></Button>
+                            </FilePickerDialog>
+                            <Button variant="outline" size="icon" onClick={() => fileInputRefs.current[`cv-${creator.id}`]?.click()}><Upload className="h-4 w-4"/></Button>
+                            <input type="file" ref={el => (fileInputRefs.current[`cv-${creator.id}`] = el)} accept=".pdf,.doc,.docx" onChange={e => handleImageUpload(creator.id, 'cvUrl', e)} className="hidden" />
+                        </div>
+                    </div>
+                    </CardContent>
+                </Card>
+                
+                <Card className="bg-muted/30">
+                  <CardHeader><CardTitle className="font-headline flex items-center gap-2 text-xl"><FileText className="w-5 h-5" />Bio</CardTitle></CardHeader>
+                  <CardContent><MarkdownEditor value={creator.bio} onChange={v => handleFieldChange(creator.id, 'bio', v)} rows={10} /></CardContent>
+                </Card>
+
+                 <Card>
+                    <CardHeader><CardTitle className="font-headline flex items-center gap-2 text-xl"><Heart className="w-5 h-5" />Details</CardTitle></CardHeader>
+                    <CardContent className="space-y-4">
+                    <div><Label>Quote</Label><Textarea value={creator.quote ?? ''} onChange={e => handleFieldChange(creator.id, 'quote', e.target.value)} rows={2} /></div>
+                    <div><Label>Quote Author</Label><Input value={creator.quoteAuthor ?? ''} onChange={e => handleFieldChange(creator.id, 'quoteAuthor', e.target.value)} /></div>
+                    <div><Label>Skills (comma-separated)</Label><Input value={creator.skills?.join(', ') ?? ''} onChange={e => handleArrayChange(creator.id, 'skills', e.target.value)} /></div>
+                    <div><Label>Languages (comma-separated)</Label><Input value={creator.languages?.join(', ') ?? ''} onChange={e => handleArrayChange(creator.id, 'languages', e.target.value)} /></div>
+                    <div><Label>Contributions (comma-separated)</Label><Textarea value={creator.contributions?.join(', ') ?? ''} onChange={e => handleArrayChange(creator.id, 'contributions', e.target.value)} rows={3} /></div>
+                    <div><Label>Hobbies (comma-separated)</Label><Input value={creator.hobbies?.join(', ') ?? ''} onChange={e => handleArrayChange(creator.id, 'hobbies', e.target.value)} /></div>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader><CardTitle className="font-headline flex items-center gap-2 text-xl"><LinkIcon className="w-5 h-5" />Social</CardTitle></CardHeader>
+                    <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                    <Input placeholder="GitHub" value={creator.socials.github ?? ''} onChange={e => handleSocialChange(creator.id, 'github', e.target.value)} />
+                    <Input placeholder="Twitter" value={creator.socials.twitter ?? ''} onChange={e => handleSocialChange(creator.id, 'twitter', e.target.value)} />
+                    <Input placeholder="LinkedIn" value={creator.socials.linkedin ?? ''} onChange={e => handleSocialChange(creator.id, 'linkedin', e.target.value)} />
+                    </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader><CardTitle className="font-headline flex items-center gap-2 text-xl"><Briefcase className="w-5 h-5" />Featured Project</CardTitle></CardHeader>
+                  <CardContent className="space-y-4">
+                    <div><Label>Project Title</Label><Input value={creator.featuredProject?.title ?? ''} onChange={e => handleProjectChange(creator.id, 'title', e.target.value)} /></div>
+                    <div><Label>Project URL</Label><Input value={creator.featuredProject?.url ?? ''} onChange={e => handleProjectChange(creator.id, 'url', e.target.value)} /></div>
+                    <div><Label>Project Description</Label><Textarea value={creator.featuredProject?.description ?? ''} onChange={e => handleProjectChange(creator.id, 'description', e.target.value)} rows={3}/></div>
+                    <div>
+                        <Label>Project Image</Label>
+                        <div className="flex gap-2">
+                            <Input value={creator.featuredProjectImageId ?? ''} disabled placeholder="Upload or choose an image"/>
+                            <FilePickerDialog onFileSelect={(fileId) => handleFileSelect(creator.id, 'featuredProjectImageId', fileId)}>
+                                <Button variant="outline" size="icon"><FolderSearch className="h-4 w-4"/></Button>
+                            </FilePickerDialog>
+                            <Button variant="outline" size="icon" onClick={() => fileInputRefs.current[`project-${creator.id}`]?.click()}><Upload className="h-4 w-4" /></Button>
+                            <input type="file" ref={el => fileInputRefs.current[`project-${creator.id}`] = el} accept="image/*" onChange={e => handleImageUpload(creator.id, 'featuredProjectImageId', e)} className="hidden" />
+                        </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader><CardTitle className="font-headline flex items-center gap-2 text-xl"><GraduationCap className="w-5 h-5" />Education</CardTitle></CardHeader>
+                  <CardContent className="space-y-4">
+                    {creator.education?.map((edu, idx) => (
+                      <div key={idx} className="flex gap-2 items-end p-2 border rounded-md">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 flex-grow">
+                            <Input placeholder="Institution" value={edu.institution} onChange={e => handleComplexArrayChange(creator.id, 'education', idx, 'institution', e.target.value)} />
+                            <Input placeholder="Degree" value={edu.degree} onChange={e => handleComplexArrayChange(creator.id, 'education', idx, 'degree', e.target.value)} />
+                            <Input placeholder="Year" value={edu.year} onChange={e => handleComplexArrayChange(creator.id, 'education', idx, 'year', e.target.value)} />
+                        </div>
+                        <Button variant="ghost" size="icon" onClick={() => handleComplexArrayDelete(creator.id, 'education', idx)}><Trash2 className="w-4 h-4 text-destructive"/></Button>
                       </div>
-                  </div>
-                </CardContent>
-              </Card>
+                    ))}
+                    <Button variant="outline" size="sm" onClick={() => handleComplexArrayAdd(creator.id, 'education')}><PlusCircle className="mr-2 h-4 w-4"/>Add Education</Button>
+                  </CardContent>
+                </Card>
 
-              <Card>
-                <CardHeader><CardTitle className="font-headline flex items-center gap-2"><ImageIcon className="w-6 h-6" />Profile Image</CardTitle></CardHeader>
-                <CardContent>
-                  <div className="flex gap-2">
-                    <Input value={creator.imageId ?? ''} disabled placeholder="Upload an image to get an ID"/>
-                    <Button variant="outline" size="icon" onClick={() => fileInputRefs.current[`creator-${creator.slug}`]?.click()}><Upload className="h-4 w-4"/></Button>
-                    <input type="file" ref={el => (fileInputRefs.current[`creator-${creator.slug}`] = el)} accept="image/*" onChange={e => handleImageUpload(creator.slug, 'imageId', e)} className="hidden" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader><CardTitle className="font-headline flex items-center gap-2"><Heart className="w-6 h-6" />Details</CardTitle></CardHeader>
-                <CardContent className="space-y-2">
-                  <Label>Quote</Label><Textarea value={creator.quote ?? ''} onChange={e => handleFieldChange(creator.slug, 'quote', e.target.value)} rows={2} />
-                  <Label>Quote Author</Label><Input value={creator.quoteAuthor ?? ''} onChange={e => handleFieldChange(creator.slug, 'quoteAuthor', e.target.value)} />
-                  <Label>Skills (comma-separated)</Label><Input value={creator.skills?.join(', ') ?? ''} onChange={e => handleArrayChange(creator.slug, 'skills', e.target.value)} />
-                  <Label>Languages (comma-separated)</Label><Input value={creator.languages?.join(', ') ?? ''} onChange={e => handleArrayChange(creator.slug, 'languages', e.target.value)} />
-                  <Label>Contributions (comma-separated)</Label><Textarea value={creator.contributions?.join(', ') ?? ''} onChange={e => handleArrayChange(creator.slug, 'contributions', e.target.value)} rows={3} />
-                  <Label>Hobbies (comma-separated)</Label><Input value={creator.hobbies?.join(', ') ?? ''} onChange={e => handleArrayChange(creator.slug, 'hobbies', e.target.value)} />
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader><CardTitle className="font-headline flex items-center gap-2"><LinkIcon className="w-6 h-6" />Social</CardTitle></CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                  <Input placeholder="GitHub" value={creator.socials.github ?? ''} onChange={e => handleSocialChange(creator.slug, 'github', e.target.value)} />
-                  <Input placeholder="Twitter" value={creator.socials.twitter ?? ''} onChange={e => handleSocialChange(creator.slug, 'twitter', e.target.value)} />
-                  <Input placeholder="LinkedIn" value={creator.socials.linkedin ?? ''} onChange={e => handleSocialChange(creator.slug, 'linkedin', e.target.value)} />
-                </CardContent>
-              </Card>
-
-              <Card className="bg-muted/30">
-                <CardHeader><CardTitle className="font-headline flex items-center gap-2"><FileText className="w-6 h-6" />Bio</CardTitle></CardHeader>
-                <CardContent><MarkdownEditor value={creator.bio} onChange={v => handleFieldChange(creator.slug, 'bio', v)} rows={10} /></CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader><CardTitle className="font-headline flex items-center gap-2"><GraduationCap className="w-6 h-6" />Education</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
-                  {creator.education?.map((edu, idx) => (
-                    <div key={idx} className="flex gap-2 items-end p-2 border rounded-md">
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 flex-grow">
-                          <Input placeholder="Institution" value={edu.institution} onChange={e => handleComplexArrayChange(creator.slug, 'education', idx, 'institution', e.target.value)} />
-                          <Input placeholder="Degree" value={edu.degree} onChange={e => handleComplexArrayChange(creator.slug, 'education', idx, 'degree', e.target.value)} />
-                          <Input placeholder="Year" value={edu.year} onChange={e => handleComplexArrayChange(creator.slug, 'education', idx, 'year', e.target.value)} />
-                      </div>
-                      <Button variant="ghost" size="icon" onClick={() => handleComplexArrayDelete(creator.slug, 'education', idx)}><Trash2 className="w-4 h-4 text-destructive"/></Button>
-                    </div>
-                  ))}
-                   <Button variant="outline" size="sm" onClick={() => handleComplexArrayAdd(creator.slug, 'education')}><PlusCircle className="mr-2 h-4 w-4"/>Add Education</Button>
-                </CardContent>
-              </Card>
-
-               <Card>
-                <CardHeader><CardTitle className="font-headline flex items-center gap-2"><Award className="w-6 h-6" />Certifications</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
-                  {creator.certifications?.map((cert, idx) => (
-                    <div key={idx} className="flex gap-2 items-end p-2 border rounded-md">
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 flex-grow">
-                          <Input placeholder="Certification Name" value={cert.name} onChange={e => handleComplexArrayChange(creator.slug, 'certifications', idx, 'name', e.target.value)} />
-                          <Input placeholder="Issuing Authority" value={cert.authority} onChange={e => handleComplexArrayChange(creator.slug, 'certifications', idx, 'authority', e.target.value)} />
-                          <Input placeholder="Year" value={cert.year} onChange={e => handleComplexArrayChange(creator.slug, 'certifications', idx, 'year', e.target.value)} />
-                      </div>
-                      <Button variant="ghost" size="icon" onClick={() => handleComplexArrayDelete(creator.slug, 'certifications', idx)}><Trash2 className="w-4 h-4 text-destructive"/></Button>
-                    </div>
-                  ))}
-                   <Button variant="outline" size="sm" onClick={() => handleComplexArrayAdd(creator.slug, 'certifications')}><PlusCircle className="mr-2 h-4 w-4"/>Add Certification</Button>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader><CardTitle className="font-headline flex items-center gap-2"><Award className="w-6 h-6" />Achievements</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
-                  {creator.achievements?.map((ach, idx) => (
-                    <div key={idx} className="flex gap-2 items-end p-2 border rounded-md">
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 flex-grow">
-                          <Input placeholder="Icon (e.g., Star)" value={ach.icon} onChange={e => handleComplexArrayChange(creator.slug, 'achievements', idx, 'icon', e.target.value)} />
-                          <Input placeholder="Achievement Name" value={ach.name} onChange={e => handleComplexArrayChange(creator.slug, 'achievements', idx, 'name', e.target.value)} />
-                          <Textarea placeholder="Description..." value={ach.description} onChange={e => handleComplexArrayChange(creator.slug, 'achievements', idx, 'description', e.target.value)} className="sm:col-span-3"/>
-                      </div>
-                      <Button variant="ghost" size="icon" onClick={() => handleComplexArrayDelete(creator.slug, 'achievements', idx)}><Trash2 className="w-4 h-4 text-destructive"/></Button>
-                    </div>
-                  ))}
-                   <Button variant="outline" size="sm" onClick={() => handleComplexArrayAdd(creator.slug, 'achievements')}><PlusCircle className="mr-2 h-4 w-4"/>Add Achievement</Button>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader><CardTitle className="font-headline flex items-center gap-2"><Music className="w-6 h-6" />Music & Playlists</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor={`spotify-${creator.slug}`}>Spotify Playlist ID</Label>
-                    <Input id={`spotify-${creator.slug}`} value={creator.music?.spotify ?? ''} onChange={e => handleMusicChange(creator.slug, 'spotify', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label htmlFor={`apple-${creator.slug}`}>Apple Music Playlist URL</Label>
-                    <Input id={`apple-${creator.slug}`} value={creator.music?.appleMusic ?? ''} onChange={e => handleMusicChange(creator.slug, 'appleMusic', e.target.value)} />
-                  </div>
-                  <div>
-                    <Label htmlFor={`youtube-${creator.slug}`}>YouTube Music Playlist ID</Label>
-                    <Input id={`youtube-${creator.slug}`} value={creator.music?.youtubeMusic ?? ''} onChange={e => handleMusicChange(creator.slug, 'youtubeMusic', e.target.value)} />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader><CardTitle className="font-headline flex items-center gap-2"><Briefcase className="w-6 h-6" />Featured Project</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
-                  <div><Label>Project Title</Label><Input value={creator.featuredProject?.title ?? ''} onChange={e => handleProjectChange(creator.slug, 'title', e.target.value)} /></div>
-                  <div><Label>Project URL</Label><Input value={creator.featuredProject?.url ?? ''} onChange={e => handleProjectChange(creator.slug, 'url', e.target.value)} /></div>
-                  <div><Label>Project Description</Label><Textarea value={creator.featuredProject?.description ?? ''} onChange={e => handleProjectChange(creator.slug, 'description', e.target.value)} rows={3}/></div>
-                  <div>
-                    <Label>Project Image</Label>
-                    <div className="flex gap-2">
-                        <Input value={creator.featuredProjectImageId ?? ''} disabled placeholder="Upload an image to get an ID"/>
-                        <Button variant="outline" size="icon" onClick={() => fileInputRefs.current[`project-${creator.slug}`]?.click()}><Upload className="h-4 w-4" /></Button>
-                        <input type="file" ref={el => fileInputRefs.current[`project-${creator.slug}`] = el} accept="image/*" onChange={e => handleImageUpload(creator.slug, 'featuredProjectImageId', e)} className="hidden" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
-                    <div className="flex justify-between items-center">
-                        <CardTitle className="font-headline flex items-center gap-2"><Camera className="w-6 h-6" />Gallery</CardTitle>
-                        <Button size="sm" onClick={() => handleGalleryAdd(creator.slug)}><PlusCircle className="mr-2 h-4 w-4" />Add Image</Button>
-                    </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    {creator.gallery?.map((img, idx) => (
-                        <div key={idx} className="flex gap-4 p-4 border rounded-md bg-muted/20">
-                            <div className="flex-grow space-y-2">
-                                <Label>Image Description</Label>
-                                <Input value={img.description} onChange={e => handleGalleryChange(creator.slug, idx, e.target.value)} />
-                                <Label>Image</Label>
-                                <div className="flex gap-2">
-                                    <Input value={img.imageId || ''} disabled placeholder="Upload an image to get an ID"/>
-                                    <Button variant="outline" size="icon" onClick={() => fileInputRefs.current[`gallery-${creator.slug}-${idx}`]?.click()}><Upload className="h-4 w-4" /></Button>
-                                    <input type="file" ref={el => fileInputRefs.current[`gallery-${creator.slug}-${idx}`] = el} accept="image/*" onChange={e => handleImageUpload(creator.slug, `gallery.${idx}`, e)} className="hidden" />
-                                </div>
-                            </div>
-                            <Button variant="destructive" size="icon" onClick={() => handleGalleryDelete(creator.slug, idx)} className="shrink-0 self-end"><Trash2 className="w-4 h-4"/></Button>
+                <Card>
+                    <CardHeader><CardTitle className="font-headline flex items-center gap-2 text-xl"><Award className="w-5 h-5" />Certifications</CardTitle></CardHeader>
+                    <CardContent className="space-y-4">
+                    {creator.certifications?.map((cert, idx) => (
+                        <div key={idx} className="flex gap-2 items-end p-2 border rounded-md">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 flex-grow">
+                            <Input placeholder="Certification Name" value={cert.name} onChange={e => handleComplexArrayChange(creator.id, 'certifications', idx, 'name', e.target.value)} />
+                            <Input placeholder="Issuing Authority" value={cert.authority} onChange={e => handleComplexArrayChange(creator.id, 'certifications', idx, 'authority', e.target.value)} />
+                            <Input placeholder="Year" value={cert.year} onChange={e => handleComplexArrayChange(creator.id, 'certifications', idx, 'year', e.target.value)} />
+                        </div>
+                        <Button variant="ghost" size="icon" onClick={() => handleComplexArrayDelete(creator.id, 'certifications', idx)}><Trash2 className="w-4 h-4 text-destructive"/></Button>
                         </div>
                     ))}
-                    {!creator.gallery || creator.gallery.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">No gallery images yet.</p>}
-                </CardContent>
-              </Card>
+                    <Button variant="outline" size="sm" onClick={() => handleComplexArrayAdd(creator.id, 'certifications')}><PlusCircle className="mr-2 h-4 w-4"/>Add Certification</Button>
+                    </CardContent>
+                </Card>
 
+                <Card>
+                    <CardHeader><CardTitle className="font-headline flex items-center gap-2 text-xl"><Award className="w-5 h-5" />Achievements</CardTitle></CardHeader>
+                    <CardContent className="space-y-4">
+                    {creator.achievements?.map((ach, idx) => (
+                        <div key={idx} className="flex gap-2 items-start p-2 border rounded-md">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 flex-grow">
+                            <Input placeholder="Icon (e.g., Star)" value={ach.icon} onChange={e => handleComplexArrayChange(creator.id, 'achievements', idx, 'icon', e.target.value)} />
+                            <Input placeholder="Achievement Name" value={ach.name} onChange={e => handleComplexArrayChange(creator.id, 'achievements', idx, 'name', e.target.value)} />
+                            <Textarea placeholder="Description..." value={ach.description} onChange={e => handleComplexArrayChange(creator.id, 'achievements', idx, 'description', e.target.value)} className="sm:col-span-2"/>
+                        </div>
+                        <Button variant="ghost" size="icon" onClick={() => handleComplexArrayDelete(creator.id, 'achievements', idx)}><Trash2 className="w-4 h-4 text-destructive"/></Button>
+                        </div>
+                    ))}
+                    <Button variant="outline" size="sm" onClick={() => handleComplexArrayAdd(creator.id, 'achievements')}><PlusCircle className="mr-2 h-4 w-4"/>Add Achievement</Button>
+                    </CardContent>
+                </Card>
 
-              <div className="flex justify-end">
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive"><Trash2 className="mr-2 h-4 w-4" />Delete</Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle></AlertDialogHeader>
-                    <AlertDialogDescription>This deletes "{creator.name}" after saving changes.</AlertDialogDescription>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => handleCreatorDelete(creator.slug)}>Remove</AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            </div>
+                 <Card>
+                    <CardHeader><CardTitle className="font-headline flex items-center gap-2 text-xl"><Music className="w-5 h-5" />Music & Playlists</CardTitle></CardHeader>
+                    <CardContent className="space-y-4">
+                    <div>
+                        <Label>Spotify Playlist ID</Label>
+                        <Input value={creator.music?.spotify ?? ''} onChange={e => handleMusicChange(creator.id, 'spotify', e.target.value)} />
+                    </div>
+                    <div>
+                        <Label>Apple Music Playlist URL</Label>
+                        <Input value={creator.music?.appleMusic ?? ''} onChange={e => handleMusicChange(creator.id, 'appleMusic', e.target.value)} />
+                    </div>
+                    <div>
+                        <Label>YouTube Music Playlist ID</Label>
+                        <Input value={creator.music?.youtubeMusic ?? ''} onChange={e => handleMusicChange(creator.id, 'youtubeMusic', e.target.value)} />
+                    </div>
+                    </CardContent>
+                </Card>
+                
+                <Card>
+                    <CardHeader>
+                        <div className="flex justify-between items-center">
+                            <CardTitle className="font-headline flex items-center gap-2 text-xl"><Camera className="w-5 h-5" />Gallery</CardTitle>
+                            <Button size="sm" variant="outline" onClick={() => handleGalleryAdd(creator.id)}><PlusCircle className="mr-2 h-4 w-4" />Add Image</Button>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {creator.gallery?.map((img, idx) => (
+                            <div key={idx} className="flex gap-4 p-2 border rounded-md bg-muted/20 items-end">
+                                <div className="flex-grow space-y-2">
+                                    <Label>Image Description</Label>
+                                    <Input value={img.description} onChange={e => handleGalleryChange(creator.id, idx, e.target.value)} />
+                                    <Label>Image</Label>
+                                    <div className="flex gap-2">
+                                        <Input value={img.imageId || ''} disabled placeholder="Upload or choose an image"/>
+                                        <FilePickerDialog onFileSelect={(fileId) => handleGalleryFileSelect(creator.id, idx, fileId)}>
+                                            <Button variant="outline" size="icon"><FolderSearch className="h-4 w-4"/></Button>
+                                        </FilePickerDialog>
+                                        <Button variant="outline" size="icon" onClick={() => fileInputRefs.current[`gallery-${creator.id}-${idx}`]?.click()}><Upload className="h-4 w-4" /></Button>
+                                        <input type="file" ref={el => fileInputRefs.current[`gallery-${creator.id}-${idx}`] = el} accept="image/*" onChange={e => handleImageUpload(creator.id, `gallery.${idx}`, e)} className="hidden" />
+                                    </div>
+                                </div>
+                                <Button variant="ghost" size="icon" onClick={() => handleGalleryDelete(creator.id, idx)} className="shrink-0"><Trash2 className="w-4 h-4 text-destructive"/></Button>
+                            </div>
+                        ))}
+                        {(!creator.gallery || creator.gallery.length === 0) && <p className="text-sm text-muted-foreground text-center py-4">No gallery images yet.</p>}
+                    </CardContent>
+                </Card>
+
+              </AccordionContent>
+            </AccordionItem>
           ))
         )}
-      </CardContent>
-    </Card>
+      </Accordion>
+    </div>
   );
 }

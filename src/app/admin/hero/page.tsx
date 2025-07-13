@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useRef } from "react";
@@ -20,6 +21,7 @@ import {
   PlusCircle,
   Trash2,
   Sparkles,
+  FolderSearch
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -37,6 +39,8 @@ import NextImage from "next/image";
 import { initialData } from "@/lib/data";
 import { AdvantageIcon } from "@/components/AdvantageIcon";
 import { Separator } from "@/components/ui/separator";
+import { FilePickerDialog } from '../creators/FilePickerDialog';
+
 
 type AllHeroData = Record<Language, HeroSectionData>;
 
@@ -98,6 +102,11 @@ export default function HeroSectionAdminPage() {
         : prev
     );
   };
+  
+  const handleFileSelect = (fileId: number) => {
+    handleChange("imageId", fileId);
+    toast({ title: 'Image Selected', description: `File ID ${fileId} assigned. Remember to save.`})
+  }
   
   const handleFeatureChange = (id: number, field: keyof HeroFeature, value: string) => {
       if (!data) return;
@@ -276,14 +285,22 @@ export default function HeroSectionAdminPage() {
                     </div>
                   )}
 
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <Upload className="mr-2 h-4 w-4" />
-                    Upload New Image
-                  </Button>
+                  <div className="flex gap-2 w-full">
+                    <FilePickerDialog onFileSelect={handleFileSelect}>
+                        <Button variant="outline" className="w-full">
+                            <FolderSearch className="mr-2 h-4 w-4" />
+                            Choose Existing
+                        </Button>
+                    </FilePickerDialog>
+                    <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => fileInputRef.current?.click()}
+                    >
+                        <Upload className="mr-2 h-4 w-4" />
+                        Upload New Image
+                    </Button>
+                  </div>
 
                   <input
                     type="file"
