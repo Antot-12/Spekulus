@@ -28,6 +28,7 @@ const createDefaultData = (lang: Language): PartnerSectionData => ({
   title: `Title for ${languageNames[lang]}`,
   text: '',
   ctaLabel: 'Contact Us',
+  imageId: null,
 });
 
 export default function PartnerSectionAdminPage() {

@@ -155,7 +155,7 @@ export async function getCreatorBySlug(lang: Language, slug: string) {
   })
 }
 
-export async function createCreator(lang: Language, data: Creator) {
+export async function createCreator(lang: Language, data: Omit<Creator, 'id'>) {
   const payload = {
     ...data,
     lang,

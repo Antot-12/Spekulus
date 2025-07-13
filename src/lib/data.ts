@@ -591,18 +591,21 @@ const rawPartnerSectionData: Record<Language, Omit<PartnerSectionData, 'id'>> = 
         text: "We are actively seeking strategic partners, investors, and collaborators who share our vision for the future of smart living. If you're interested in helping us scale, innovate, and bring Spekulus to a global market, we'd love to hear from you.",
         ctaLabel: "Contact Our Founders",
         ctaUrl: "mailto:spekulus.mirror@gmail.com",
+        imageId: null,
     },
     uk: {
         title: "Станьте нашим партнером",
         text: "Ми активно шукаємо стратегічних партнерів, інвесторів та співробітників, які поділяють наше бачення майбутнього розумного життя. Якщо ви зацікавлені в допомозі нам масштабуватися, впроваджувати інновації та виводити Spekulus на світовий ринок, ми будемо раді вас почути.",
         ctaLabel: "Зв'язатися із засновниками",
         ctaUrl: "mailto:spekulus.mirror@gmail.com",
+        imageId: null,
     },
     sk: {
         title: "Staňte sa naším partnerom",
         text: "Aktívne hľadáme strategických partnerov, investorov a spolupracovníkov, ktorí zdieľajú našu víziu budúcnosti inteligentného bývania. Ak máte záujem pomôcť nám rásť, inovovať a priniesť Spekulus na globálny trh, radi by sme sa s vami spojili.",
         ctaLabel: "Kontaktujte našich zakladateľov",
         ctaUrl: "mailto:spekulus.mirror@gmail.com",
+        imageId: null,
     },
 };
 
