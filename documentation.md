@@ -361,3 +361,4 @@ The project uses Genkit for its AI features.
 7.  **Admin UI (`/admin/testimonials/page.tsx`)**: Create a new admin page to perform CRUD operations on testimonials. Add a link to it in the admin dashboard and sidebar.
 8.  **Frontend Component (`/components/landing/TestimonialsSection.tsx`)**: Create the public-facing component to display the testimonials.
 9.  **Homepage (`/app/page.tsx`)**: Import and render the new `TestimonialsSection` component, passing it data fetched from the `getTestimonials` action.
+```
