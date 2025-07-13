@@ -1,4 +1,58 @@
-# Spekulus Project: Comprehensive Technical Documentation
+<div align="center">
+
+---
+
+# **S&S Creation**
+## **Spekulus Site**
+
+---
+
+</div>
+
+<br/>
+<br/>
+
+## Table of Contents
+
+- **[1. Project Overview](#1-project-overview)**
+- **[2. Developer Operations & Setup](#2-developer-operations--setup)**
+  - [2.1. Environment Variables](#21-environment-variables)
+  - [2.2. Database Management (Drizzle ORM)](#22-database-management-drizzle-orm)
+  - [2.3. Running the AI (Genkit)](#23-running-the-ai-genkit)
+- **[3. Project Structure](#3-project-structure)**
+- **[4. Database Design & Schema](#4-database-design--schema)**
+  - [Tables](#tables)
+  - [Entity Relationships (ER Summary)](#entity-relationships-er-summary)
+- **[5. Backend & Data Flow](#5-backend--data-flow)**
+  - [5.1. Server Actions](#51-server-actions-srclibdbactionsts)
+  - [5.2. API Routes](#52-api-routes-srcappapi)
+- **[6. Admin Panel](#6-admin-panel)**
+  - [6.1. Admin Panel Iconography](#61-admin-panel-iconography)
+- **[7. AI Integration (Genkit)](#7-ai-integration-genkit)**
+- **[8. Advanced Technical Documentation](#8-advanced-technical-documentation)**
+  - [8.1. Project Architecture & Design Patterns](#81-project-architecture--design-patterns)
+  - [8.2. Developer Workflow: Adding a "Testimonials" Section](#82-developer-workflow-adding-a-testimonials-section)
+  - [8.3. Testing Strategy](#83-testing-strategy)
+  - [8.4. Deployment Instructions](#84-deployment-instructions)
+  - [8.5. Logs, Monitoring & Error Reporting](#85-logs-monitoring--error-reporting)
+  - [8.6. Access Control & Security Notes](#86-access-control--security-notes)
+  - [8.7. Internationalization (i18n) Guidelines](#87-internationalization-i18n-guidelines)
+  - [8.8. Versioning, Branching, & Release Strategy](#88-versioning-branching--release-strategy)
+  - [8.9. Contribution Guidelines](#89-contribution-guidelines)
+- **[9. Glossary](#9-glossary)**
+- **[10. Changelog & Versioning](#10-changelog--versioning)**
+- **[11. Performance Optimization](#11-performance-optimization)**
+- **[12. Accessibility (a11y) Guidelines](#12-accessibility-a11y-guidelines)**
+- **[13. Asset & Image Handling](#13-asset--image-handling)**
+- **[14. Rate Limiting & Anti-Spam](#14-rate-limiting--anti-spam)**
+- **[15. Analytics & Telemetry](#15-analytics--telemetry)**
+- **[16. Feature Flags](#16-feature-flags)**
+- **[17. Known Issues & Limitations](#17-known-issues--limitations)**
+- **[18. Tech Stack & Versions Summary](#18-tech-stack--versions-summary)**
+- **[19. Architecture Diagram](#19-architecture-diagram)**
+- **[20. Technical Roadmap (Planned Features)](#20-technical-roadmap-planned-features)**
+
+---
 
 ## 1. Project Overview
 
@@ -453,7 +507,7 @@ Currently, the project does not have an automated testing suite. This is a key a
 
 ---
 
-### 18. Glossary
+### 9. Glossary
 
 - **a11y**: Abbreviation for "accessibility," referring to the practice of making websites usable by people with disabilities.
 - **Flow**: A term from Genkit for an end-to-end AI function that can be called from the application (e.g., `creatorChatFlow`).
@@ -463,7 +517,7 @@ Currently, the project does not have an automated testing suite. This is a key a
 - **Server Action**: A Next.js feature allowing server-side code to be executed directly from client components, without manually creating API endpoints.
 - **Slug**: A URL-friendly string used as a unique identifier for a resource, such as `my-first-post` in `/dev-notes/my-first-post`.
 
-### 19. Changelog & Versioning
+### 10. Changelog & Versioning
 
 - **Versioning Scheme**: The project should adopt **Semantic Versioning (SemVer)** `MAJOR.MINOR.PATCH` (e.g., `1.2.3`).
     - `MAJOR` version when you make incompatible API changes.
@@ -486,55 +540,55 @@ Currently, the project does not have an automated testing suite. This is a key a
   - Updated `documentation.md` with details on the new testimonials table.
   ```
 
-### 20. Performance Optimization
+### 11. Performance Optimization
 
 - **Framework**: The use of Next.js with the App Router and Server Components by default minimizes the amount of JavaScript sent to the client, improving initial load times.
 - **Images**: The `next/image` component is used for automatic image optimization (resizing, format conversion like WebP), but is not yet implemented everywhere. This is a key area for improvement.
 - **Database**: Drizzle ORM is efficient, but complex queries should be benchmarked. Adding database indexes to frequently queried columns (like `slug` and `lang`) is critical for performance at scale.
 - **Caching**: Vercel automatically caches static assets. API Routes use `Cache-Control` headers (e.g., `/api/images/[id]`) for efficient browser and CDN caching.
 
-### 21. Accessibility (a11y) Guidelines
+### 12. Accessibility (a11y) Guidelines
 
 - **Semantic HTML**: Use appropriate HTML5 tags (`<main>`, `<nav>`, `<article>`, etc.) to provide structure for screen readers.
 - **ARIA Attributes**: Use `aria-label` for icon-only buttons to provide a text description. The ShadCN UI components used in this project handle many ARIA attributes automatically.
 - **Focus Management**: Ensure all interactive elements have clear `focus-visible` styles (the default blue ring). Custom components should maintain this behavior.
 - **Keyboard Navigation**: All interactive elements should be reachable and operable via the keyboard.
 
-### 22. Asset & Image Handling
+### 13. Asset & Image Handling
 
 - **Storage**: All uploaded files are stored in the `files` table in the database as `bytea` (binary data).
 - **Serving**: Files are served via the `/api/images/[id]` route, which retrieves the binary data from the database.
 - **Formats**: While the system accepts any file type, it's recommended to use optimized web formats like **WebP** for images and **PDF** for documents.
 - **Naming**: File naming should be descriptive and use hyphens instead of spaces (e.g., `creator-profile-anton.webp`).
 
-### 23. Rate Limiting & Anti-Spam
+### 14. Rate Limiting & Anti-Spam
 
 - **Current Status**: There is **no rate limiting or anti-spam protection** implemented on public endpoints like `/api/contact` or `/api/auth/login`.
 - **Future Improvements**:
     - **Rate Limiting**: Implement a package like `rate-limiter-flexible` with a Redis or Postgres store to limit requests to sensitive endpoints.
     - **Anti-Spam**: For the contact form, integrate a service like Google reCAPTCHA or use a simple honeypot field to deter bots.
 
-### 24. Analytics & Telemetry
+### 15. Analytics & Telemetry
 
 - **Current Status**: No analytics or telemetry systems are currently integrated.
 - **Future Plan**:
     - **Vercel Speed Insights & Analytics**: These can be enabled with one click in the Vercel dashboard to monitor Web Vitals and track page views, respecting user privacy.
     - **Google Analytics**: If more detailed event tracking is needed, a Google Analytics script could be added in the root `layout.tsx`, managed via a React Context or a third-party library to handle user consent (GDPR).
 
-### 25. Feature Flags
+### 16. Feature Flags
 
 - **Current Status**: There is no formal feature flag system in place.
 - **Implementation**: Feature visibility is currently handled by simple boolean flags in the database (e.g., `isVisible` on `devNotes` or `creators` tables) or by commenting out components in the code.
 - **Future Plan**: For more complex A/B testing or gradual rollouts, a dedicated feature flag service like LaunchDarkly, PostHog, or a custom solution using the database could be implemented.
 
-### 26. Known Issues & Limitations
+### 17. Known Issues & Limitations
 
 - **Admin Authentication**: The current admin auth is client-side only and not secure for production. (See "Access Control & Security Notes").
 - **Missing Tests**: The lack of an automated testing suite increases the risk of regressions.
 - **Translation Fallbacks**: There is no system to fall back to English if a translation key is missing for another language, which can cause runtime errors.
 - **Image Optimization**: The project uses the raw `/api/images/[id]` endpoint, bypassing Next.js's powerful `next/image` optimization. This should be refactored.
 
-### 27. Tech Stack & Versions Summary
+### 18. Tech Stack & Versions Summary
 
 - **Framework**: Next.js 15.3.3
 - **Language**: TypeScript 5
@@ -546,7 +600,7 @@ Currently, the project does not have an automated testing suite. This is a key a
 - **Forms**: React Hook Form 7.54.2 with Zod 3.24.2 for validation
 - **Deployment**: Vercel
 
-### 28. Architecture Diagram
+### 19. Architecture Diagram
 
 This diagram illustrates the high-level interaction between the different parts of the Spekulus application.
 
@@ -587,7 +641,7 @@ graph TD
 - **Database**: The Neon Postgres database, the single source of truth for all content.
 - **Genkit/AI**: AI features are handled by Genkit flows, which communicate with the Google AI API.
 
-### 29. Technical Roadmap (Planned Features)
+### 20. Technical Roadmap (Planned Features)
 
 This section tracks planned technical improvements, distinct from the public-facing product roadmap.
 
@@ -600,4 +654,3 @@ This section tracks planned technical improvements, distinct from the public-fac
 | **Image Resizing/Cropping** | `In Progress` | Allow admins to resize or crop images directly in the upload manager instead of requiring pre-sized images. |
 | **i18n Fallback Logic** | `Planned` | Implement a system where missing translation strings automatically fall back to English to prevent errors. |
 | **CI/CD Pipeline** | `Planned` | Set up a GitHub Actions workflow to run linting and tests automatically on every pull request. |
-```
