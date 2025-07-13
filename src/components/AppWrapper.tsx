@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { translations } from '@/lib/translations';
@@ -36,7 +36,6 @@ const initialPages: PageInfo[] = [
 ];
 
 export default function AppWrapper({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
   const pathname = usePathname();
   const [language, setLanguage] = useState<Language>('en');
   const [pageStatuses, setPageStatuses] = useState<PageInfo[]>(initialPages);
@@ -45,23 +44,6 @@ export default function AppWrapper({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     setIsClient(true);
   }, []);
-
-  // Admin shortcut
-  useEffect(() => {
-    if (isClient) {
-      const handleKeyDown = (event: KeyboardEvent) => {
-        if (event.ctrlKey && event.shiftKey && event.key === 'S') {
-          event.preventDefault();
-          router.push('/admin');
-        }
-      };
-
-      window.addEventListener('keydown', handleKeyDown);
-      return () => {
-        window.removeEventListener('keydown', handleKeyDown);
-      };
-    }
-  }, [router, isClient]);
 
   // Language state management
   useEffect(() => {
@@ -139,15 +121,21 @@ export default function AppWrapper({ children }: { children: React.ReactNode }) 
   if (currentPageStatus === 'Hidden') {
     return <NotFoundPage />;
   }
+  
+  const isAuthPage = pathname.startsWith('/admin') || pathname === '/login';
 
   return (
     <LanguageContext.Provider value={{ language, translations: currentTranslations, handleLanguageChange }}>
-      <div className="flex flex-col min-h-screen">
-        <Header />
-        <main className="flex-grow">{children}</main>
-        <Footer />
-        <ScrollButtons />
-      </div>
+      {isAuthPage ? (
+        children
+      ) : (
+        <div className="flex flex-col min-h-screen">
+          <Header />
+          <main className="flex-grow">{children}</main>
+          <Footer />
+          <ScrollButtons />
+        </div>
+      )}
     </LanguageContext.Provider>
   );
 }
