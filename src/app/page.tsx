@@ -23,6 +23,7 @@ import {
   getScenarios,
   getComparisonSectionData,
   getCompetitorFeatures,
+  getNewsletterSectionData,
 } from '@/lib/db/actions';
 import { initialData } from '@/lib/data';
 
@@ -39,6 +40,7 @@ export default async function Home() {
     scenarios,
     comparisonSectionData,
     competitorFeatures,
+    newsletterSectionData,
   ] = await Promise.all([
     getHeroData(lang),
     getProductData(lang),
@@ -49,6 +51,7 @@ export default async function Home() {
     getScenarios(lang),
     getComparisonSectionData(lang),
     getCompetitorFeatures(lang),
+    getNewsletterSectionData(lang),
   ]);
 
   if (!heroData) {
@@ -95,6 +98,11 @@ export default async function Home() {
     competitorFeatures = initialData.competitorFeaturesData[lang];
   }
 
+  if (!newsletterSectionData) {
+    newsletterSectionData = initialData.newsletterSectionData[lang];
+  }
+
+
   return (
     <>
       <HeroSection data={heroData} lang={lang} />
@@ -105,7 +113,7 @@ export default async function Home() {
       <ComparisonSection sectionData={comparisonSectionData} featuresData={competitorFeatures} lang={lang} />
       <CooperationSection />
       <RoadmapSection data={roadmapEvents} lang={lang} />
-      <NewsletterSection />
+      <NewsletterSection data={newsletterSectionData} />
       <FaqSection initialFaqs={faqs} />
       <DevNotesSection />
       <CreatorsSection />

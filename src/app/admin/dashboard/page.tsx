@@ -13,6 +13,7 @@ const dashboardItems = [
   { href: "/admin/scenarios", icon: <MessageSquareQuote />, title: "Scenarios", description: "Manage the 'Why Spekulus?' real-life scenarios section.", buttonText: "Manage Scenarios" },
   { href: "/admin/comparison", icon: <Swords />, title: "Comparison Table", description: "Edit the competitor comparison table features.", buttonText: "Manage Table" },
   { href: "/admin/cooperation", icon: <Handshake />, title: "Cooperation Requests", description: "View and manage partnership and cooperation inquiries.", buttonText: "Manage Requests" },
+  { href: "/admin/newsletter", icon: <Mail />, title: "Newsletter Section", description: "Manage the newsletter signup section on the homepage.", buttonText: "Manage Section" },
   { href: "/admin/notes", icon: <FileText />, title: "Dev Notes", description: "Manage the developer notes that appear in the bottom ticker on the main site.", buttonText: "Manage Notes" },
   { href: "/admin/creators", icon: <Users />, title: "Creators", description: "Manage the creator profiles displayed on the 'Our Team' page.", buttonText: "Manage Creators" },
   { href: "/admin/roadmap", icon: <Calendar />, title: "Roadmap", description: "Update the public roadmap timeline displayed on the landing page.", buttonText: "Manage Roadmap" },

@@ -5,20 +5,19 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { Mail, Loader2 } from 'lucide-react';
 import { subscribeToNewsletter } from '@/lib/db/actions';
+import { NewsletterSectionData } from '@/lib/data';
 
 const formSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
 });
 
-export function NewsletterSection() {
-  const { translations } = useLanguage();
+export function NewsletterSection({ data }: { data: NewsletterSectionData }) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -65,9 +64,9 @@ export function NewsletterSection() {
             <div className="inline-block bg-primary/10 text-primary p-3 rounded-full mb-4">
                 <Mail className="w-8 h-8"/>
             </div>
-            <h2 className="text-3xl md:text-4xl font-bold font-headline">Stay in the Loop</h2>
+            <h2 className="text-3xl md:text-4xl font-bold font-headline">{data.title}</h2>
             <p className="text-lg text-foreground/70 mt-2 mb-8">
-                Subscribe to our newsletter to receive the latest news, updates, and special offers from the Spekulus team.
+                {data.subtitle}
             </p>
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col sm:flex-row items-start gap-4 max-w-lg mx-auto">
@@ -98,7 +97,7 @@ export function NewsletterSection() {
                     </Button>
                 </form>
             </Form>
-            <p className="text-xs text-muted-foreground mt-4">We respect your privacy. No spam, ever.</p>
+            <p className="text-xs text-muted-foreground mt-4">{data.privacy_notice}</p>
         </div>
       </div>
     </section>

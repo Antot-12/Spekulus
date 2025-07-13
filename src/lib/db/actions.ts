@@ -18,6 +18,7 @@ import {
   Scenario,
   CompetitorFeature,
   ComparisonSectionData,
+  NewsletterSectionData,
 } from '../data'
 import { eq, and, notInArray, sql as sqlBuilder } from 'drizzle-orm'
 
@@ -389,6 +390,23 @@ export async function updateCompetitorFeatures(lang: Language, features: Omit<Co
 // ==============================
 // NEWSLETTER
 // ==============================
+export async function getNewsletterSectionData(lang: Language): Promise<NewsletterSectionData | null> {
+    return await db.query.newsletterSections.findFirst({
+        where: eq(schema.newsletterSections.lang, lang),
+    });
+}
+
+export async function updateNewsletterSectionData(lang: Language, data: Omit<NewsletterSectionData, 'id'>) {
+    const payload = { ...data };
+    await db.insert(schema.newsletterSections)
+        .values({ lang, ...payload })
+        .onConflictDoUpdate({
+            target: schema.newsletterSections.lang,
+            set: payload,
+        });
+}
+
+
 export async function subscribeToNewsletter(email: string) {
     try {
         await db.insert(schema.newsletterSubscriptions).values({ email }).onConflictDoNothing();

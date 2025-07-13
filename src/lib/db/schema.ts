@@ -115,6 +115,14 @@ export const competitorFeatures = pgTable('competitor_features', {
     mirrocool: boolean('mirrocool').default(false).notNull(),
 });
 
+export const newsletterSections = pgTable('newsletter_sections', {
+  id: serial('id').primaryKey(),
+  lang: varchar('lang', { length: 2 }).notNull().references(() => languages.code).unique(),
+  title: text('title').notNull(),
+  subtitle: text('subtitle').notNull(),
+  privacy_notice: text('privacy_notice').notNull(),
+});
+
 export const newsletterSubscriptions = pgTable('newsletter_subscriptions', {
   id: serial('id').primaryKey(),
   email: text('email').unique().notNull(),

@@ -12,10 +12,10 @@ async function main() {
   console.log("Seeding database...");
 
   // Clear existing data
+  await db.delete(schema.newsletterSections);
   await db.delete(schema.maintenanceSettings);
-  await db.delete(schema.partnerSections);
-  await db.delete(schema.comparisonSections);
   await db.delete(schema.competitorFeatures);
+  await db.delete(schema.comparisonSections);
   await db.delete(schema.scenarios);
   await db.delete(schema.creators);
   await db.delete(schema.devNotes);
@@ -126,11 +126,11 @@ async function main() {
   }
   console.log("Competitor features seeded.");
 
-  // Seed partner sections
+  // Seed newsletter sections
   for (const lang of ['en', 'uk', 'sk'] as const) {
-      await db.insert(schema.partnerSections).values({ ...initialData.partnerSectionData[lang], lang, imageId: null }).onConflictDoNothing();
+      await db.insert(schema.newsletterSections).values({ ...initialData.newsletterSectionData[lang], lang }).onConflictDoNothing();
   }
-  console.log("Partner sections seeded.");
+  console.log("Newsletter sections seeded.");
 
   console.log("Database seeding complete.");
 }

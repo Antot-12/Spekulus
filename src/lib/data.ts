@@ -193,6 +193,17 @@ export type ComparisonSectionData = {
 }
 
 // ==================================
+// NEWSLETTER
+// ==================================
+export type NewsletterSectionData = {
+  id: number;
+  title: string;
+  subtitle: string;
+  privacy_notice: string;
+};
+
+
+// ==================================
 // PARTNER CTA
 // ==================================
 export type PartnerSectionData = {
@@ -630,6 +641,24 @@ const rawPartnerSectionData: Record<Language, Omit<PartnerSectionData, 'id'>> = 
     },
 };
 
+const rawNewsletterSectionData: Record<Language, Omit<NewsletterSectionData, 'id'>> = {
+  en: {
+    title: 'Stay in the Loop',
+    subtitle: 'Subscribe to our newsletter to receive the latest news, updates, and special offers from the Spekulus team.',
+    privacy_notice: 'We respect your privacy. No spam, ever.',
+  },
+  uk: {
+    title: 'Залишайтеся на зв\'язку',
+    subtitle: 'Підпишіться на нашу розсилку, щоб отримувати останні новини, оновлення та спеціальні пропозиції від команди Spekulus.',
+    privacy_notice: 'Ми поважаємо вашу конфіденційність. Ніякого спаму, ніколи.',
+  },
+  sk: {
+    title: 'Zostaňte v obraze',
+    subtitle: 'Prihláste sa na odber nášho newslettera a dostávajte najnovšie správy, aktualizácie a špeciálne ponuky od tímu Spekulus.',
+    privacy_notice: 'Rešpektujeme vaše súkromie. Žiadny spam, nikdy.',
+  },
+};
+
 const mergeData = <T extends { [key: string]: any }, U extends Partial<T>>(baseData: T[], langData: U[], idKey: keyof T & keyof U): T[] => {
   const langMap = new Map(langData.map(item => [item[idKey], item]));
   return baseData.map(baseItem => ({
@@ -742,4 +771,5 @@ export const initialData = {
     comparisonSectionData: rawComparisonSectionData,
     competitorFeaturesData: rawCompetitorFeaturesData,
     partnerSectionData: rawPartnerSectionData,
+    newsletterSectionData: rawNewsletterSectionData,
 };

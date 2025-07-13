@@ -20,6 +20,7 @@ export type LogActionType =
   | 'Action Section Update'
   | 'Pages Update'
   | 'Maintenance Mode'
+  | 'Newsletter Update'
   | 'Reactions Reset';
 
 export type LogEntry = {

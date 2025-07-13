@@ -134,6 +134,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/newsletter')}>
+                    <Link href="/admin/newsletter"><Mail />Newsletter</Link>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/notes')}>
                     <Link href="/admin/notes"><FileText />Dev Notes</Link>
                 </SidebarMenuButton>
