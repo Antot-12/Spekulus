@@ -224,30 +224,30 @@ export async function deleteDevNote(id: number) {
   await db.delete(schema.devNotes).where(eq(schema.devNotes.id, id))
 }
 
-export async function getImageData(id: number) {
+export async function getFileData(id: number) {
   if (isNaN(id)) return null
-  return await db.query.images.findFirst({ where: eq(schema.images.id, id) })
+  return await db.query.files.findFirst({ where: eq(schema.files.id, id) })
 }
 
-export async function getImages() {
+export async function getFiles() {
   return db.select({
-      id: schema.images.id,
-      filename: schema.images.filename,
-      mimeType: schema.images.mimeType,
-      createdAt: schema.images.createdAt,
+      id: schema.files.id,
+      filename: schema.files.filename,
+      mimeType: schema.files.mimeType,
+      createdAt: schema.files.createdAt,
       size: sqlBuilder<number>`octet_length(data)`.mapWith(Number),
-    }).from(schema.images).orderBy(sqlBuilder`${schema.images.createdAt} desc`);
+    }).from(schema.files).orderBy(sqlBuilder`${schema.files.createdAt} desc`);
 }
 
-export async function deleteImage(id: number) {
-    await db.delete(schema.images).where(eq(schema.images.id, id));
+export async function deleteFile(id: number) {
+    await db.delete(schema.files).where(eq(schema.files.id, id));
 }
 
 
-export async function uploadImage(fileBuffer: Buffer, filename: string, mimeType: string) {
+export async function uploadFile(fileBuffer: Buffer, filename: string, mimeType: string) {
   const [row] = await db
-    .insert(schema.images)
+    .insert(schema.files)
     .values({ data: fileBuffer, filename, mimeType })
-    .returning({ id: schema.images.id })
+    .returning({ id: schema.files.id })
   return row
 }

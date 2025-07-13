@@ -174,11 +174,11 @@ export default function CreatorsAdminPage() {
     toast({ title: "Creator Removed", description: `${creator?.name} removed. Save to confirm.`, variant: 'destructive' });
   };
 
-  const handleImageUpload = async (creatorSlug: string, field: 'imageId' | 'featuredProjectImageId' | `gallery.${number}`, event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (creatorSlug: string, field: 'imageId' | 'featuredProjectImageId' | `gallery.${number}` | 'cvUrl', event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    toast({ title: "Uploading...", description: "Uploading image." });
+    toast({ title: "Uploading...", description: "Uploading file." });
     const formData = new FormData();
     formData.append('file', file);
 
@@ -189,12 +189,9 @@ export default function CreatorsAdminPage() {
       if (result.success && result.id) {
         setCreators(prev => prev.map(c => {
           if (c.slug === creatorSlug) {
-            if (field === 'imageId') {
-              return { ...c, imageId: result.id };
-            }
-            if (field === 'featuredProjectImageId') {
-              return { ...c, featuredProjectImageId: result.id };
-            }
+            if (field === 'imageId') return { ...c, imageId: result.id };
+            if (field === 'featuredProjectImageId') return { ...c, featuredProjectImageId: result.id };
+            if (field === 'cvUrl') return { ...c, cvUrl: `/api/images/${result.id}`};
             if (field.startsWith('gallery.')) {
               const idx = parseInt(field.split('.')[1], 10);
               const newGallery = [...(c.gallery ?? [])];
@@ -206,14 +203,14 @@ export default function CreatorsAdminPage() {
           }
           return c;
         }));
-        toast({ title: "Uploaded", description: "Image uploaded. Save to persist." });
-        logAction('File Upload', 'Success', `Uploaded image for creator slug ${creatorSlug}.`);
+        toast({ title: "Uploaded", description: "File uploaded. Save to persist." });
+        logAction('File Upload', 'Success', `Uploaded file for creator slug ${creatorSlug}.`);
       } else {
         toast({ title: "Upload Failed", description: result.error, variant: 'destructive' });
         logAction('File Upload', 'Failure', `Failed upload for creator slug ${creatorSlug}.`);
       }
     } catch {
-      toast({ title: "Upload Failed", description: "Error uploading image.", variant: 'destructive' });
+      toast({ title: "Upload Failed", description: "Error uploading file.", variant: 'destructive' });
       logAction('File Upload', 'Failure', `Error uploading for creator slug ${creatorSlug}.`);
     } finally {
       if (event.target) event.target.value = '';
@@ -341,7 +338,14 @@ export default function CreatorsAdminPage() {
                   <div><Label htmlFor={`role-${creator.slug}`}>Role</Label><Input id={`role-${creator.slug}`} value={creator.role} onChange={e => handleFieldChange(creator.slug, 'role', e.target.value)} /></div>
                   <div><Label htmlFor={`slug-${creator.slug}`}>Slug</Label><Input id={`slug-${creator.slug}`} value={creator.slug} onChange={e => handleFieldChange(creator.slug, 'slug', e.target.value)} /></div>
                   <div><Label htmlFor={`location-${creator.slug}`}>Location</Label><Input id={`location-${creator.slug}`} value={creator.location ?? ''} onChange={e => handleFieldChange(creator.slug, 'location', e.target.value)} /></div>
-                  <div className="md:col-span-2"><Label htmlFor={`cvUrl-${creator.slug}`}>CV URL</Label><Input id={`cvUrl-${creator.slug}`} value={creator.cvUrl ?? ''} onChange={e => handleFieldChange(creator.slug, 'cvUrl', e.target.value)} /></div>
+                  <div className="md:col-span-2">
+                      <Label htmlFor={`cvUrl-${creator.slug}`}>CV File</Label>
+                      <div className="flex gap-2">
+                        <Input id={`cvUrl-${creator.slug}`} value={creator.cvUrl ?? ''} disabled placeholder="Upload a file to get a URL"/>
+                        <Button variant="outline" size="icon" onClick={() => fileInputRefs.current[`cv-${creator.slug}`]?.click()}><Upload className="h-4 w-4"/></Button>
+                        <input type="file" ref={el => (fileInputRefs.current[`cv-${creator.slug}`] = el)} accept=".pdf,.doc,.docx" onChange={e => handleImageUpload(creator.slug, 'cvUrl', e)} className="hidden" />
+                      </div>
+                  </div>
                 </CardContent>
               </Card>
 

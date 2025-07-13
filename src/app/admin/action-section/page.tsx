@@ -31,13 +31,10 @@ import {
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { logAction } from '@/lib/logger'
-import NextImage from 'next/image'
 import {
   getActionSectionData,
   updateActionSectionData,
 } from '@/lib/db/actions'
-
-type AllActionSectionData = Record<Language, ActionSectionData>
 
 const LanguageFlag = ({ lang }: { lang: Language }) => {
   const flags: Record<string, string> = {
@@ -71,7 +68,7 @@ const createDefaultActionSectionData = (lang: Language): ActionSectionData => ({
 
 export default function ActionSectionAdminPage() {
   const { toast } = useToast()
-  const [allData, setAllData] = useState<AllActionSectionData | null>(null)
+  const [allData, setAllData] = useState<Record<Language, ActionSectionData> | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [selectedLang, setSelectedLang] = useState<Language>('en')
@@ -89,7 +86,7 @@ export default function ActionSectionAdminPage() {
       const newAllData = languages.reduce((acc, lang, index) => {
         acc[lang] = results[index] || createDefaultActionSectionData(lang)
         return acc
-      }, {} as AllActionSectionData)
+      }, {} as Record<Language, ActionSectionData>)
 
       setAllData(newAllData)
       setIsLoading(false)

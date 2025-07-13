@@ -31,7 +31,7 @@ export const languages = pgTable('languages', {
   name: text('name').notNull()
 })
 
-export const images = pgTable('images', {
+export const files = pgTable('files', {
   id: serial('id').primaryKey(),
   filename: text('filename'),
   mimeType: text('mime_type'),
@@ -44,7 +44,7 @@ export const heroSections = pgTable('hero_sections', {
   lang: varchar('lang', { length: 2 }).notNull().references(() => languages.code).unique(),
   title: text('title').notNull(),
   subtitle: text('subtitle').notNull(),
-  imageId: integer('image_id').references(() => images.id, { onDelete: 'set null' })
+  imageId: integer('image_id').references(() => files.id, { onDelete: 'set null' })
 })
 
 export const heroFeatures = pgTable('hero_features', {
@@ -60,7 +60,7 @@ export const productComponents = pgTable('product_components', {
   icon: text('icon').notNull(),
   title: text('title').notNull(),
   description: text('description').notNull(),
-  imageId: integer('image_id').references(() => images.id, { onDelete: 'set null' })
+  imageId: integer('image_id').references(() => files.id, { onDelete: 'set null' })
 })
 
 export const advantages = pgTable('advantages', {
@@ -81,7 +81,7 @@ export const actionSections = pgTable('action_sections', {
   buttonText: text('button_text').notNull(),
   buttonUrl: text('button_url').notNull(),
   buttonVisible: boolean('button_visible').default(true).notNull(),
-  imageId: integer('image_id').references(() => images.id, { onDelete: 'set null' })
+  imageId: integer('image_id').references(() => files.id, { onDelete: 'set null' })
 })
 
 export const roadmapEvents = pgTable('roadmap_events', {
@@ -110,7 +110,7 @@ export const devNotes = pgTable('dev_notes', {
   tags: jsonb('tags').$type<string[]>(),
   isVisible: boolean('is_visible').default(true).notNull(),
   reactionCounts: jsonb('reaction_counts').$type<Record<string, number>>(),
-  imageId: integer('image_id').references(() => images.id, { onDelete: 'set null' })
+  imageId: integer('image_id').references(() => files.id, { onDelete: 'set null' })
 })
 
 export const creators = pgTable(
@@ -137,8 +137,8 @@ export const creators = pgTable(
     certifications: jsonb('certifications').$type<{ name: string; authority: string; year: string }[]>(),
     gallery: jsonb('gallery').$type<{ imageId: number; description: string }[]>(),
     achievements: jsonb('achievements').$type<{ icon: string; name: string; description: string }[]>(),
-    imageId: integer('image_id').references(() => images.id, { onDelete: 'set null' }),
-    featuredProjectImageId: integer('featured_project_image_id').references(() => images.id, {
+    imageId: integer('image_id').references(() => files.id, { onDelete: 'set null' }),
+    featuredProjectImageId: integer('featured_project_image_id').references(() => files.id, {
       onDelete: 'set null'
     }),
     featuredProject: jsonb('featured_project').$type<{

@@ -22,7 +22,7 @@ async function main() {
   await db.delete(schema.heroFeatures);
   await db.delete(schema.heroSections);
   await db.delete(schema.languages);
-  await db.delete(schema.images);
+  await db.delete(schema.files);
 
   // Seed languages
   await db.insert(schema.languages).values([

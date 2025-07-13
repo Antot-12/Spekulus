@@ -1,7 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import 'dotenv/config';
-import { uploadImage } from '@/lib/db/actions';
+import { uploadFile } from '@/lib/db/actions';
 
 // Helper to convert a file stream to a buffer
 async function streamToBuffer(stream: ReadableStream<Uint8Array>): Promise<Buffer> {
@@ -28,10 +28,10 @@ export async function POST(request: NextRequest) {
   try {
     const fileBuffer = await streamToBuffer(file.stream());
     
-    const result = await uploadImage(fileBuffer, file.name, file.type);
+    const result = await uploadFile(fileBuffer, file.name, file.type);
     
     if (!result || !result.id) {
-        throw new Error("Image upload failed to return an ID.");
+        throw new Error("File upload failed to return an ID.");
     }
     
     return NextResponse.json({ success: true, id: result.id });

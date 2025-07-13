@@ -1,31 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getImageData } from '@/lib/db/actions';
+import { getFileData } from '@/lib/db/actions';
 
 export async function GET(request: NextRequest, context: { params: { id: string } }) {
   const { id } = context.params;
 
-  const imageId = Number(id);
-  if (!imageId || isNaN(imageId)) {
-    return new NextResponse('Invalid image ID', { status: 400 });
+  const fileId = Number(id);
+  if (!fileId || isNaN(fileId)) {
+    return new NextResponse('Invalid file ID', { status: 400 });
   }
 
   try {
-    const image = await getImageData(imageId);
+    const file = await getFileData(fileId);
 
-    if (!image || !image.data) {
-      return new NextResponse('Image not found', { status: 404 });
+    if (!file || !file.data) {
+      return new NextResponse('File not found', { status: 404 });
     }
 
-    return new NextResponse(image.data, {
+    // Ensure the filename is URL-safe
+    const safeFilename = encodeURIComponent(file.filename || 'download');
+
+    return new NextResponse(file.data, {
       status: 200,
       headers: {
-        'Content-Type': image.mimeType || 'application/octet-stream',
-        'Content-Length': image.data.length.toString(),
+        'Content-Type': file.mimeType || 'application/octet-stream',
+        'Content-Length': file.data.length.toString(),
         'Cache-Control': 'public, max-age=31536000, immutable',
+        'Content-Disposition': `inline; filename="${safeFilename}"`
       },
     });
   } catch (error) {
-    console.error(`Failed to fetch image with ID ${imageId}:`, error);
+    console.error(`Failed to fetch file with ID ${fileId}:`, error);
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }

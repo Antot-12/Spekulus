@@ -71,7 +71,7 @@ The project follows a standard Next.js App Router structure.
 │   │   └── genkit.ts        # Genkit initialization
 │   ├── /app/                # Next.js App Router: pages and layouts
 │   │   ├── /admin/          # Admin panel pages for content management
-│   │   ├── /api/            # API route handlers (e.g., image serving)
+│   │   ├── /api/            # API route handlers (e.g., file serving)
 │   │   ├── /creators/       # Public-facing pages for creators/team
 │   │   ├── /dev-notes/      # Public-facing pages for dev notes
 │   │   └── page.tsx         # Homepage component
@@ -110,15 +110,15 @@ The schema is defined in `/src/lib/db/schema.ts` using Drizzle ORM.
   - `code (varchar, PK)`: The 2-letter language code (e.g., 'en').
   - `name (text)`: The full language name (e.g., 'English').
 
-- **`images`**: Stores all uploaded binary image data.
-  - `id (serial, PK)`: Unique identifier for the image.
-  - `data (bytea)`: The raw binary data of the image.
+- **`files`**: Stores all uploaded binary file data.
+  - `id (serial, PK)`: Unique identifier for the file.
+  - `data (bytea)`: The raw binary data of the file.
   - `filename (text)`, `mimeType (text)`, `createdAt (timestamp)`: Metadata.
 
 - **`heroSections`**: Content for the main hero section of the homepage.
   - `lang (varchar, FK -> languages.code)`: Associates the content with a language.
   - `title, subtitle (text)`: The main heading and subheading.
-  - `imageId (integer, FK -> images.id)`: The background image for the hero section.
+  - `imageId (integer, FK -> files.id)`: The background image for the hero section.
 
 - **`heroFeatures`**: The list of features displayed within the hero section.
   - `lang (varchar, FK -> languages.code)`: Language association.
@@ -128,7 +128,7 @@ The schema is defined in `/src/lib/db/schema.ts` using Drizzle ORM.
 - **`productComponents`**: The four "Anatomy" components on the homepage.
   - `lang (varchar, FK -> languages.code)`: Language association.
   - `icon, title, description (text)`: Content for each component.
-  - `imageId (integer, FK -> images.id)`: The image for the component card.
+  - `imageId (integer, FK -> files.id)`: The image for the component card.
 
 - **`advantages`**: The key advantages/benefits listed on the homepage.
   - Fields are identical to `productComponents`.
@@ -137,7 +137,7 @@ The schema is defined in `/src/lib/db/schema.ts` using Drizzle ORM.
   - `lang (varchar, FK -> languages.code)`: Language association.
   - `title, subtitle, description, buttonText, buttonUrl (text)`: All text content.
   - `visible, buttonVisible (boolean)`: Toggles for visibility.
-  - `imageId (integer, FK -> images.id)`: The main image for this section.
+  - `imageId (integer, FK -> files.id)`: The main image for this section.
 
 - **`roadmapEvents`**: Milestones for the public roadmap timeline.
   - `lang (varchar, FK -> languages.code)`: Language association.
@@ -154,18 +154,18 @@ The schema is defined in `/src/lib/db/schema.ts` using Drizzle ORM.
   - `tags (jsonb)`: An array of string tags (e.g., `['Backend', 'API']`).
   - `isVisible (boolean)`: Toggles public visibility.
   - `reactionCounts (jsonb)`: Stores reaction counts (e.g., `{'like': 10}`).
-  - `imageId (integer, FK -> images.id)`: The header image for the note.
+  - `imageId (integer, FK -> files.id)`: The header image for the note.
 
 - **`creators`**: Profiles for team members.
   - `id (serial, PK)`, `slug (text, unique per lang)`: Unique identifiers.
   - `lang (varchar, FK -> languages.code)`: Language association.
   - All other fields (`name`, `role`, `bio`, etc.) are `text` or `jsonb` to store profile information. `jsonb` is used for arrays (skills, hobbies) and nested objects (socials, music).
-  - `imageId, featuredProjectImageId (integer, FK -> images.id)`: Foreign keys for profile and project images.
+  - `imageId, featuredProjectImageId (integer, FK -> files.id)`: Foreign keys for profile and project images.
 
 ### Entity Relationships (ER Summary)
 
 - **One-to-Many**: A `languages` record can be associated with many records in other tables (e.g., one 'en' language has many `faqItems`, `roadmapEvents`, etc.).
-- **One-to-Many (Images)**: An `images` record can be referenced by many other records across different tables (`heroSections`, `creators`, etc.), but each content item (like a single creator profile) can only have one primary `imageId`.
+- **One-to-Many (Files)**: A `files` record can be referenced by many other records across different tables (`heroSections`, `creators`, etc.), but each content item (like a single creator profile) can only have one primary `imageId`.
 - **Composite Keys**: The `creators` table uses a unique constraint on `(slug, lang)` to ensure that a creator's profile URL is unique for each language.
 
 ---
@@ -192,16 +192,16 @@ Instead of a traditional REST API, the application uses **Next.js Server Actions
   - e.g., `deleteDevNote(id)`.
   - These remove a specific record from the database by its ID.
 
-- **Image Handling**:
-  - `uploadImage(fileBuffer, filename, mimeType)`: Takes raw image data, inserts it into the `images` table, and returns the new image `id`.
-  - `getImage(id)`: Retrieves the raw image data from the `images` table based on its `id`.
+- **File Handling**:
+  - `uploadFile(fileBuffer, filename, mimeType)`: Takes raw file data, inserts it into the `files` table, and returns the new file `id`.
+  - `getFile(id)`: Retrieves the raw file data from the `files` table based on its `id`.
 
 ### 5.2. API Routes (`/src/app/api/`)
 
 A few traditional API routes exist for specific purposes:
 
-- `/api/images/[id]`: Serves the raw image data from the database. This allows using a simple `<img src="/api/images/123" />` tag on the frontend.
-- `/api/upload`: Handles file uploads from the admin panel, calls the `uploadImage` server action, and returns the new image ID as JSON.
+- `/api/images/[id]`: Serves the raw file data from the database. This allows using a simple `<img src="/api/images/123" />` tag on the frontend for image files.
+- `/api/upload`: Handles file uploads from the admin panel, calls the `uploadFile` server action, and returns the new file ID as JSON.
 - `/api/auth/login`: Validates admin credentials against environment variables.
 - `/api/contact`: Handles the public contact form submission, using Resend to forward the message.
 
@@ -235,7 +235,7 @@ The admin panel uses icons from the `lucide-react` library to provide quick, int
 | **`Loader2`** | A spinning indicator shown inside a button when an action (like saving or uploading) is in progress. | The button is disabled and the icon spins. | Replaces other icons inside buttons during processing. |
 | **`PlusCircle`** | Adds a new item to a list (e.g., a new FAQ, a new roadmap event, a new creator profile). | Immediately adds a new, editable item to the list in the UI. Requires saving to persist. | Top-right of list-based admin pages (FAQ, Roadmap, etc.). |
 | **`Trash2`** | Deletes an item. | This action is often irreversible and placed inside a confirmation dialog to prevent accidental deletion. | Next to individual items in a list or form. |
-| **`Upload` / `UploadCloud`** | Opens a file dialog to upload an image or file. | Triggers the browser's file selector. An `UploadCloud` is used for the main uploads page button. | Next to image input fields; main button on Uploads page. |
+| **`Upload` / `UploadCloud`** | Opens a file dialog to upload a file. | Triggers the browser's file selector. An `UploadCloud` is used for the main uploads page button. | Next to file input fields; main button on Uploads page. |
 | **`Eye` / `EyeOff`** | Toggles the public visibility of an item (e.g., a dev note or creator profile). | The icon state changes on click to reflect the new visibility status. Requires saving. | Appears in visibility toggles on Notes and Creators pages. |
 | **`Copy`** | Copies an item's ID or URL to the clipboard. | Displays a toast notification on success. | Appears in the Uploads manager. |
 | **`LinkIcon`** | Copies an item's full public URL to the clipboard. | Displays a toast notification on success. | Appears in the Uploads manager. |
@@ -296,7 +296,7 @@ The project uses Genkit for its AI features.
       lang: varchar('lang', { length: 2 }).notNull().references(() => languages.code),
       author: text('author').notNull(),
       quote: text('quote').notNull(),
-      imageId: integer('image_id').references(() => images.id),
+      imageId: integer('image_id').references(() => files.id),
     });
     ```
 2.  **Drizzle Config (`drizzle.config.ts`)**: Add `'testimonials'` to the `tablesFilter` array.

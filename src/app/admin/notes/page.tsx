@@ -296,7 +296,7 @@ export default function NotesAdminPage() {
                             <Separator />
 
                             <div className="space-y-2">
-                                <Label htmlFor="imageUrl">Header Image</Label>
+                                <Label htmlFor="imageId">Header Image ID</Label>
                                 <div className="flex gap-2">
                                     <Input id="imageId" value={activeNote.imageId || ''} disabled placeholder="Upload an image to see its ID"/>
                                     <Button variant="outline" size="icon" onClick={() => fileInputRefs.current[activeNote.id]?.click()}><Upload className="h-4 w-4" /></Button>

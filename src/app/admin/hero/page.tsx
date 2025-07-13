@@ -127,7 +127,7 @@ export default function HeroSectionAdminPage() {
     formData.append("file", file);
 
     try {
-      const response = await fetch("/api/upload-image", {
+      const response = await fetch("/api/upload", {
         method: "POST",
         body: formData,
       });
@@ -146,10 +146,10 @@ export default function HeroSectionAdminPage() {
       handleChange("imageId", json.id);
       
       toast({
-        title: "Image uploaded",
+        title: "File uploaded",
         description: "Click “Save Changes” to persist.",
       });
-      logAction("File Upload", "Success", `Uploaded hero image ID: ${json.id}`);
+      logAction("File Upload", "Success", `Uploaded hero file ID: ${json.id}`);
     } catch (err: any) {
       console.error(err);
       toast({
@@ -159,7 +159,7 @@ export default function HeroSectionAdminPage() {
       });
       logAction("File Upload", "Failure", err.message ?? "Unknown error");
     } finally {
-      e.target.value = "";
+      if (e.target) e.target.value = "";
     }
   };
 

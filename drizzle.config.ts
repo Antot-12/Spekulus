@@ -12,7 +12,7 @@ export default defineConfig({
   dbCredentials: {
     url: process.env.DATABASE_URL,
   },
-  tablesFilter: ["advantages", "dev_notes", "faq_items", "hero_sections", "product_components", "roadmap_events", "creators", "action_sections", "languages", "images"],
+  tablesFilter: ["advantages", "dev_notes", "faq_items", "hero_sections", "product_components", "roadmap_events", "creators", "action_sections", "languages", "files", "hero_features"],
   out: "./drizzle",
   verbose: true,
   strict: true,

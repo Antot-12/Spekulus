@@ -21,7 +21,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronsRight,
-  Expand
+  Expand,
+  File as FileIcon
 } from 'lucide-react'
 import {
   AlertDialog,
@@ -37,11 +38,11 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle as RDialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { getImages, deleteImage } from '@/lib/db/actions'
+import { getFiles, deleteFile } from '@/lib/db/actions'
 import { logAction } from '@/lib/logger'
 import { format } from 'date-fns'
 
-type ImageInfo = {
+type FileInfo = {
   id: number
   filename: string | null
   mimeType: string | null
@@ -52,7 +53,7 @@ type ImageInfo = {
 type ViewMode = 'grid' | 'list';
 type SortMode = 'newest' | 'oldest' | 'name';
 
-const IMAGES_PER_PAGE = 12;
+const FILES_PER_PAGE = 12;
 
 function formatFileSize(bytes: number | null | undefined): string {
     if (bytes === null || bytes === undefined) return 'N/A';
@@ -63,10 +64,13 @@ function formatFileSize(bytes: number | null | undefined): string {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
 
+const isImageFile = (mimeType: string | null): boolean => {
+    return mimeType ? mimeType.startsWith('image/') : false;
+}
 
 export default function UploadsAdminPage() {
   const { toast } = useToast()
-  const [images, setImages] = useState<ImageInfo[]>([])
+  const [files, setFiles] = useState<FileInfo[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isUploading, setIsUploading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
@@ -75,15 +79,15 @@ export default function UploadsAdminPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const fetchImages = useCallback(async () => {
+  const fetchFiles = useCallback(async () => {
     setIsLoading(true)
     try {
-      const data = await getImages()
-      setImages(data)
+      const data = await getFiles()
+      setFiles(data)
     } catch (error) {
       toast({
         title: 'Fetch Error',
-        description: 'Could not load image library.',
+        description: 'Could not load file library.',
         variant: 'destructive',
       })
     } finally {
@@ -92,13 +96,13 @@ export default function UploadsAdminPage() {
   }, [toast])
 
   useEffect(() => {
-    fetchImages()
-  }, [fetchImages])
+    fetchFiles()
+  }, [fetchFiles])
 
-  const filteredAndSortedImages = useMemo(() => {
-    return images
-      .filter(image =>
-        image.filename?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredAndSortedFiles = useMemo(() => {
+    return files
+      .filter(file =>
+        file.filename?.toLowerCase().includes(searchTerm.toLowerCase())
       )
       .sort((a, b) => {
         switch (sortMode) {
@@ -108,13 +112,13 @@ export default function UploadsAdminPage() {
             return (a.filename || '').localeCompare(b.filename || '');
           case 'newest':
           default:
-            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+            return new Date(b.createdAt).getTime() - new Date(b.createdAt).getTime();
         }
       });
-  }, [images, searchTerm, sortMode]);
+  }, [files, searchTerm, sortMode]);
   
-  const totalPages = Math.ceil(filteredAndSortedImages.length / IMAGES_PER_PAGE);
-  const paginatedImages = filteredAndSortedImages.slice((currentPage - 1) * IMAGES_PER_PAGE, currentPage * IMAGES_PER_PAGE);
+  const totalPages = Math.ceil(filteredAndSortedFiles.length / FILES_PER_PAGE);
+  const paginatedFiles = filteredAndSortedFiles.slice((currentPage - 1) * FILES_PER_PAGE, currentPage * FILES_PER_PAGE);
 
 
   const handleFileUpload = async (
@@ -144,7 +148,7 @@ export default function UploadsAdminPage() {
           description: `${file.name} has been uploaded.`,
         })
         logAction('File Upload', 'Success', `Uploaded file: ${file.name}`)
-        fetchImages() // Refresh the list
+        fetchFiles() // Refresh the list
       } else {
         throw new Error(result.error)
       }
@@ -164,37 +168,37 @@ export default function UploadsAdminPage() {
   }
 
   const handleDelete = async (id: number) => {
-    const imageToDelete = images.find((img) => img.id === id)
+    const fileToDelete = files.find((img) => img.id === id)
     try {
-      await deleteImage(id)
+      await deleteFile(id)
       toast({
-        title: 'Image Deleted',
-        description: `Image ID ${id} has been deleted.`,
+        title: 'File Deleted',
+        description: `File ID ${id} has been deleted.`,
         variant: 'destructive',
       })
       logAction(
         'File Delete',
         'Success',
-        `Deleted image: ${imageToDelete?.filename || `ID ${id}`}`
+        `Deleted file: ${fileToDelete?.filename || `ID ${id}`}`
       )
-      fetchImages() // Refresh the list
+      fetchFiles() // Refresh the list
     } catch (error: any) {
       toast({
         title: 'Deletion Failed',
-        description: error.message || 'Could not delete the image.',
+        description: error.message || 'Could not delete the file.',
         variant: 'destructive',
       })
-      logAction('File Delete', 'Failure', `Failed to delete image ID ${id}.`)
+      logAction('File Delete', 'Failure', `Failed to delete file ID ${id}.`)
     }
   }
 
   const copyToClipboard = (text: string, type: 'ID' | 'URL') => {
     navigator.clipboard.writeText(text)
-    toast({ description: `Copied image ${type} to clipboard.` })
+    toast({ description: `Copied file ${type} to clipboard.` })
   }
   
-  const copyFullUrl = (imageId: number) => {
-    const url = `${window.location.origin}/api/images/${imageId}`;
+  const copyFullUrl = (fileId: number) => {
+    const url = `${window.location.origin}/api/images/${fileId}`;
     copyToClipboard(url, 'URL');
   }
 
@@ -213,6 +217,40 @@ export default function UploadsAdminPage() {
         </div>
     )
   );
+  
+  const FilePreview = ({ file }: { file: FileInfo }) => {
+    if (isImageFile(file.mimeType)) {
+      return (
+        <Dialog>
+          <DialogTrigger asChild>
+            <div className="aspect-square w-full bg-muted cursor-pointer overflow-hidden relative group">
+              <img
+                src={`/api/images/${file.id}`}
+                alt={file.filename || `File ${file.id}`}
+                className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <Expand className="w-8 h-8 text-white drop-shadow-lg" />
+              </div>
+            </div>
+          </DialogTrigger>
+          <DialogContent className="max-w-4xl p-2 bg-transparent border-none shadow-none">
+            <DialogHeader>
+              <RDialogTitle className="sr-only">Image Preview: {file.filename || `File ${file.id}`}</RDialogTitle>
+            </DialogHeader>
+            <img src={`/api/images/${file.id}`} alt={file.filename || ''} className="max-h-[90vh] w-auto h-auto rounded-lg mx-auto" />
+          </DialogContent>
+        </Dialog>
+      );
+    }
+    return (
+      <a href={`/api/images/${file.id}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center aspect-square w-full bg-muted">
+        <FileIcon className="w-16 h-16 text-muted-foreground" />
+      </a>
+    );
+  };
+
 
   return (
     <Card className="opacity-0 animate-fade-in-up">
@@ -221,7 +259,7 @@ export default function UploadsAdminPage() {
           <div>
             <CardTitle>Manage Uploads</CardTitle>
             <CardDescription>
-              Browse, search, upload, and delete images from your site's library.
+              Browse, search, upload, and delete files from your site's library.
             </CardDescription>
           </div>
           <Button
@@ -239,7 +277,6 @@ export default function UploadsAdminPage() {
             type="file"
             ref={fileInputRef}
             onChange={handleFileUpload}
-            accept="image/*,video/*"
             className="hidden"
           />
         </div>
@@ -284,46 +321,28 @@ export default function UploadsAdminPage() {
               <Skeleton key={i} className="aspect-square rounded-lg" />
             ))}
           </div>
-        ) : paginatedImages.length > 0 ? (
+        ) : paginatedFiles.length > 0 ? (
           <>
             {viewMode === 'grid' ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {paginatedImages.map((image) => (
-                  <Card key={image.id} className="group relative overflow-hidden flex flex-col">
+                {paginatedFiles.map((file) => (
+                  <Card key={file.id} className="group relative overflow-hidden flex flex-col">
                      <div className="flex flex-col flex-grow">
-                      <Dialog>
-                       <DialogTrigger asChild>
-                         <div className="aspect-square w-full bg-muted cursor-pointer resize overflow-hidden relative">
-                            <img
-                                src={`/api/images/${image.id}`}
-                                alt={image.filename || `Image ${image.id}`}
-                                className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                                loading="lazy"
-                            />
-                             <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                               <Expand className="w-8 h-8 text-white drop-shadow-lg" />
-                             </div>
-                         </div>
-                       </DialogTrigger>
-                       <DialogContent className="max-w-4xl p-2 bg-transparent border-none shadow-none">
-                            <DialogHeader>
-                              <RDialogTitle className="sr-only">Image Preview: {image.filename || `Image ${image.id}`}</RDialogTitle>
-                            </DialogHeader>
-                            <img src={`/api/images/${image.id}`} alt={image.filename || ''} className="max-h-[90vh] w-auto h-auto rounded-lg mx-auto" />
-                       </DialogContent>
-                    </Dialog>
-                    <div className="p-4 border-t flex-grow flex flex-col justify-between">
+                      <div className="resize overflow-auto">
+                        <FilePreview file={file} />
+                      </div>
+                      <div className="p-4 border-t flex-grow flex flex-col justify-between">
                         <div>
-                            <p className="text-sm font-semibold truncate" title={image.filename || ''}>{image.filename || 'Untitled'}</p>
-                            <p className="text-xs text-muted-foreground">ID: {image.id}</p>
-                            <p className="text-xs text-muted-foreground">Size: {formatFileSize(image.size)}</p>
-                            <p className="text-xs text-muted-foreground">Uploaded: {format(new Date(image.createdAt), 'MMM d, yyyy')}</p>
+                            <p className="text-sm font-semibold truncate" title={file.filename || ''}>{file.filename || 'Untitled'}</p>
+                            <p className="text-xs text-muted-foreground">ID: {file.id}</p>
+                            <p className="text-xs text-muted-foreground">Size: {formatFileSize(file.size)}</p>
+                            <p className="text-xs text-muted-foreground">Uploaded: {format(new Date(file.createdAt), 'MMM d, yyyy')}</p>
                         </div>
                         <div className="flex gap-2 mt-3">
-                            <Button variant="outline" size="sm" className="flex-1" onClick={() => copyToClipboard(String(image.id), 'ID')}>
+                            <Button variant="outline" size="sm" className="flex-1" onClick={() => copyToClipboard(String(file.id), 'ID')}>
                                 <Copy className="mr-2 h-4 w-4" /> ID
                             </Button>
-                            <Button variant="outline" size="sm" className="flex-1" onClick={() => copyFullUrl(image.id)}>
+                            <Button variant="outline" size="sm" className="flex-1" onClick={() => copyFullUrl(file.id)}>
                                 <LinkIcon className="mr-2 h-4 w-4" /> URL
                             </Button>
                             <AlertDialog>
@@ -336,17 +355,17 @@ export default function UploadsAdminPage() {
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    This will permanently delete the image "{image.filename || `ID ${image.id}`}". This action cannot be undone.
+                                    This will permanently delete the file "{file.filename || `ID ${file.id}`}". This action cannot be undone.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDelete(image.id)}>Delete</AlertDialogAction>
+                                  <AlertDialogAction onClick={() => handleDelete(file.id)}>Delete</AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>
                             </AlertDialog>
                         </div>
-                    </div>
+                      </div>
                     </div>
                   </Card>
                 ))}
@@ -365,34 +384,27 @@ export default function UploadsAdminPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {paginatedImages.map(image => (
-                                <TableRow key={image.id}>
+                            {paginatedFiles.map(file => (
+                                <TableRow key={file.id}>
                                     <TableCell>
-                                      <Dialog>
-                                        <DialogTrigger asChild>
-                                          <div className="w-16 h-16 bg-muted rounded-md overflow-hidden cursor-pointer">
-                                            <img src={`/api/images/${image.id}`} alt={image.filename || ''} className="h-full w-full object-cover"/>
-                                          </div>
-                                        </DialogTrigger>
-                                        <DialogContent className="max-w-4xl p-2 bg-transparent border-none shadow-none">
-                                            <DialogHeader>
-                                              <RDialogTitle className="sr-only">Image Preview: {image.filename || `Image ${image.id}`}</RDialogTitle>
-                                            </DialogHeader>
-                                            <img src={`/api/images/${image.id}`} alt={image.filename || ''} className="max-h-[90vh] w-auto h-auto rounded-lg mx-auto" />
-                                        </DialogContent>
-                                      </Dialog>
+                                      <div className="w-16 h-16 bg-muted rounded-md overflow-hidden flex items-center justify-center">
+                                        {isImageFile(file.mimeType) ?
+                                          <img src={`/api/images/${file.id}`} alt={file.filename || ''} className="h-full w-full object-cover"/>
+                                          : <FileIcon className="h-8 w-8 text-muted-foreground"/>
+                                        }
+                                      </div>
                                     </TableCell>
                                     <TableCell>
-                                        <p className="font-medium truncate" title={image.filename || ''}>{image.filename || 'Untitled'}</p>
-                                        <p className="text-xs text-muted-foreground">ID: {image.id}</p>
+                                        <p className="font-medium truncate" title={file.filename || ''}>{file.filename || 'Untitled'}</p>
+                                        <p className="text-xs text-muted-foreground">ID: {file.id}</p>
                                     </TableCell>
-                                    <TableCell className="text-muted-foreground">{image.mimeType || 'N/A'}</TableCell>
-                                    <TableCell className="text-muted-foreground">{formatFileSize(image.size)}</TableCell>
-                                    <TableCell className="text-muted-foreground">{format(new Date(image.createdAt), 'yyyy-MM-dd')}</TableCell>
+                                    <TableCell className="text-muted-foreground">{file.mimeType || 'N/A'}</TableCell>
+                                    <TableCell className="text-muted-foreground">{formatFileSize(file.size)}</TableCell>
+                                    <TableCell className="text-muted-foreground">{format(new Date(file.createdAt), 'yyyy-MM-dd')}</TableCell>
                                     <TableCell className="text-right">
                                          <div className="flex gap-2 justify-end">
-                                            <Button variant="ghost" size="icon" onClick={() => copyToClipboard(String(image.id), 'ID')}><Copy className="h-4 w-4"/></Button>
-                                            <Button variant="ghost" size="icon" onClick={() => copyFullUrl(image.id)}><LinkIcon className="h-4 w-4"/></Button>
+                                            <Button variant="ghost" size="icon" onClick={() => copyToClipboard(String(file.id), 'ID')}><Copy className="h-4 w-4"/></Button>
+                                            <Button variant="ghost" size="icon" onClick={() => copyFullUrl(file.id)}><LinkIcon className="h-4 w-4"/></Button>
                                             <AlertDialog>
                                               <AlertDialogTrigger asChild>
                                                   <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4"/></Button>
@@ -400,11 +412,11 @@ export default function UploadsAdminPage() {
                                               <AlertDialogContent>
                                                 <AlertDialogHeader>
                                                   <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                                  <AlertDialogDescription>This will permanently delete "{image.filename || `ID ${image.id}`}".</AlertDialogDescription>
+                                                  <AlertDialogDescription>This will permanently delete "{file.filename || `ID ${file.id}`}".</AlertDialogDescription>
                                                 </AlertDialogHeader>
                                                 <AlertDialogFooter>
                                                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                  <AlertDialogAction onClick={() => handleDelete(image.id)}>Delete</AlertDialogAction>
+                                                  <AlertDialogAction onClick={() => handleDelete(file.id)}>Delete</AlertDialogAction>
                                                 </AlertDialogFooter>
                                               </AlertDialogContent>
                                             </AlertDialog>
@@ -420,12 +432,12 @@ export default function UploadsAdminPage() {
           </>
         ) : (
           <div className="text-center py-16 text-muted-foreground border-2 border-dashed rounded-lg flex flex-col items-center justify-center">
-            <FileImage className="w-12 h-12 mb-4" />
+            <FileIcon className="w-12 h-12 mb-4" />
             <h3 className="text-xl font-semibold">
-              {searchTerm ? 'No images found' : 'Your library is empty'}
+              {searchTerm ? 'No files found' : 'Your library is empty'}
             </h3>
             <p>
-              {searchTerm ? 'Try a different search term.' : 'Click "Upload File" to add your first image.'}
+              {searchTerm ? 'Try a different search term.' : 'Click "Upload File" to add your first file.'}
             </p>
           </div>
         )}
