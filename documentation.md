@@ -51,6 +51,14 @@
 - **[18. Tech Stack & Versions Summary](#18-tech-stack--versions-summary)**
 - **[19. Architecture Diagram](#19-architecture-diagram)**
 - **[20. Technical Roadmap (Planned Features)](#20-technical-roadmap-planned-features)**
+- **[21. New Content Sections](#21-new-content-sections)**
+  - [21.1. Scenarios ("Why Spekulus?")](#211-scenarios-why-spekulus)
+  - [21.2. Competitor Comparison Table](#212-competitor-comparison-table)
+  - [21.3. Partner / Investor CTA](#213-partner--investor-cta)
+- **[22. Admin Panel Features](#22-admin-panel-features)**
+  - [22.1. Admin Dashboard Link to Homepage](#221-admin-dashboard-link-to-homepage)
+  - [22.2. Reusable File Picker](#222-reusable-file-picker)
+  - [22.3. Collapsible Creator Profiles](#223-collapsible-creator-profiles)
 
 ---
 
@@ -186,6 +194,20 @@ The schema is defined in `/src/lib/db/schema.ts` using Drizzle ORM.
 
 - **`advantages`**: The key advantages/benefits listed on the homepage.
   - Fields are identical to `productComponents`.
+
+- **`scenarios`**: The "Why Spekulus?" real-life scenarios.
+  - `lang (varchar, FK -> languages.code)`: Language association.
+  - `icon, question, answer (text)`: Content for each scenario card.
+
+- **`competitorFeatures`**: The features for the competitor comparison table.
+  - `lang (varchar, FK -> languages.code)`: Language association.
+  - `feature (text)`: The name of the feature being compared.
+  - `spekulus, himirror, simplehuman, mirrocool (boolean)`: Flags indicating support.
+
+- **`partnerSections`**: The "Partner with Us" call-to-action section.
+  - `lang (varchar, FK -> languages.code)`: Language association.
+  - `title, text, ctaLabel, ctaUrl (text)`: All text content for the section.
+  - `imageId (integer, FK -> files.id)`: An optional accompanying image.
 
 - **`actionSections`**: The "See in Action" section on the homepage.
   - `lang (varchar, FK -> languages.code)`: Language association.
@@ -369,6 +391,10 @@ The admin panel uses icons from the `lucide-react` library to provide quick, int
 | **`Cpu`** | Sidebar link to manage the Product "Anatomy" section. | Admin Sidebar, Dashboard |
 | **`Sparkles`** | Sidebar link to manage the Advantages section. | Admin Sidebar, Dashboard |
 | **`Camera`** | Sidebar link to manage the "In Action" or Gallery sections. | Admin Sidebar, Dashboard; Creators Page |
+| **`Swords`** | Sidebar link to manage the Competitor Comparison table. | Admin Sidebar, Dashboard |
+| **`MessageSquareQuote`** | Sidebar link to manage the Scenarios section. | Admin Sidebar, Dashboard |
+| **`Handshake`** | Sidebar link to manage the Partner CTA section. | Admin Sidebar, Dashboard |
+| **`MonitorPlay`** | Dashboard link to view the live homepage. | Admin Dashboard |
 | **`FileText`** | Sidebar link to manage Dev Notes. | Admin Sidebar, Dashboard; Creators Page |
 | **`Users`** | Sidebar link to manage Creator profiles. | Admin Sidebar, Dashboard; Creators Page |
 | **`Calendar`** | Sidebar link to manage the Roadmap or date-related fields. | Admin Sidebar, Dashboard |
@@ -654,3 +680,90 @@ This section tracks planned technical improvements, distinct from the public-fac
 | **Image Resizing/Cropping** | `In Progress` | Allow admins to resize or crop images directly in the upload manager instead of requiring pre-sized images. |
 | **i18n Fallback Logic** | `Planned` | Implement a system where missing translation strings automatically fall back to English to prevent errors. |
 | **CI/CD Pipeline** | `Planned` | Set up a GitHub Actions workflow to run linting and tests automatically on every pull request. |
+
+---
+
+### 21. New Content Sections
+
+This section details the homepage content sections that are fully manageable via the Admin Panel.
+
+#### 21.1. Scenarios ("Why Spekulus?")
+- **Purpose**: To explain real-world problems and show how Spekulus provides smart, practical solutions.
+- **Homepage Component**: `WhySpekulusSection` (`/src/components/landing/WhySpekulusSection.tsx`)
+- **Admin Page**: `/admin/scenarios`
+- **Database Table**: `scenarios`
+  ```typescript
+  export const scenarios = pgTable('scenarios', {
+      id: serial('id').primaryKey(),
+      lang: varchar('lang', { length: 2 }).notNull().references(() => languages.code),
+      icon: text('icon').notNull(),
+      question: text('question').notNull(),
+      answer: text('answer').notNull(),
+  });
+  ```
+- **Functionality**: Admins can add, edit, and delete scenario cards for each language. Each scenario consists of an icon, a question (the problem), and an answer (the solution).
+
+#### 21.2. Competitor Comparison Table
+- **Purpose**: To transparently compare Spekulus's features against key competitors in the market.
+- **Homepage Component**: `ComparisonSection` (`/src/components/landing/ComparisonSection.tsx`)
+- **Admin Page**: `/admin/comparison`
+- **Database Table**: `competitorFeatures`
+  ```typescript
+  export const competitorFeatures = pgTable('competitor_features', {
+      id: serial('id').primaryKey(),
+      lang: varchar('lang', { length: 2 }).notNull().references(() => languages.code),
+      feature: text('feature').notNull(),
+      spekulus: boolean('spekulus').default(false).notNull(),
+      himirror: boolean('himirror').default(false).notNull(),
+      simplehuman: boolean('simplehuman').default(false).notNull(),
+      mirrocool: boolean('mirrocool').default(false).notNull(),
+  });
+  ```
+- **Functionality**: The admin panel at `/admin/comparison` allows full CRUD management of the features list. Admins can:
+  - Add new feature rows.
+  - Edit the `feature` description text for each row.
+  - Toggle the boolean checkmarks for each product (`spekulus`, `himirror`, etc.).
+  - Delete features.
+  - The homepage table renders this data dynamically, showing check or cross icons based on the boolean values.
+
+#### 21.3. Partner / Investor CTA
+- **Purpose**: A call-to-action section to attract potential partners and investors.
+- **Homepage Component**: `PartnerSection` (`/src/components/landing/PartnerSection.tsx`)
+- **Admin Page**: `/admin/partner`
+- **Database Table**: `partnerSections`
+  ```typescript
+  export const partnerSections = pgTable('partner_sections', {
+      id: serial('id').primaryKey(),
+      lang: varchar('lang', { length: 2 }).notNull().references(() => languages.code).unique(),
+      title: text('title').notNull(),
+      text: text('text').notNull(),
+      ctaLabel: text('cta_label').notNull(),
+      ctaUrl: text('cta_url'),
+      imageId: integer('image_id').references(() => files.id, { onDelete: 'set null' }),
+  });
+  ```
+- **Functionality**: A dedicated admin form allows editing the title, descriptive text, button label, and button URL for each language. It also includes an image uploader to add a visual element to the section.
+
+---
+
+### 22. Admin Panel Features
+
+This section details specific UI/UX enhancements made to the admin panel for better usability.
+
+#### 22.1. Admin Dashboard Link to Homepage
+- **Location**: `/admin/dashboard`
+- **Description**: The first card in the admin dashboard grid is "View Live Site". This provides a direct, one-click link to the public homepage (`/`).
+- **Purpose**: This was added to improve the content editing workflow, allowing administrators to quickly navigate from the admin panel to the live site to see their changes in context.
+
+#### 22.2. Reusable File Picker
+- **Component**: `FilePickerDialog` (`/src/app/admin/creators/FilePickerDialog.tsx`)
+- **Description**: A reusable dialog component that allows selecting a previously uploaded file from the `files` table instead of re-uploading it.
+- **Functionality**: The picker dialog displays a searchable grid of all uploaded files. When a file is selected, its `id` is passed back to the parent form, which then updates the relevant `imageId` field. This is used across all content management pages where images are present (e.g., Hero, Creators, Notes).
+
+#### 22.3. Collapsible Creator Profiles
+- **Location**: `/admin/creators`
+- **Description**: The creator management page was redesigned to use an `Accordion` component. Each creator profile is now a separate, collapsible item.
+- **Purpose**: This change dramatically improves the organization of the page, preventing it from becoming an overwhelmingly long form. Editors can now focus on one creator at a time by expanding their specific accordion item. Each accordion trigger displays the creator's name and a badge indicating their visibility status ("Visible" or "Hidden").
+```
+      
+    
