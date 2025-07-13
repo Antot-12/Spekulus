@@ -26,6 +26,54 @@ import 'dotenv/config'
 const sql = neon(process.env.DATABASE_URL!)
 const db = drizzle(sql, { schema })
 
+// ==============================
+// MAINTENANCE SETTINGS
+// ==============================
+export type MaintenanceSettings = {
+  isActive: boolean;
+  message: string;
+  endsAt?: Date | null;
+}
+
+export async function getMaintenanceSettings(): Promise<MaintenanceSettings> {
+    const settings = await db.query.maintenanceSettings.findFirst({
+        where: eq(schema.maintenanceSettings.id, 1),
+    });
+
+    if (settings) {
+        // If maintenance mode has an end date and it has passed, automatically turn it off
+        if (settings.isActive && settings.endsAt && new Date() > settings.endsAt) {
+            const [updatedSettings] = await db.update(schema.maintenanceSettings)
+                .set({ isActive: false, endsAt: null, updatedAt: new Date() })
+                .where(eq(schema.maintenanceSettings.id, 1))
+                .returning();
+            return updatedSettings;
+        }
+        return settings;
+    }
+
+    // If no settings exist, create the default entry
+    const [newSettings] = await db.insert(schema.maintenanceSettings)
+        .values({
+            id: 1,
+            isActive: false,
+            message: 'We are currently down for maintenance. Please check back soon!',
+            endsAt: null
+        })
+        .onConflictDoNothing({ target: schema.maintenanceSettings.id })
+        .returning();
+
+    return newSettings || { isActive: false, message: '', endsAt: null };
+}
+
+export async function updateMaintenanceSettings(data: Partial<MaintenanceSettings>) {
+    return await db.update(schema.maintenanceSettings)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(schema.maintenanceSettings.id, 1))
+        .returning();
+}
+
+
 export async function getHeroData(lang: Language): Promise<HeroSectionData | null> {
   const hero = await db.query.heroSections.findFirst({ where: eq(schema.heroSections.lang, lang) })
   if (!hero) return null

@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { FileText, Calendar, HelpCircle, ArrowRight, Users, LayoutGrid, Sparkles, Camera, Home, Cpu, History, UploadCloud, Swords, Handshake, MessageSquareQuote, MonitorPlay } from "lucide-react";
+import { FileText, Calendar, HelpCircle, ArrowRight, Users, LayoutGrid, Sparkles, Camera, Home, Cpu, History, UploadCloud, Swords, Handshake, MessageSquareQuote, MonitorPlay, Wrench } from "lucide-react";
 
 const dashboardItems = [
   { href: "/", icon: <MonitorPlay />, title: "View Live Site", description: "Go to the public homepage to see your changes live.", buttonText: "Go to Homepage", isExternal: true },
@@ -17,9 +17,9 @@ const dashboardItems = [
   { href: "/admin/creators", icon: <Users />, title: "Creators", description: "Manage the creator profiles displayed on the 'Our Team' page.", buttonText: "Manage Creators" },
   { href: "/admin/roadmap", icon: <Calendar />, title: "Roadmap", description: "Update the public roadmap timeline displayed on the landing page.", buttonText: "Manage Roadmap" },
   { href: "/admin/faq", icon: <HelpCircle />, title: "FAQ", description: "Add, edit, or remove questions and answers from the FAQ section.", buttonText: "Manage FAQs" },
-  { href: "/admin/pages", icon: <LayoutGrid />, title: "Pages Overview", description: "Manage site page visibility and status.", buttonText: "Manage Pages" },
   { href: "/admin/uploads", icon: <UploadCloud />, title: "Uploads", description: "View and manage all uploaded files and images.", buttonText: "Manage Uploads" },
   { href: "/admin/logs", icon: <History />, title: "Action Logs", description: "View a detailed audit trail of all actions performed in the admin panel.", buttonText: "View Logs" },
+  { href: "/admin/maintenance", icon: <Wrench />, title: "Maintenance", description: "Enable or disable site-wide maintenance mode.", buttonText: "Manage Mode" },
 ];
 
 export default function AdminDashboard() {

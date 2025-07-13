@@ -39,6 +39,15 @@ export const files = pgTable('files', {
   createdAt: timestamp('created_at').defaultNow().notNull()
 })
 
+export const maintenanceSettings = pgTable('maintenance_settings', {
+    id: serial('id').primaryKey(), // Using a single row with ID 1
+    isActive: boolean('is_active').default(false).notNull(),
+    message: text('message').notNull().default('We will be back shortly.'),
+    endsAt: timestamp('ends_at', { withTimezone: true }),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+
 export const heroSections = pgTable('hero_sections', {
   id: serial('id').primaryKey(),
   lang: varchar('lang', { length: 2 }).notNull().references(() => languages.code).unique(),

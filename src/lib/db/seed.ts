@@ -12,6 +12,7 @@ async function main() {
   console.log("Seeding database...");
 
   // Clear existing data
+  await db.delete(schema.maintenanceSettings);
   await db.delete(schema.partnerSections);
   await db.delete(schema.comparisonSections);
   await db.delete(schema.competitorFeatures);
@@ -35,6 +36,11 @@ async function main() {
     { code: 'sk', name: 'Slovak' },
   ]).onConflictDoNothing();
   console.log("Languages seeded.");
+  
+  // Seed maintenance settings
+  await db.insert(schema.maintenanceSettings).values({ id: 1 }).onConflictDoNothing();
+  console.log("Maintenance settings seeded.");
+
 
   // Seed hero sections and features
   for (const lang of ['en', 'uk', 'sk'] as const) {

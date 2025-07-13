@@ -2,6 +2,9 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import AppWrapper from '@/components/AppWrapper';
+import { getMaintenanceSettings } from '@/lib/db/actions';
+import MaintenancePage from './maintenance/page';
+import type { MaintenanceSettings } from '@/lib/db/actions';
 
 export const metadata: Metadata = {
   title: 'Spekulus',
@@ -15,11 +18,33 @@ export const viewport: Viewport = {
   userScalable: true,
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  let maintenanceSettings: MaintenanceSettings = { isActive: false, message: '', endsAt: null };
+
+  try {
+    // Attempt to fetch maintenance settings
+    maintenanceSettings = await getMaintenanceSettings();
+  } catch (error) {
+    console.warn('Could not fetch maintenance settings. This is expected if the database schema has not been pushed yet. Defaulting to live mode.');
+    // Default to maintenance mode being off if the table doesn't exist.
+    // This allows the server to start so `npm run db:push` can be run.
+    maintenanceSettings = { isActive: false, message: 'Maintenance mode check failed.', endsAt: null };
+  }
+  
+  if (maintenanceSettings.isActive) {
+    return (
+       <html lang="en" className="dark">
+         <body>
+           <MaintenancePage message={maintenanceSettings.message} endsAt={maintenanceSettings.endsAt} />
+         </body>
+       </html>
+    )
+  }
+
   return (
     <html lang="en" className="dark">
       <head>

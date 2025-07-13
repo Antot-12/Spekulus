@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarContent, SidebarInset, SidebarTrigger, SidebarFooter } from '@/components/ui/sidebar';
 import Link from 'next/link';
-import { LayoutDashboard, FileText, Calendar, HelpCircle, LogOut, Loader2, Users, LayoutGrid, Sparkles, Camera, Home, Cpu, History, UploadCloud, Swords, Handshake, MessageSquareQuote } from 'lucide-react';
+import { LayoutDashboard, FileText, Calendar, HelpCircle, LogOut, Loader2, Users, LayoutGrid, Sparkles, Camera, Home, Cpu, History, UploadCloud, Swords, Handshake, MessageSquareQuote, Wrench } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { logAction } from '@/lib/logger';
 
@@ -154,11 +154,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/pages')}>
-                    <Link href="/admin/pages"><LayoutGrid />Pages</Link>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/uploads')}>
                     <Link href="/admin/uploads"><UploadCloud />Uploads</Link>
                 </SidebarMenuButton>
@@ -166,6 +161,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
              <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/logs')}>
                     <Link href="/admin/logs"><History />Logs</Link>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/maintenance')}>
+                    <Link href="/admin/maintenance"><Wrench />Maintenance</Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
