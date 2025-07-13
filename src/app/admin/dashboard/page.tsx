@@ -36,13 +36,15 @@ export default function AdminDashboard() {
             <CardDescription>{item.description}</CardDescription>
           </CardHeader>
           <CardContent>
-            <Link href={item.href} passHref>
-              <Button asChild className="w-full">
-                  <a target={item.isExternal ? "_blank" : undefined} rel={item.isExternal ? "noopener noreferrer" : undefined}>
-                    {item.buttonText} <ArrowRight className="ml-2"/>
-                  </a>
-              </Button>
-            </Link>
+            <Button asChild className="w-full">
+              <Link
+                href={item.href}
+                target={item.isExternal ? '_blank' : undefined}
+                rel={item.isExternal ? 'noopener noreferrer' : undefined}
+              >
+                {item.buttonText} <ArrowRight className="ml-2" />
+              </Link>
+            </Button>
           </CardContent>
         </Card>
       ))}
