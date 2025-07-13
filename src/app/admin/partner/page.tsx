@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Save, Upload, Loader2, Image as ImageIcon, FolderSearch } from 'lucide-react';
+import { Save, Upload, Loader2, Image as ImageIcon, FolderSearch, Handshake } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from '@/components/ui/label';
@@ -105,7 +105,7 @@ export default function PartnerSectionAdminPage() {
       <CardHeader>
         <div className="flex flex-wrap gap-4 justify-between items-center">
           <div>
-            <CardTitle>Manage Partner CTA Section</CardTitle>
+            <CardTitle className="flex items-center gap-2"><Handshake /> Manage Partner CTA Section</CardTitle>
             <CardDescription>Edit the content for the "Partner with Us" section on the homepage.</CardDescription>
           </div>
           <div className="flex gap-2">

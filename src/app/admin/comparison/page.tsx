@@ -6,7 +6,7 @@ import type { CompetitorFeature, Language } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Trash2, PlusCircle, Save, Loader2, Check, X } from 'lucide-react';
+import { Trash2, PlusCircle, Save, Loader2, Check, X, Swords } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -111,7 +111,7 @@ export default function ComparisonAdminPage() {
           <CardHeader>
             <div className="flex flex-wrap gap-4 justify-between items-center">
                 <div>
-                    <CardTitle>Manage Comparison Table</CardTitle>
+                    <CardTitle className="flex items-center gap-2"><Swords /> Manage Comparison Table</CardTitle>
                     <CardDescription>Edit the features for the competitor comparison table.</CardDescription>
                 </div>
                 <div className="flex gap-2">

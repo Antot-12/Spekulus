@@ -4,7 +4,7 @@
 import type { Language, Scenario } from '@/lib/data';
 import { translations } from '@/lib/translations';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Coffee, Thermometer, Zap, Home } from 'lucide-react';
+import { Coffee, Thermometer, Zap, Home, Sparkles } from 'lucide-react';
 import type { LucideProps } from 'lucide-react';
 import type { FC } from 'react';
 
@@ -13,10 +13,11 @@ const icons: Record<string, FC<LucideProps>> = {
   Thermometer,
   Zap,
   Home,
+  Sparkles,
 };
 
 const ScenarioIcon = ({ name, className }: { name: string; className?: string }) => {
-  const IconComponent = icons[name] || Zap;
+  const IconComponent = icons[name] || Sparkles;
   return <IconComponent className={className} />;
 };
 
