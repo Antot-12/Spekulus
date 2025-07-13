@@ -1,3 +1,4 @@
+
 import { HeroSection } from '@/components/landing/HeroSection';
 import { ProductSection } from '@/components/landing/ProductSection';
 import { RoadmapSection } from '@/components/landing/RoadmapSection';
@@ -102,11 +103,11 @@ export default async function Home() {
       <ActionSection data={actionSectionData} />
       <WhySpekulusSection data={scenarios} lang={lang} />
       <ComparisonSection data={competitorFeatures} lang={lang} />
+      <PartnerSection data={partnerSectionData} />
       <RoadmapSection data={roadmapEvents} lang={lang} />
       <FaqSection initialFaqs={faqs} />
       <DevNotesSection />
       <CreatorsSection />
-      <PartnerSection data={partnerSectionData} />
       <ContactSection />
     </>
   );
