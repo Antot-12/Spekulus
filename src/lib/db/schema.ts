@@ -9,7 +9,8 @@ import {
   serial,
   customType,
   primaryKey,
-  unique
+  unique,
+  pgEnum
 } from 'drizzle-orm/pg-core'
 
 const bytea = customType<{ data: Buffer; driverData: string }>({
@@ -45,6 +46,15 @@ export const maintenanceSettings = pgTable('maintenance_settings', {
     message: text('message').notNull().default('We will be back shortly.'),
     endsAt: timestamp('ends_at', { withTimezone: true }),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const pageStatusEnum = pgEnum('page_status', ['active', 'hidden', 'maintenance']);
+
+export const pages = pgTable('pages', {
+    path: varchar('path', { length: 255 }).primaryKey(),
+    title: text('title').notNull(),
+    status: pageStatusEnum('status').default('active').notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
 

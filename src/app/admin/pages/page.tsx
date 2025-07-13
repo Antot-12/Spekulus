@@ -1,91 +1,67 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ExternalLink, Files } from 'lucide-react';
+import { ExternalLink, Files, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { logAction } from '@/lib/logger';
+import { getPages, updatePageStatus, type PageStatus, type PageInfo } from '@/lib/db/actions';
 
-type PageStatus = 'Active' | 'Hidden' | 'Maintenance';
-
-type PageInfo = {
-  id: string;
-  title: string;
-  url: string;
-  status: PageStatus;
+const getBadgeVariant = (status: PageStatus): 'default' | 'secondary' | 'destructive' => {
+    switch (status) {
+        case 'active': return 'default';
+        case 'hidden': return 'secondary';
+        case 'maintenance': return 'destructive';
+        default: return 'secondary';
+    }
 };
-
-const initialPages: PageInfo[] = [
-  { id: 'home', title: 'Home (Landing Page)', url: '/', status: 'Active' },
-  { id: 'dev-notes-list', title: 'Dev Notes (List)', url: '/dev-notes', status: 'Active' },
-  { id: 'dev-notes-detail', title: 'Dev Notes (Detail)', url: '/dev-notes/[slug]', status: 'Active' },
-  { id: 'team-list', title: 'Our Team (List)', url: '/creators', status: 'Active' },
-  { id: 'team-detail', title: 'Our Team (Detail)', url: '/creators/[slug]', status: 'Active' },
-  { id: 'coming-soon', title: 'Coming Soon', url: '/coming-soon', status: 'Active' },
-  { id: 'maintenance', title: 'Maintenance', url: '/maintenance', status: 'Active' },
-  { id: 'login', title: 'Admin Login', url: '/login', status: 'Hidden' },
-  { id: 'admin-dashboard', title: 'Admin Dashboard', url: '/admin', status: 'Hidden' },
-  { id: '404', title: '404 Not Found', url: '/404', status: 'Active' },
-];
-
-const LOCAL_STORAGE_KEY = 'spekulus-pages-status';
 
 export default function PagesAdminPage() {
     const { toast } = useToast();
     const [pages, setPages] = useState<PageInfo[]>([]);
-    const [isLoaded, setIsLoaded] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+
+    const fetchPages = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const data = await getPages();
+            setPages(data);
+        } catch (error) {
+            console.error("Failed to load pages from database", error);
+            toast({ title: "Fetch Error", description: "Could not load page statuses.", variant: 'destructive' });
+        } finally {
+            setIsLoading(false);
+        }
+    }, [toast]);
 
     useEffect(() => {
-        try {
-            const storedPages = localStorage.getItem(LOCAL_STORAGE_KEY);
-            if (storedPages) {
-                // Basic validation and merging with initialPages to handle new pages
-                const parsedPages: PageInfo[] = JSON.parse(storedPages);
-                const pageMap = new Map(parsedPages.map(p => [p.id, p]));
-                const mergedPages = initialPages.map(p => pageMap.has(p.id) ? { ...p, status: pageMap.get(p.id)!.status } : p);
-                setPages(mergedPages);
-            } else {
-                setPages(initialPages);
-            }
-        } catch (error) {
-            console.error("Failed to load pages from localStorage", error);
-            setPages(initialPages);
-        }
-        setIsLoaded(true);
-    }, []);
+        fetchPages();
+    }, [fetchPages]);
     
-    const handleStatusChange = (id: string, newStatus: PageStatus) => {
-        const pageToUpdate = pages.find(page => page.id === id);
+    const handleStatusChange = async (path: string, newStatus: PageStatus) => {
+        const originalPages = [...pages];
+        const pageToUpdate = pages.find(page => page.path === path);
         if (!pageToUpdate) return;
         
-        const updatedPages = pages.map(page =>
-            page.id === id ? { ...page, status: newStatus } : page
-        );
-        
+        // Optimistically update UI
+        setPages(pages.map(p => p.path === path ? { ...p, status: newStatus } : p));
+
         try {
-            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedPages));
-            setPages(updatedPages);
+            await updatePageStatus(path, newStatus);
             toast({ title: "Page Status Updated", description: `Status for ${pageToUpdate.title} changed to ${newStatus}.` });
             logAction('Pages Update', 'Success', `Status for page '${pageToUpdate.title}' changed to ${newStatus}.`);
         } catch (error) {
-            console.error("Failed to save pages to localStorage", error);
-            toast({ title: "Save Failed", description: "Could not save changes.", variant: 'destructive' });
-        }
-    };
-
-    const getBadgeVariant = (status: PageStatus): 'default' | 'secondary' | 'destructive' => {
-        switch (status) {
-            case 'Active': return 'default';
-            case 'Hidden': return 'secondary';
-            case 'Maintenance': return 'destructive';
-            default: return 'secondary';
+            console.error("Failed to update page status", error);
+            // Revert UI on failure
+            setPages(originalPages);
+            toast({ title: "Update Failed", description: "Could not save changes to the database.", variant: 'destructive' });
         }
     };
 
@@ -105,13 +81,13 @@ export default function PagesAdminPage() {
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Page Title</TableHead>
-                                <TableHead>URL</TableHead>
+                                <TableHead>URL Path</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {!isLoaded ? (
+                            {isLoading ? (
                                 [...Array(5)].map((_, i) => (
                                     <TableRow key={i}>
                                         <TableCell><Skeleton className="h-6 w-32" /></TableCell>
@@ -122,13 +98,13 @@ export default function PagesAdminPage() {
                                 ))
                             ) : (
                                 pages.map((page) => (
-                                    <TableRow key={page.id}>
+                                    <TableRow key={page.path}>
                                         <TableCell className="font-medium">{page.title}</TableCell>
-                                        <TableCell><code className="text-muted-foreground">{page.url}</code></TableCell>
+                                        <TableCell><code className="text-muted-foreground">{page.path}</code></TableCell>
                                         <TableCell>
                                             <Select
                                                 value={page.status}
-                                                onValueChange={(value: PageStatus) => handleStatusChange(page.id, value)}
+                                                onValueChange={(value: PageStatus) => handleStatusChange(page.path, value)}
                                             >
                                                 <SelectTrigger className="w-[140px]">
                                                     <SelectValue>
@@ -136,21 +112,21 @@ export default function PagesAdminPage() {
                                                     </SelectValue>
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="Active">Active</SelectItem>
-                                                    <SelectItem value="Hidden">Hidden</SelectItem>
-                                                    <SelectItem value="Maintenance">Maintenance</SelectItem>
+                                                    <SelectItem value="active">Active</SelectItem>
+                                                    <SelectItem value="hidden">Hidden</SelectItem>
+                                                    <SelectItem value="maintenance">Maintenance</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            {page.url.includes('[slug]') || page.id === '404' ? (
+                                            {page.path.includes('[slug]') || page.path === '/404' ? (
                                                 <Button variant="outline" size="sm" disabled>
-                                                    Go to Page <ExternalLink className="ml-2 h-4 w-4" />
+                                                    View Page <ExternalLink className="ml-2 h-4 w-4" />
                                                 </Button>
                                             ) : (
                                                 <Button asChild variant="outline" size="sm">
-                                                    <Link href={page.url} target="_blank" rel="noopener noreferrer">
-                                                        Go to Page <ExternalLink className="ml-2 h-4 w-4" />
+                                                    <Link href={page.path} target="_blank" rel="noopener noreferrer">
+                                                        View Page <ExternalLink className="ml-2 h-4 w-4" />
                                                     </Link>
                                                 </Button>
                                             )}

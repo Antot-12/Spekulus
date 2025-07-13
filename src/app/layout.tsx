@@ -29,7 +29,7 @@ export default async function RootLayout({
   try {
     maintenanceSettings = await getMaintenanceSettings();
   } catch (error) {
-    console.warn('Could not fetch maintenance settings. This is expected if the database schema has not been pushed yet. Defaulting to live mode.');
+    console.warn('Could not fetch maintenance settings. Assuming live mode.', error);
     maintenanceSettings = { isActive: false, message: 'Maintenance mode check failed.', endsAt: null };
   }
   

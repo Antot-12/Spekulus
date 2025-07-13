@@ -42,7 +42,7 @@ export async function getMaintenanceSettings(): Promise<MaintenanceSettings> {
 
     if (settings) {
         // If maintenance mode has an end date and it has passed, automatically turn it off
-        if (settings.isActive && settings.endsAt && new Date() > settings.endsAt) {
+        if (settings.isActive && settings.endsAt && new Date() > new Date(settings.endsAt)) {
             const [updatedSettings] = await db.update(schema.maintenanceSettings)
                 .set({ isActive: false, endsAt: null, updatedAt: new Date() })
                 .where(eq(schema.maintenanceSettings.id, 1))
@@ -72,6 +72,56 @@ export async function updateMaintenanceSettings(data: Partial<MaintenanceSetting
         .where(eq(schema.maintenanceSettings.id, 1))
         .returning();
 }
+
+// ==============================
+// PAGES
+// ==============================
+export type PageStatus = 'active' | 'hidden' | 'maintenance';
+export type PageInfo = { path: string; title: string; status: PageStatus; };
+
+const ALL_PAGES: Omit<PageInfo, 'status'>[] = [
+  { path: '/', title: 'Home (Landing Page)' },
+  { path: '/dev-notes', title: 'Dev Notes (List)' },
+  { path: '/dev-notes/[slug]', title: 'Dev Notes (Detail)' },
+  { path: '/creators', title: 'Our Team (List)' },
+  { path: '/creators/[slug]', title: 'Our Team (Detail)' },
+  { path: '/coming-soon', title: 'Coming Soon' },
+  { path: '/simulator', title: 'AI Simulator' },
+];
+
+export async function getPages(): Promise<PageInfo[]> {
+  const dbPages = await db.query.pages.findMany();
+  const dbPagesMap = new Map(dbPages.map(p => [p.path, p]));
+  
+  const pages = ALL_PAGES.map(p => ({
+    ...p,
+    status: dbPagesMap.get(p.path)?.status || 'active',
+  }));
+  
+  // Seed pages if they don't exist
+  for (const page of pages) {
+    await db.insert(schema.pages)
+      .values(page)
+      .onConflictDoNothing({ target: schema.pages.path });
+  }
+
+  return pages;
+}
+
+export async function getPageStatus(path: string): Promise<PageStatus | null> {
+    const page = await db.query.pages.findFirst({
+        where: eq(schema.pages.path, path),
+        columns: { status: true }
+    });
+    return page?.status || null;
+}
+
+export async function updatePageStatus(path: string, status: PageStatus) {
+    await db.update(schema.pages)
+        .set({ status, updatedAt: new Date() })
+        .where(eq(schema.pages.path, path));
+}
+
 
 
 export async function getHeroData(lang: Language): Promise<HeroSectionData | null> {
