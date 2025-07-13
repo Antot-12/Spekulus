@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarContent, SidebarInset, SidebarTrigger, SidebarFooter } from '@/components/ui/sidebar';
 import Link from 'next/link';
-import { LayoutDashboard, FileText, Calendar, HelpCircle, LogOut, Loader2, Users, LayoutGrid, Sparkles, Camera, Home, Cpu, History, UploadCloud } from 'lucide-react';
+import { LayoutDashboard, FileText, Calendar, HelpCircle, LogOut, Loader2, Users, LayoutGrid, Sparkles, Camera, Home, Cpu, History, UploadCloud, Swords, Handshake, MessageSquareQuestion } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { logAction } from '@/lib/logger';
 
@@ -107,6 +107,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/action-section')}>
                     <Link href="/admin/action-section"><Camera />In Action Section</Link>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/scenarios')}>
+                    <Link href="/admin/scenarios"><MessageSquareQuestion />Scenarios</Link>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/comparison')}>
+                    <Link href="/admin/comparison"><Swords />Comparison</Link>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/partner')}>
+                    <Link href="/admin/partner"><Handshake />Partner CTA</Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>

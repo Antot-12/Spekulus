@@ -7,6 +7,9 @@ import { CreatorsSection } from '@/components/landing/CreatorsSection';
 import { AdvantagesSection } from '@/components/landing/AdvantagesSection';
 import { ContactSection } from '@/components/landing/ContactSection';
 import { ActionSection } from '@/components/landing/ActionSection';
+import { WhySpekulusSection } from '@/components/landing/WhySpekulusSection';
+import { ComparisonSection } from '@/components/landing/ComparisonSection';
+import { PartnerSection } from '@/components/landing/PartnerSection';
 import { getLanguage } from '@/lib/getLanguage';
 import {
   getHeroData,
@@ -15,6 +18,9 @@ import {
   getActionSectionData,
   getRoadmapEvents,
   getFaqs,
+  getScenarios,
+  getCompetitorFeatures,
+  getPartnerSectionData,
 } from '@/lib/db/actions';
 import { initialData } from '@/lib/data';
 
@@ -28,6 +34,9 @@ export default async function Home() {
     actionSectionData,
     roadmapEvents,
     faqs,
+    scenarios,
+    competitorFeatures,
+    partnerSectionData,
   ] = await Promise.all([
     getHeroData(lang),
     getProductData(lang),
@@ -35,6 +44,9 @@ export default async function Home() {
     getActionSectionData(lang),
     getRoadmapEvents(lang),
     getFaqs(lang),
+    getScenarios(lang),
+    getCompetitorFeatures(lang),
+    getPartnerSectionData(lang),
   ]);
 
   if (!heroData) {
@@ -69,16 +81,32 @@ export default async function Home() {
     faqs = initialData.faqData[lang].map((faq, index) => ({ ...faq, id: index + 1 }));
   }
 
+  if (!scenarios || scenarios.length === 0) {
+    scenarios = initialData.scenariosData[lang];
+  }
+
+  if (!competitorFeatures || competitorFeatures.length === 0) {
+    competitorFeatures = initialData.competitorFeaturesData[lang];
+  }
+
+  if (!partnerSectionData) {
+    partnerSectionData = initialData.partnerSectionData[lang];
+  }
+
+
   return (
     <>
       <HeroSection data={heroData} lang={lang} />
       <ProductSection data={productData} lang={lang} />
       <AdvantagesSection data={advantagesData} lang={lang} />
       <ActionSection data={actionSectionData} />
+      <WhySpekulusSection data={scenarios} lang={lang} />
+      <ComparisonSection data={competitorFeatures} lang={lang} />
       <RoadmapSection data={roadmapEvents} lang={lang} />
       <FaqSection initialFaqs={faqs} />
       <DevNotesSection />
       <CreatorsSection />
+      <PartnerSection data={partnerSectionData} />
       <ContactSection />
     </>
   );

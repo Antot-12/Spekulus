@@ -14,7 +14,10 @@ import {
   DevNote,
   RoadmapEvent,
   Advantage,
-  FaqItem
+  FaqItem,
+  Scenario,
+  CompetitorFeature,
+  PartnerSectionData,
 } from '../data'
 import { eq, and, notInArray, sql as sqlBuilder } from 'drizzle-orm'
 import 'dotenv/config'
@@ -223,6 +226,58 @@ export async function updateDevNote(id: number, note: Partial<Omit<DevNote, 'id'
 export async function deleteDevNote(id: number) {
   await db.delete(schema.devNotes).where(eq(schema.devNotes.id, id))
 }
+
+export async function getScenarios(lang: Language) {
+  return await db.query.scenarios.findMany({
+    where: eq(schema.scenarios.lang, lang),
+    orderBy: (s, { asc }) => [asc(s.id)],
+  })
+}
+
+export async function createScenario(lang: Language, scenario: Omit<Scenario, 'id'>) {
+  const [row] = await db.insert(schema.scenarios).values({ ...scenario, lang }).returning();
+  return row;
+}
+
+export async function updateScenarios(lang: Language, scenarios: Scenario[]) {
+  await db.delete(schema.scenarios).where(eq(schema.scenarios.lang, lang));
+  if (scenarios.length) {
+    const rows = scenarios.map(({ id, ...rest }) => ({ ...rest, lang }));
+    await db.insert(schema.scenarios).values(rows);
+  }
+}
+
+export async function getCompetitorFeatures(lang: Language) {
+    return await db.query.competitorFeatures.findMany({
+        where: eq(schema.competitorFeatures.lang, lang),
+        orderBy: (c, { asc }) => [asc(c.id)],
+    });
+}
+
+export async function updateCompetitorFeatures(lang: Language, features: CompetitorFeature[]) {
+    await db.delete(schema.competitorFeatures).where(eq(schema.competitorFeatures.lang, lang));
+    if (features.length) {
+        const rows = features.map(({ id, ...rest }) => ({...rest, lang }));
+        await db.insert(schema.competitorFeatures).values(rows);
+    }
+}
+
+export async function getPartnerSectionData(lang: Language) {
+    return await db.query.partnerSections.findFirst({
+        where: eq(schema.partnerSections.lang, lang),
+    });
+}
+
+export async function updatePartnerSectionData(lang: Language, data: Omit<PartnerSectionData, 'id'>) {
+    const payload = { ...data, imageId: data.imageId ?? null };
+    await db.insert(schema.partnerSections)
+        .values({ lang, ...payload })
+        .onConflictDoUpdate({
+            target: schema.partnerSections.lang,
+            set: payload,
+        });
+}
+
 
 export async function getFileData(id: number) {
   if (isNaN(id)) return null

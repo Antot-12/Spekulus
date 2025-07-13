@@ -12,6 +12,9 @@ async function main() {
   console.log("Seeding database...");
 
   // Clear existing data
+  await db.delete(schema.partnerSections);
+  await db.delete(schema.competitorFeatures);
+  await db.delete(schema.scenarios);
   await db.delete(schema.creators);
   await db.delete(schema.devNotes);
   await db.delete(schema.faqItems);
@@ -93,6 +96,28 @@ async function main() {
       }
   }
   console.log("Creators seeded.");
+
+  // Seed scenarios
+  for (const lang of ['en', 'uk', 'sk'] as const) {
+      for (const scenario of initialData.scenariosData[lang]) {
+          await db.insert(schema.scenarios).values({ ...scenario, lang });
+      }
+  }
+  console.log("Scenarios seeded.");
+
+  // Seed competitor features
+  for (const lang of ['en', 'uk', 'sk'] as const) {
+      for (const feature of initialData.competitorFeaturesData[lang]) {
+          await db.insert(schema.competitorFeatures).values({ ...feature, lang });
+      }
+  }
+  console.log("Competitor features seeded.");
+
+  // Seed partner sections
+  for (const lang of ['en', 'uk', 'sk'] as const) {
+      await db.insert(schema.partnerSections).values({ ...initialData.partnerSectionData[lang], lang, imageId: null }).onConflictDoNothing();
+  }
+  console.log("Partner sections seeded.");
 
   console.log("Database seeding complete.");
 }
