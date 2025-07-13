@@ -172,13 +172,17 @@ The schema is defined in `/src/lib/db/schema.ts` using Drizzle ORM.
 
 ## 5. Backend & Data Flow
 
+The application backend uses a hybrid approach:
+1.  **Next.js Server Actions**: The primary method for data fetching and mutations. These are server-side functions that can be called directly from client components, simplifying data flow and eliminating the need for most traditional API endpoints.
+2.  **API Routes**: A small number of traditional RESTful API routes are used for specific tasks like file handling and authentication where a dedicated endpoint is more suitable.
+
 ### 5.1. Server Actions (`/src/lib/db/actions.ts`)
 
-Instead of a traditional REST API, the application uses **Next.js Server Actions**. These are functions that execute on the server but can be called directly from client components. This simplifies data fetching and mutations.
+These functions execute securely on the server and are the main bridge between the client and the database.
 
 - **`get...` functions (READ)**:
   - e.g., `getHeroData(lang)`, `getCreators(lang)`, `getDevNoteBySlug(slug)`.
-  - These functions query the database using Drizzle and return the requested data. They are called from page components (server-side) or client components to fetch initial data.
+  - These functions query the database using Drizzle and return the requested data. They are called from page components (server-side) or client components (`useEffect`) to fetch initial data.
 
 - **`update...` functions (UPDATE)**:
   - e.g., `updateHeroData(lang, data)`, `updateCreators(lang, data)`.
@@ -194,16 +198,66 @@ Instead of a traditional REST API, the application uses **Next.js Server Actions
 
 - **File Handling**:
   - `uploadFile(fileBuffer, filename, mimeType)`: Takes raw file data, inserts it into the `files` table, and returns the new file `id`.
-  - `getFile(id)`: Retrieves the raw file data from the `files` table based on its `id`.
+  - `getFileData(id)`: Retrieves the raw file data and metadata from the `files` table based on its `id`.
 
 ### 5.2. API Routes (`/src/app/api/`)
 
-A few traditional API routes exist for specific purposes:
+A few traditional API routes exist for specific purposes where a standard HTTP endpoint is beneficial. The frontend communicates with these routes using the standard `fetch()` API. All routes return JSON responses with a `success: boolean` flag and an `error: string` message on failure.
 
-- `/api/images/[id]`: Serves the raw file data from the database. This allows using a simple `<img src="/api/images/123" />` tag on the frontend for image files.
-- `/api/upload`: Handles file uploads from the admin panel, calls the `uploadFile` server action, and returns the new file ID as JSON.
-- `/api/auth/login`: Validates admin credentials against environment variables.
-- `/api/contact`: Handles the public contact form submission, using Resend to forward the message.
+---
+#### **`GET /api/images/[id]`**
+- **Purpose**: Serves raw file data from the database. This allows using a simple `<img src="/api/images/123" />` tag on the frontend for image files or creating download links for other file types.
+- **Method**: `GET`
+- **Parameters**:
+  - `id` (URL path): The unique integer ID of the file to retrieve.
+- **Success Response**:
+  - `Status`: `200 OK`
+  - `Body`: The raw binary data of the file.
+  - `Headers`: `Content-Type`, `Content-Length`, `Cache-Control`.
+- **Error Response**:
+  - `Status`: `400 Bad Request` if the ID is invalid.
+  - `Status`: `404 Not Found` if the file doesn't exist.
+  - `Status`: `500 Internal Server Error` for database or other server issues.
+
+---
+#### **`POST /api/upload`**
+- **Purpose**: Handles file uploads from the admin panel. It takes a file, calls the `uploadFile` server action to store it in the database, and returns the new file ID.
+- **Method**: `POST`
+- **Request Body**: `FormData` containing a single `file` field.
+- **Success Response**:
+  - `Status`: `200 OK`
+  - `Body`: `{ "success": true, "id": <number> }`
+- **Error Response**:
+  - `Status`: `400 Bad Request` if no file is provided.
+  - `Status`: `500 Internal Server Error` if the upload fails.
+  - `Body`: `{ "success": false, "error": "<error_message>" }`
+
+---
+#### **`POST /api/auth/login`**
+- **Purpose**: Validates admin credentials against environment variables. It's used exclusively by the `/login` page.
+- **Method**: `POST`
+- **Request Body**: JSON object `{ "username": "<string>", "password": "<string>" }`.
+- **Success Response**:
+  - `Status`: `200 OK`
+  - `Body`: `{ "success": true, "user": { "username": "<string>" } }`
+- **Error Response**:
+  - `Status`: `400 Bad Request` for invalid input.
+  - `Status`: `401 Unauthorized` for incorrect credentials.
+  - `Status`: `500 Internal Server Error` for server configuration issues (e.g., missing ENV variables).
+  - `Body`: `{ "success": false, "error": "<error_message>" }`
+
+---
+#### **`POST /api/contact`**
+- **Purpose**: Handles submissions from the public contact form on the homepage. It validates the input and uses the Resend API to forward the message to a predefined email address.
+- **Method**: `POST`
+- **Request Body**: JSON object `{ "name": "<string>", "email": "<string>", "message": "<string>" }`.
+- **Success Response**:
+  - `Status`: `200 OK`
+  - `Body`: `{ "success": true, "message": "Message sent successfully!" }`
+- **Error Response**:
+  - `Status`: `400 Bad Request` for invalid input (e.g., invalid email, message too short).
+  - `Status`: `500 Internal Server Error` if the email fails to send or the server is misconfigured.
+  - `Body`: `{ "success": false, "error": "<error_message>" }`
 
 ---
 
@@ -307,5 +361,3 @@ The project uses Genkit for its AI features.
 7.  **Admin UI (`/admin/testimonials/page.tsx`)**: Create a new admin page to perform CRUD operations on testimonials. Add a link to it in the admin dashboard and sidebar.
 8.  **Frontend Component (`/components/landing/TestimonialsSection.tsx`)**: Create the public-facing component to display the testimonials.
 9.  **Homepage (`/app/page.tsx`)**: Import and render the new `TestimonialsSection` component, passing it data fetched from the `getTestimonials` action.
-
-    
