@@ -18,7 +18,6 @@ import {
   Scenario,
   CompetitorFeature,
   ComparisonSectionData,
-  PartnerSectionData,
 } from '../data'
 import { eq, and, notInArray, sql as sqlBuilder } from 'drizzle-orm'
 
@@ -387,23 +386,49 @@ export async function updateCompetitorFeatures(lang: Language, features: Omit<Co
     }
 }
 
+// ==============================
+// NEWSLETTER
+// ==============================
+export async function subscribeToNewsletter(email: string) {
+    try {
+        await db.insert(schema.newsletterSubscriptions).values({ email }).onConflictDoNothing();
+        return { success: true };
+    } catch (error) {
+        if (error instanceof Error && 'code' in error && error.code === '23505') { // Unique violation
+            return { success: true, message: 'Email is already subscribed.' };
+        }
+        console.error("Newsletter subscription error:", error);
+        return { success: false, error: 'Failed to subscribe.' };
+    }
+}
 
-export async function getPartnerSectionData(lang: Language) {
-    return await db.query.partnerSections.findFirst({
-        where: eq(schema.partnerSections.lang, lang),
+// ==============================
+// COOPERATION REQUESTS
+// ==============================
+export type CooperationRequest = typeof schema.cooperationRequests.$inferSelect;
+export type NewCooperationRequest = typeof schema.cooperationRequests.$inferInsert;
+export type RequestStatus = "pending" | "replied" | "archived";
+
+export async function createCooperationRequest(data: Omit<NewCooperationRequest, 'id' | 'submittedAt' | 'status'>) {
+    const [row] = await db.insert(schema.cooperationRequests).values(data).returning();
+    return row;
+}
+
+export async function getCooperationRequests(): Promise<CooperationRequest[]> {
+    return db.query.cooperationRequests.findMany({
+        orderBy: (cr, { desc }) => [desc(cr.submittedAt)],
     });
 }
 
-export async function updatePartnerSectionData(lang: Language, data: Omit<PartnerSectionData, 'id'>) {
-    const payload = { ...data, imageId: data.imageId ?? null };
-    await db.insert(schema.partnerSections)
-        .values({ lang, ...payload })
-        .onConflictDoUpdate({
-            target: schema.partnerSections.lang,
-            set: payload,
-        });
+export async function updateCooperationRequestStatus(id: number, status: RequestStatus) {
+    await db.update(schema.cooperationRequests)
+        .set({ status })
+        .where(eq(schema.cooperationRequests.id, id));
 }
 
+export async function deleteCooperationRequest(id: number) {
+    await db.delete(schema.cooperationRequests).where(eq(schema.cooperationRequests.id, id));
+}
 
 export async function getFileData(id: number) {
   if (isNaN(id)) return null

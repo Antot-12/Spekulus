@@ -10,7 +10,8 @@ import { ContactSection } from '@/components/landing/ContactSection';
 import { ActionSection } from '@/components/landing/ActionSection';
 import { WhySpekulusSection } from '@/components/landing/WhySpekulusSection';
 import { ComparisonSection } from '@/components/landing/ComparisonSection';
-import { PartnerSection } from '@/components/landing/PartnerSection';
+import { NewsletterSection } from '@/components/landing/NewsletterSection';
+import { CooperationSection } from '@/components/landing/CooperationSection';
 import { getLanguage } from '@/lib/getLanguage';
 import {
   getHeroData,
@@ -22,7 +23,6 @@ import {
   getScenarios,
   getComparisonSectionData,
   getCompetitorFeatures,
-  getPartnerSectionData,
 } from '@/lib/db/actions';
 import { initialData } from '@/lib/data';
 
@@ -39,7 +39,6 @@ export default async function Home() {
     scenarios,
     comparisonSectionData,
     competitorFeatures,
-    partnerSectionData,
   ] = await Promise.all([
     getHeroData(lang),
     getProductData(lang),
@@ -50,7 +49,6 @@ export default async function Home() {
     getScenarios(lang),
     getComparisonSectionData(lang),
     getCompetitorFeatures(lang),
-    getPartnerSectionData(lang),
   ]);
 
   if (!heroData) {
@@ -97,11 +95,6 @@ export default async function Home() {
     competitorFeatures = initialData.competitorFeaturesData[lang];
   }
 
-  if (!partnerSectionData) {
-    partnerSectionData = initialData.partnerSectionData[lang];
-  }
-
-
   return (
     <>
       <HeroSection data={heroData} lang={lang} />
@@ -111,7 +104,8 @@ export default async function Home() {
       <WhySpekulusSection data={scenarios} lang={lang} />
       <ComparisonSection sectionData={comparisonSectionData} featuresData={competitorFeatures} lang={lang} />
       <RoadmapSection data={roadmapEvents} lang={lang} />
-      <PartnerSection data={partnerSectionData} />
+      <CooperationSection />
+      <NewsletterSection />
       <FaqSection initialFaqs={faqs} />
       <DevNotesSection />
       <CreatorsSection />

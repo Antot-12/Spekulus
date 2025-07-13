@@ -115,15 +115,24 @@ export const competitorFeatures = pgTable('competitor_features', {
     mirrocool: boolean('mirrocool').default(false).notNull(),
 });
 
-export const partnerSections = pgTable('partner_sections', {
-    id: serial('id').primaryKey(),
-    lang: varchar('lang', { length: 2 }).notNull().references(() => languages.code).unique(),
-    title: text('title').notNull(),
-    text: text('text').notNull(),
-    ctaLabel: text('cta_label').notNull(),
-    ctaUrl: text('cta_url'),
-    imageId: integer('image_id').references(() => files.id, { onDelete: 'set null' }),
+export const newsletterSubscriptions = pgTable('newsletter_subscriptions', {
+  id: serial('id').primaryKey(),
+  email: text('email').unique().notNull(),
+  subscribedAt: timestamp('subscribed_at').defaultNow().notNull(),
 });
+
+export const requestStatusEnum = pgEnum('request_status', ['pending', 'replied', 'archived']);
+
+export const cooperationRequests = pgTable('cooperation_requests', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  email: text('email').notNull(),
+  phone: text('phone'),
+  message: text('message').notNull(),
+  status: requestStatusEnum('status').default('pending').notNull(),
+  submittedAt: timestamp('submitted_at').defaultNow().notNull(),
+});
+
 
 export const actionSections = pgTable('action_sections', {
   id: serial('id').primaryKey(),
