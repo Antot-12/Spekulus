@@ -60,7 +60,7 @@ export default function ComparisonAdminPage() {
 
     useEffect(() => { 
         fetchData(selectedLang);
-    }, [selectedLang, fetchData]);
+    }, [selectedLang]);
 
     const handleSave = async () => {
         if (!sectionData) return;
