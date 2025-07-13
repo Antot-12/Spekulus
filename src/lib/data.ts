@@ -72,8 +72,8 @@ export type Achievement = {
 };
 
 export type Creator = {
+  id: number;
   slug: string;
-  lang: Language;
   name: string;
   role: string;
   bio: string;
@@ -164,6 +164,39 @@ export type ProductSectionData = {
   components: ProductComponent[];
 };
 
+// ==================================
+// SCENARIOS
+// ==================================
+export type Scenario = {
+  id: number;
+  icon: string;
+  question: string;
+  answer: string;
+};
+
+// ==================================
+// COMPETITOR COMPARISON
+// ==================================
+export type CompetitorFeature = {
+    id: number;
+    feature: string;
+    spekulus: boolean;
+    himirror: boolean;
+    simplehuman: boolean;
+    mirrocool: boolean;
+}
+
+// ==================================
+// PARTNER CTA
+// ==================================
+export type PartnerSectionData = {
+  id: number;
+  title: string;
+  text: string;
+  ctaLabel: string;
+  ctaUrl?: string | null;
+  imageId?: number | null;
+};
 
 // ==================================
 // INITIAL DATA FOR SEEDING
@@ -293,11 +326,10 @@ const rawFaqData: Record<Language, PartialBy<FaqItem, 'id'>[]> = {
   ]
 };
 
-const rawCreatorsData: Record<Language, Creator[]> = {
+const rawCreatorsData: Record<Language, PartialBy<Creator, 'id'>[]> = {
   en: [
     {
       slug: 'anton-shyrko',
-      lang: 'en',
       name: 'Anton Shyrko',
       role: 'CEO & Team Lead',
       bio: "Anton is the visionary behind Spekulus, guiding the team with a steady hand and a passion for innovative technology. He coordinates the overall project strategy, leads decision-making, and ensures the team's alignment with our ambitious goals. He believes in transparent development and building products that genuinely improve people's daily lives.\n\n### Core Philosophies\n\n- **User-Centric Design**: Every feature must solve a real user problem.\n- **Open Collaboration**: The best ideas can come from anywhere.\n- **Sustainable Growth**: Building a lasting company that values its people.",
@@ -345,7 +377,6 @@ const rawCreatorsData: Record<Language, Creator[]> = {
   uk: [
     {
       slug: 'anton-shyrko',
-      lang: 'uk',
       name: 'Антон Ширко',
       role: 'CEO & Керівник команди',
       bio: "Антон — візіонер, що стоїть за Spekulus, він керує командою твердою рукою та пристрастю до інноваційних технологій. Він координує загальну стратегію проєкту, очолює прийняття рішень та забезпечує відповідність команди нашим амбітним цілям. Він вірить у прозору розробку та створення продуктів, які справді покращують повсякденне життя людей.\n\n### Основні філософії\n\n- **Дизайн, орієнтований на користувача**: Кожна функція повинна вирішувати реальну проблему користувача.\n- **Відкрита співпраця**: Найкращі ідеї можуть прийти звідки завгодно.\n- **Сталий розвиток**: Побудова довготривалої компанії, яка цінує своїх людей.",
@@ -356,7 +387,6 @@ const rawCreatorsData: Record<Language, Creator[]> = {
   sk: [
     {
       slug: 'anton-shyrko',
-      lang: 'sk',
       name: 'Anton Shyrko',
       role: 'CEO & Vedúci tímu',
       bio: "Anton je vizionárom za projektom Spekulus, vedie tím pevnou rukou a s vášňou pre inovatívne technológie. Koordinuje celkovú stratégiu projektu, vedie rozhodovanie a zabezpečuje súlad tímu s našimi ambicióznymi cieľmi. Verí v transparentný vývoj a budovanie produktov, ktoré skutočne zlepšujú každodenný život ľudí.\n\n### Základné filozofie\n\n- **Dizajn zameraný na používateľa**: Každá funkcia musí riešiť skutočný problém používateľa.\n- **Otvorená spolupráca**: Najlepšie nápady môžu prísť odkiaľkoľvek.\n- **Udržateľný rast**: Budovanie trvalej spoločnosti, ktorá si váži svojich ľudí.",
@@ -504,6 +534,77 @@ const rawProductSectionData: Record<Language, Partial<ProductSectionData>> = {
   }
 };
 
+const rawScenariosData: Record<Language, Scenario[]> = {
+  en: [
+    { id: 1, icon: 'Coffee', question: "Feeling stressed after a long day?", answer: "Spekulus suggests a guided breathing exercise to help you unwind and lower your cortisol levels." },
+    { id: 2, icon: 'Thermometer', question: "Not sure what to wear today?", answer: "Get an instant, real-time weather forecast and personalized outfit suggestions based on your calendar." },
+    { id: 3, icon: 'Zap', question: "Notice a new blemish on your skin?", answer: "The AI-powered skin analysis identifies potential issues and recommends targeted care routines." },
+    { id: 4, icon: 'Home', question: "Need to adjust the room's ambiance?", answer: "Use voice commands to dim the lights, play your favorite playlist, and prepare for your evening." },
+  ],
+  uk: [
+    { id: 1, icon: 'Coffee', question: "Відчуваєте стрес після довгого дня?", answer: "Spekulus пропонує керовану дихальну вправу, щоб допомогти вам розслабитися та знизити рівень кортизолу." },
+    { id: 2, icon: 'Thermometer', question: "Не знаєте, що одягнути сьогодні?", answer: "Отримайте миттєвий прогноз погоди в реальному часі та персоналізовані пропозиції щодо одягу на основі вашого календаря." },
+    { id: 3, icon: 'Zap', question: "Помітили новий прищик на шкірі?", answer: "Аналіз шкіри на основі ШІ виявляє потенційні проблеми та рекомендує цільові процедури догляду." },
+    { id: 4, icon: 'Home', question: "Потрібно налаштувати атмосферу в кімнаті?", answer: "Використовуйте голосові команди, щоб приглушити світло, увімкнути улюблений плейлист і підготуватися до вечора." },
+  ],
+  sk: [
+    { id: 1, icon: 'Coffee', question: "Cítite sa v strese po dlhom dni?", answer: "Spekulus navrhuje riadené dychové cvičenie, ktoré vám pomôže uvoľniť sa a znížiť hladinu kortizolu." },
+    { id: 2, icon: 'Thermometer', question: "Nie ste si istí, čo si dnes obliecť?", answer: "Získajte okamžitú predpoveď počasia v reálnom čase a personalizované návrhy oblečenia na základe vášho kalendára." },
+    { id: 3, icon: 'Zap', question: "Všimli ste si novú nedokonalosť na pleti?", answer: "Analýza pleti poháňaná AI identifikuje potenciálne problémy a odporučí cielené rutiny starostlivosti." },
+    { id: 4, icon: 'Home', question: "Potrebujete upraviť atmosféru v miestnosti?", answer: "Použite hlasové príkazy na stlmenie svetiel, prehranie obľúbeného playlistu a prípravu na večer." },
+  ],
+};
+
+const rawCompetitorFeaturesData: Record<Language, CompetitorFeature[]> = {
+    en: [
+        { id: 1, feature: "AI Skin Analysis", spekulus: true, himirror: true, simplehuman: false, mirrocool: false },
+        { id: 2, feature: "Stress Detection", spekulus: true, himirror: false, simplehuman: false, mirrocool: false },
+        { id: 3, feature: "Voice Control", spekulus: true, himirror: true, simplehuman: true, mirrocool: true },
+        { id: 4, feature: "Smart Home Hub", spekulus: true, himirror: false, simplehuman: false, mirrocool: true },
+        { id: 5, feature: "Personalized Lighting", spekulus: true, himirror: true, simplehuman: true, mirrocool: false },
+        { id: 6, feature: "Gesture Control", spekulus: true, himirror: false, simplehuman: false, mirrocool: true },
+        { id: 7, feature: "Third-Party App Store", spekulus: true, himirror: true, simplehuman: false, mirrocool: false },
+    ],
+    uk: [
+        { id: 1, feature: "Аналіз шкіри за допомогою ШІ", spekulus: true, himirror: true, simplehuman: false, mirrocool: false },
+        { id: 2, feature: "Виявлення стресу", spekulus: true, himirror: false, simplehuman: false, mirrocool: false },
+        { id: 3, feature: "Голосове керування", spekulus: true, himirror: true, simplehuman: true, mirrocool: true },
+        { id: 4, feature: "Центр розумного будинку", spekulus: true, himirror: false, simplehuman: false, mirrocool: true },
+        { id: 5, feature: "Персоналізоване освітлення", spekulus: true, himirror: true, simplehuman: true, mirrocool: false },
+        { id: 6, feature: "Керування жестами", spekulus: true, himirror: false, simplehuman: false, mirrocool: true },
+        { id: 7, feature: "Магазин сторонніх додатків", spekulus: true, himirror: true, simplehuman: false, mirrocool: false },
+    ],
+    sk: [
+        { id: 1, feature: "Analýza pleti pomocou AI", spekulus: true, himirror: true, simplehuman: false, mirrocool: false },
+        { id: 2, feature: "Detekcia stresu", spekulus: true, himirror: false, simplehuman: false, mirrocool: false },
+        { id: 3, feature: "Hlasové ovládanie", spekulus: true, himirror: true, simplehuman: true, mirrocool: true },
+        { id: 4, feature: "Centrum inteligentnej domácnosti", spekulus: true, himirror: false, simplehuman: false, mirrocool: true },
+        { id: 5, feature: "Personalizované osvetlenie", spekulus: true, himirror: true, simplehuman: true, mirrocool: false },
+        { id: 6, feature: "Ovládanie gestami", spekulus: true, himirror: false, simplehuman: false, mirrocool: true },
+        { id: 7, feature: "Obchod s aplikáciami tretích strán", spekulus: true, himirror: true, simplehuman: false, mirrocool: false },
+    ],
+};
+
+const rawPartnerSectionData: Record<Language, Omit<PartnerSectionData, 'id'>> = {
+    en: {
+        title: "Partner with Us",
+        text: "We are actively seeking strategic partners, investors, and collaborators who share our vision for the future of smart living. If you're interested in helping us scale, innovate, and bring Spekulus to a global market, we'd love to hear from you.",
+        ctaLabel: "Contact Our Founders",
+        ctaUrl: "mailto:spekulus.mirror@gmail.com",
+    },
+    uk: {
+        title: "Станьте нашим партнером",
+        text: "Ми активно шукаємо стратегічних партнерів, інвесторів та співробітників, які поділяють наше бачення майбутнього розумного життя. Якщо ви зацікавлені в допомозі нам масштабуватися, впроваджувати інновації та виводити Spekulus на світовий ринок, ми будемо раді вас почути.",
+        ctaLabel: "Зв'язатися із засновниками",
+        ctaUrl: "mailto:spekulus.mirror@gmail.com",
+    },
+    sk: {
+        title: "Staňte sa naším partnerom",
+        text: "Aktívne hľadáme strategických partnerov, investorov a spolupracovníkov, ktorí zdieľajú našu víziu budúcnosti inteligentného bývania. Ak máte záujem pomôcť nám rásť, inovovať a priniesť Spekulus na globálny trh, radi by sme sa s vami spojili.",
+        ctaLabel: "Kontaktujte našich zakladateľov",
+        ctaUrl: "mailto:spekulus.mirror@gmail.com",
+    },
+};
 
 const mergeData = <T extends { [key: string]: any }, U extends Partial<T>>(baseData: T[], langData: U[], idKey: keyof T & keyof U): T[] => {
   const langMap = new Map(langData.map(item => [item[idKey], item]));
@@ -532,7 +633,7 @@ const faqData: Record<Language, PartialBy<FaqItem, 'id'>[]> = {
 };
 
 const mergeCreators = (base: Creator, lang: Partial<Creator>): Creator => {
-  const merged = { ...base, ...lang };
+  const merged = { ...base, ...lang } as Creator;
   if (lang.featuredProject || base.featuredProject) {
     merged.featuredProject = {
       ...(base.featuredProject || { title: '', url: '', description: ''}),
@@ -549,12 +650,12 @@ const mergeCreators = (base: Creator, lang: Partial<Creator>): Creator => {
 }
 
 const creatorsData: Record<Language, Creator[]> = {
-  en: rawCreatorsData.en,
-  uk: rawCreatorsData.en.map((baseCreator) => {
+  en: rawCreatorsData.en as Creator[],
+  uk: (rawCreatorsData.en as Creator[]).map((baseCreator) => {
     const langCreator = rawCreatorsData.uk.find(c => c.slug === baseCreator.slug);
     return mergeCreators(baseCreator, langCreator || {});
   }),
-  sk: rawCreatorsData.en.map((baseCreator) => {
+  sk: (rawCreatorsData.en as Creator[]).map((baseCreator) => {
     const langCreator = rawCreatorsData.sk.find(c => c.slug === baseCreator.slug);
     return mergeCreators(baseCreator, langCreator || {});
   }),
@@ -613,4 +714,7 @@ export const initialData = {
     heroSectionData,
     heroFeaturesData,
     productSectionData,
+    scenariosData: rawScenariosData,
+    competitorFeaturesData: rawCompetitorFeaturesData,
+    partnerSectionData: rawPartnerSectionData,
 };

@@ -13,6 +13,23 @@ export type Translation = {
     title: string;
     subtitle: string;
   };
+  scenarios: {
+    title: string;
+    subtitle: string;
+  };
+  comparison: {
+    title: string;
+    subtitle: string;
+    feature: string;
+    spekulus: string;
+    himirror: string;
+    simplehuman: string;
+    mirrocool: string;
+  };
+  partner: {
+    title: string;
+    subtitle: string;
+  };
   actionSection: {
     title: string;
     subtitle: string;
@@ -80,6 +97,23 @@ export const translations: Record<'en' | 'uk' | 'sk', Translation> = {
       title: 'Our Key Advantages',
       subtitle: 'Here’s what makes Spekulus more than just a mirror.',
     },
+    scenarios: {
+        title: "Why Spekulus?",
+        subtitle: "From daily inconveniences to wellness goals, see how Spekulus provides smart solutions."
+    },
+    comparison: {
+        title: "How We Compare",
+        subtitle: "A side-by-side look at how Spekulus stacks up against the competition.",
+        feature: "Feature",
+        spekulus: "Spekulus",
+        himirror: "HiMirror",
+        simplehuman: "Simplehuman",
+        mirrocool: "MirroCool"
+    },
+    partner: {
+        title: "Join Our Journey",
+        subtitle: "We're building the future of smart wellness technology."
+    },
     actionSection: {
       title: 'See Spekulus in Action',
       subtitle: 'A glimpse of how our smart mirror fits into your everyday life.',
@@ -145,6 +179,23 @@ export const translations: Record<'en' | 'uk' | 'sk', Translation> = {
       title: 'Наші ключові переваги',
       subtitle: 'Ось що робить Spekulus більше, ніж просто дзеркалом.',
     },
+     scenarios: {
+        title: "Чому Spekulus?",
+        subtitle: "Від щоденних незручностей до цілей оздоровлення, подивіться, як Spekulus пропонує розумні рішення."
+    },
+    comparison: {
+        title: "Як ми порівнюємося",
+        subtitle: "Порівняльний погляд на те, як Spekulus виглядає на тлі конкурентів.",
+        feature: "Функція",
+        spekulus: "Spekulus",
+        himirror: "HiMirror",
+        simplehuman: "Simplehuman",
+        mirrocool: "MirroCool"
+    },
+    partner: {
+        title: "Приєднуйтесь до нашої подорожі",
+        subtitle: "Ми будуємо майбутнє технологій розумного здоров'я."
+    },
     actionSection: {
       title: 'Spekulus в дії',
       subtitle: 'Погляд на те, як наше розумне дзеркало вписується у ваше повсякденне життя.',
@@ -209,6 +260,23 @@ export const translations: Record<'en' | 'uk' | 'sk', Translation> = {
     advantages: {
       title: 'Naše kľúčové výhody',
       subtitle: 'Toto je to, čo robí Spekulus viac než len zrkadlom.',
+    },
+    scenarios: {
+        title: "Prečo Spekulus?",
+        subtitle: "Od každodenných nepríjemností po wellness ciele, pozrite sa, ako Spekulus poskytuje inteligentné riešenia."
+    },
+    comparison: {
+        title: "Ako sa porovnávame",
+        subtitle: "Pohľad vedľa seba na to, ako Spekulus obstojí v porovnaní s konkurenciou.",
+        feature: "Funkcia",
+        spekulus: "Spekulus",
+        himirror: "HiMirror",
+        simplehuman: "Simplehuman",
+        mirrocool: "MirroCool"
+    },
+    partner: {
+        title: "Pridajte sa k našej ceste",
+        subtitle: "Budujeme budúcnosť technológií inteligentného wellness."
     },
     actionSection: {
       title: 'Pozrite sa na Spekulus v akcii',

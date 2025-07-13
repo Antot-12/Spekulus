@@ -71,6 +71,34 @@ export const advantages = pgTable('advantages', {
   description: text('description').notNull()
 })
 
+export const scenarios = pgTable('scenarios', {
+    id: serial('id').primaryKey(),
+    lang: varchar('lang', { length: 2 }).notNull().references(() => languages.code),
+    icon: text('icon').notNull(),
+    question: text('question').notNull(),
+    answer: text('answer').notNull(),
+});
+
+export const competitorFeatures = pgTable('competitor_features', {
+    id: serial('id').primaryKey(),
+    lang: varchar('lang', { length: 2 }).notNull().references(() => languages.code),
+    feature: text('feature').notNull(),
+    spekulus: boolean('spekulus').default(false).notNull(),
+    himirror: boolean('himirror').default(false).notNull(),
+    simplehuman: boolean('simplehuman').default(false).notNull(),
+    mirrocool: boolean('mirrocool').default(false).notNull(),
+});
+
+export const partnerSections = pgTable('partner_sections', {
+    id: serial('id').primaryKey(),
+    lang: varchar('lang', { length: 2 }).notNull().references(() => languages.code).unique(),
+    title: text('title').notNull(),
+    text: text('text').notNull(),
+    ctaLabel: text('cta_label').notNull(),
+    ctaUrl: text('cta_url'),
+    imageId: integer('image_id').references(() => files.id, { onDelete: 'set null' }),
+});
+
 export const actionSections = pgTable('action_sections', {
   id: serial('id').primaryKey(),
   lang: varchar('lang', { length: 2 }).notNull().references(() => languages.code).unique(),
