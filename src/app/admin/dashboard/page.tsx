@@ -2,14 +2,14 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { FileText, Calendar, HelpCircle, ArrowRight, Users, LayoutGrid, Sparkles, Camera, Home, Cpu, History, UploadCloud, Swords, Handshake, MessageSquareQuestion } from "lucide-react";
+import { FileText, Calendar, HelpCircle, ArrowRight, Users, LayoutGrid, Sparkles, Camera, Home, Cpu, History, UploadCloud, Swords, Handshake, MessageSquareQuote } from "lucide-react";
 
 const dashboardItems = [
   { href: "/admin/hero", icon: <Home />, title: "Hero Section", description: "Manage the main hero section of the homepage.", buttonText: "Manage Hero" },
   { href: "/admin/product", icon: <Cpu />, title: "Product Section", description: "Manage the \"Anatomy of a Smart Mirror\" section.", buttonText: "Manage Section" },
   { href: "/admin/advantages", icon: <Sparkles />, title: "Advantages", description: "Manage the key advantages listed on the homepage.", buttonText: "Manage Advantages" },
   { href: "/admin/action-section", icon: <Camera />, title: "In Action Section", description: "Manage the \"See Spekulus in Action\" section.", buttonText: "Manage Section" },
-  { href: "/admin/scenarios", icon: <MessageSquareQuestion />, title: "Scenarios", description: "Manage the 'Why Spekulus?' real-life scenarios section.", buttonText: "Manage Scenarios" },
+  { href: "/admin/scenarios", icon: <MessageSquareQuote />, title: "Scenarios", description: "Manage the 'Why Spekulus?' real-life scenarios section.", buttonText: "Manage Scenarios" },
   { href: "/admin/comparison", icon: <Swords />, title: "Comparison Table", description: "Edit the competitor comparison table features.", buttonText: "Manage Table" },
   { href: "/admin/partner", icon: <Handshake />, title: "Partner CTA", description: "Manage the partner and investor call-to-action section.", buttonText: "Manage CTA" },
   { href: "/admin/notes", icon: <FileText />, title: "Dev Notes", description: "Manage the developer notes that appear in the bottom ticker on the main site.", buttonText: "Manage Notes" },
