@@ -416,7 +416,6 @@ The project uses Genkit for its AI features.
 - **Configuration**: The core Genkit setup is in `/src/ai/genkit.ts`, which configures the Google AI plugin.
 - **Flows**: Specific AI tasks are defined as "flows" in `/src/ai/flows/`.
   - **`creator-chat-flow.ts`**: Powers the "Ask Me Anything" widget on creator profile pages. It takes a creator's bio, skills, and featured project along with a user's question, and prompts the LLM to answer in the first-person persona of the creator.
-  - **`mirror-simulator-flow.ts`**: Powers the AI simulator page. It uses a detailed prompt with simulated data (weather, schedule) to respond to user commands as if it were the Spekulus smart mirror.
 - **Usage**: These flows are exported as server actions and can be called directly from client components, just like the database actions.
 
 ---

@@ -86,8 +86,9 @@ const ALL_PAGES: Omit<PageInfo, 'status'>[] = [
     { path: '/creators', title: 'Our Team (List)' },
     { path: '/creators/[slug]', title: 'Our Team (Detail)' },
     { path: '/coming-soon', title: 'Coming Soon' },
-    { path: '/simulator', title: 'AI Simulator' },
-    { path: '/not-found', title: '404 Not Found Page' }
+    { path: '/not-found', title: '404 Not Found Page' },
+    { path: '/admin', title: 'Admin Dashboard' },
+    { path: '/login', title: 'Admin Login' }
 ];
 
 export async function getPages(): Promise<PageInfo[]> {
