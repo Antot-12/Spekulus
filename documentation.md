@@ -341,7 +341,24 @@ The project uses Genkit for its AI features.
 
 ---
 
-## 8. Sample Developer Workflow: Adding a "Testimonials" Section
+## 8. Advanced Technical Documentation
+
+### 8.1. Project Architecture & Design Patterns
+
+- **Architectural Approach**: The project employs a **modular monolith** architecture. It's a single Next.js application, but it's organized with a strong separation of concerns to maintain clarity and scalability. The structure is feature-based within the `app` and `components` directories (e.g., `/admin/faq`, `/components/landing/FaqSection`).
+- **Design Patterns**:
+    - **Separation of Concerns**: UI components (`/components`), routing/pages (`/app`), business logic/database actions (`/lib/db/actions.ts`), and static definitions (`/lib/data.ts`) are kept in distinct directories.
+    - **Service Layer (Data Access Layer)**: The `/src/lib/db/actions.ts` file acts as a service layer. It abstracts all database interactions, so UI components don't query the database directly. This makes the code easier to maintain and test.
+    - **Reusable Components**: The project heavily relies on reusable React components, especially from ShadCN UI (`/components/ui`), which are composed to build complex UIs. This follows the DRY (Don't Repeat Yourself) principle.
+- **System Interaction Flow**:
+    1.  **Frontend (Next.js/React)**: The user interacts with a client component (e.g., an admin form).
+    2.  **Server Action Call**: The component calls an async function from `actions.ts`. Because of the `'use server'` directive, Next.js treats this as a secure, server-only function call, not a typical API request.
+    3.  **Database (Drizzle/Neon)**: The server action uses Drizzle ORM to build and execute a SQL query against the Neon Postgres database.
+    4.  **AI (Genkit)**: For AI features, a component calls a flow from `/src/ai/flows/`. Genkit then communicates with the Google AI API and returns the result.
+
+### 8.2. Developer Workflow: Adding a "Testimonials" Section
+
+This example illustrates the end-to-end process for adding a new content section to the site.
 
 1.  **DB Schema (`schema.ts`)**: Define a new `testimonials` table.
     ```typescript
@@ -354,11 +371,82 @@ The project uses Genkit for its AI features.
     });
     ```
 2.  **Drizzle Config (`drizzle.config.ts`)**: Add `'testimonials'` to the `tablesFilter` array.
-3.  **Push to DB**: Run `npm run db:push`.
-4.  **Server Actions (`actions.ts`)**: Create `getTestimonials(lang)` and `updateTestimonials(lang, data)` functions.
-5.  **Data Types (`data.ts`)**: Define the `Testimonial` type and add initial data for the seed script.
-6.  **Seed Script (`seed.ts`)**: Add logic to clear and seed the new `testimonials` table. Run `npm run db:seed`.
-7.  **Admin UI (`/admin/testimonials/page.tsx`)**: Create a new admin page to perform CRUD operations on testimonials. Add a link to it in the admin dashboard and sidebar.
-8.  **Frontend Component (`/components/landing/TestimonialsSection.tsx`)**: Create the public-facing component to display the testimonials.
-9.  **Homepage (`/app/page.tsx`)**: Import and render the new `TestimonialsSection` component, passing it data fetched from the `getTestimonials` action.
-```
+3.  **Push to DB**: Run `npm run db:push` to apply the schema change.
+4.  **Server Actions (`actions.ts`)**: Create `getTestimonials(lang)` and `updateTestimonials(lang, data)` functions to handle CRUD for the new table.
+5.  **Data Types (`data.ts`)**: Define the `Testimonial` TypeScript type and add initial data to the `initialData` object for seeding.
+6.  **Seed Script (`seed.ts`)**: Add logic to clear and seed the new `testimonials` table. Run `npm run db:seed` to populate the database.
+7.  **Admin UI (`/admin/testimonials/page.tsx`)**: Create a new admin page (a client component) to manage testimonials. This page will use the new server actions. Add a link to it in the admin dashboard and sidebar.
+8.  **Frontend Component (`/components/landing/TestimonialsSection.tsx`)**: Create the public-facing React component to display the testimonials.
+9.  **Homepage (`/app/page.tsx`)**: Import and render the new `TestimonialsSection` component, fetching its data from the `getTestimonials` server action.
+
+### 8.3. Testing Strategy
+
+Currently, the project does not have an automated testing suite. This is a key area for future improvement.
+
+- **Proposed Strategy**:
+  - **Unit Tests (Vitest/Jest)**: For utility functions (`/lib/utils.ts`), translation helpers, and potentially individual server actions (with a mocked database).
+  - **Integration Tests**: To test the interaction between server actions and the database schema. This could involve running tests against a separate, temporary database.
+  - **End-to-End (E2E) Tests (Playwright/Cypress)**: To simulate user flows, such as logging into the admin panel, creating a new FAQ, and verifying it appears on the public site.
+- **Setup Instructions (Future)**: A testing framework would be added to `package.json`. A `tests` directory would be created at the root, mirroring the `src` structure.
+
+### 8.4. Deployment Instructions
+
+- **Service**: The project is configured for easy deployment on **Vercel**, which is the recommended hosting provider for Next.js applications.
+- **Process**:
+    1.  Connect the GitHub repository to a new Vercel project.
+    2.  Vercel will automatically detect that it is a Next.js project.
+    3.  Add the required environment variables (`DATABASE_URL`, `ADMIN_USERNAME`, etc.) in the Vercel project settings.
+    4.  Pushing to the `main` branch will trigger a production deployment. Pushing to any other branch will create a preview deployment.
+- **Secrets Management**: All secrets (API keys, database URLs) must be stored as environment variables in the Vercel dashboard and never hard-coded.
+
+### 8.5. Logs, Monitoring & Error Reporting
+
+- **Logging**:
+    - **Vercel Logs**: All `console.log`, `console.warn`, and `console.error` statements in server-side code (server actions, API routes) are automatically captured and can be viewed in the Vercel dashboard for both production and preview deployments.
+    - **Admin Action Logs**: The application includes a custom logging solution for admin actions, visible on the `/admin/logs` page. It uses `localStorage` and is designed to provide a client-side audit trail for content editors.
+- **Error Reporting**: No external error reporting service (like Sentry) is currently integrated. Errors are logged to the Vercel console.
+
+### 8.6. Access Control & Security Notes
+
+- **Admin Route Protection**: Access to the `/admin` section is controlled by a simple client-side check in `/src/app/admin/layout.tsx`. It looks for a specific key (`admin_token`) in `localStorage`.
+- **Known Limitations & Future Improvements**:
+    - **No Server-Side Session**: The current method is not a secure, server-enforced session. A malicious user could bypass this by manually setting the `localStorage` key.
+    - **Improvement Plan**: Implement a proper authentication solution using JWTs (JSON Web Tokens) or a library like `NextAuth.js`. This would involve:
+        1.  The `/api/auth/login` route returning a signed HTTP-only cookie.
+        2.  Creating a middleware file (`middleware.ts`) to protect all `/admin/**` routes by verifying the cookie on the server for every request.
+    - **CSRF Protection**: Standard form submissions are protected against Cross-Site Request Forgery by Next.js Server Actions.
+    - **Secrets**: Ensure the `.env` file is never committed to version control.
+
+### 8.7. Internationalization (i18n) Guidelines
+
+- **Structure**: All static translations are stored in `/src/lib/translations.ts`. The structure is a nested object, first keyed by language code (`en`, `uk`, `sk`), then by page or component.
+- **Adding New Translations**:
+    1.  Add the new key-value pair to the `en` (English) object first.
+    2.  Add the corresponding translations to the `uk` and `sk` objects.
+    3.  Use the `useLanguage` hook in a client component to access the translations: `const { translations } = useLanguage();`.
+- **Fallback Logic**: There is no automatic fallback. If a translation key is missing for a specific language, it will cause a runtime error. It is crucial to ensure all keys exist for all languages.
+
+### 8.8. Versioning, Branching, & Release Strategy
+
+- **Git Workflow**: The project uses a simple **GitHub Flow** model.
+    1.  The `main` branch is always considered production-ready.
+    2.  To work on a new feature or bugfix, create a new branch from `main` (e.g., `feature/add-testimonials` or `fix/login-error`).
+    3.  Once work is complete, open a Pull Request (PR) against the `main` branch.
+    4.  After code review and automated checks (if any) pass, the PR is merged into `main`, which triggers a new deployment.
+- **Commit Messages**: Commits should follow the **Conventional Commits** specification (e.g., `feat: Add testimonials section`, `fix: Correct typo in footer`).
+- **Versioning**: The project does not currently use semantic versioning tags, but this can be added in the future as the project matures.
+
+### 8.9. Contribution Guidelines
+
+- **Onboarding**:
+    1.  Clone the repository.
+    2.  Install dependencies with `npm install`.
+    3.  Create a `.env` file and set the required variables (see Section 2.1).
+    4.  Run the database seed script: `npm run db:seed`.
+    5.  Start the development server: `npm run dev`.
+- **Pull Request Checklist**:
+    - [ ] Code is formatted (`npm run lint` if a linter is configured).
+    - [ ] New features are documented in `documentation.md`.
+    - [ ] The PR has a descriptive title and explains the "why" behind the changes.
+    - [ ] (If applicable) Include screenshots or GIFs of UI changes.
+- **Communication**: Project discussions happen in GitHub Issues and Pull Requests.
