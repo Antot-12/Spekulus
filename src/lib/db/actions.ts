@@ -22,6 +22,7 @@ import {
 } from '../data'
 import { eq, and, notInArray, sql as sqlBuilder } from 'drizzle-orm'
 
+
 const sql = neon(process.env.DATABASE_URL!)
 const db = drizzle(sql, { schema })
 
@@ -79,13 +80,14 @@ export type PageStatus = 'active' | 'hidden' | 'maintenance';
 export type PageInfo = { path: string; title: string; status: PageStatus; };
 
 const ALL_PAGES: Omit<PageInfo, 'status'>[] = [
-  { path: '/', title: 'Home (Landing Page)' },
-  { path: '/dev-notes', title: 'Dev Notes (List)' },
-  { path: '/dev-notes/[slug]', title: 'Dev Notes (Detail)' },
-  { path: '/creators', title: 'Our Team (List)' },
-  { path: '/creators/[slug]', title: 'Our Team (Detail)' },
-  { path: '/coming-soon', title: 'Coming Soon' },
-  { path: '/simulator', title: 'AI Simulator' },
+    { path: '/', title: 'Home (Landing Page)' },
+    { path: '/dev-notes', title: 'Dev Notes (List)' },
+    { path: '/dev-notes/[slug]', title: 'Dev Notes (Detail)' },
+    { path: '/creators', title: 'Our Team (List)' },
+    { path: '/creators/[slug]', title: 'Our Team (Detail)' },
+    { path: '/coming-soon', title: 'Coming Soon' },
+    { path: '/simulator', title: 'AI Simulator' },
+    { path: '/not-found', title: '404 Not Found Page' }
 ];
 
 export async function getPages(): Promise<PageInfo[]> {
