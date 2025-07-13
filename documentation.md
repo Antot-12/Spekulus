@@ -24,8 +24,8 @@
   - [Tables](#tables)
   - [Entity Relationships (ER Summary)](#entity-relationships-er-summary)
 - **[5. Backend & Data Flow](#5-backend--data-flow)**
-  - [5.1. Server Actions](#51-server-actions-srclibdbactionsts)
-  - [5.2. API Routes](#52-api-routes-srcappapi)
+  - [5.1. Server Actions (`/src/lib/db/actions.ts`)](#51-server-actions-srclibdbactionsts)
+  - [5.2. API Routes (`/src/app/api/`)](#52-api-routes-srcappapi)
 - **[6. Admin Panel](#6-admin-panel)**
   - [6.1. Admin Panel Iconography](#61-admin-panel-iconography)
 - **[7. AI Integration (Genkit)](#7-ai-integration-genkit)**
@@ -199,18 +199,22 @@ The schema is defined in `/src/lib/db/schema.ts` using Drizzle ORM.
   - `lang (varchar, FK -> languages.code)`: Language association.
   - `icon, question, answer (text)`: Content for each scenario card.
 
+- **`comparisonSections`**: Stores the title and subtitle for the comparison section.
+  - `lang (varchar, FK -> languages.code, unique)`: Associates the text with a language.
+  - `title, subtitle (text)`: Editable text for the section header.
+
 - **`competitorFeatures`**: The features for the competitor comparison table.
   - `lang (varchar, FK -> languages.code)`: Language association.
   - `feature (text)`: The name of the feature being compared.
   - `spekulus, himirror, simplehuman, mirrocool (boolean)`: Flags indicating support.
 
 - **`partnerSections`**: The "Partner with Us" call-to-action section.
-  - `lang (varchar, FK -> languages.code)`: Language association.
+  - `lang (varchar, FK -> languages.code, unique)`: Language association.
   - `title, text, ctaLabel, ctaUrl (text)`: All text content for the section.
   - `imageId (integer, FK -> files.id)`: An optional accompanying image.
 
 - **`actionSections`**: The "See in Action" section on the homepage.
-  - `lang (varchar, FK -> languages.code)`: Language association.
+  - `lang (varchar, FK -> languages.code, unique)`: Language association.
   - `title, subtitle, description, buttonText, buttonUrl (text)`: All text content.
   - `visible, buttonVisible (boolean)`: Toggles for visibility.
   - `imageId (integer, FK -> files.id)`: The main image for this section.
@@ -238,9 +242,13 @@ The schema is defined in `/src/lib/db/schema.ts` using Drizzle ORM.
   - All other fields (`name`, `role`, `bio`, etc.) are `text` or `jsonb` to store profile information. `jsonb` is used for arrays (skills, hobbies) and nested objects (socials, music).
   - `imageId, featuredProjectImageId (integer, FK -> files.id)`: Foreign keys for profile and project images.
 
+- **`maintenanceSettings`**: A single-row table to control site-wide maintenance mode.
+- **`pages`**: A table to control the status (active, hidden, maintenance) of individual site pages.
+
 ### Entity Relationships (ER Summary)
 
 - **One-to-Many**: A `languages` record can be associated with many records in other tables (e.g., one 'en' language has many `faqItems`, `roadmapEvents`, etc.).
+- **One-to-One**: Some tables like `heroSections`, `actionSections`, and `partnerSections` have a unique constraint on the `lang` key, creating a one-to-one relationship between a language and that section's content.
 - **One-to-Many (Files)**: A `files` record can be referenced by many other records across different tables (`heroSections`, `creators`, etc.), but each content item (like a single creator profile) can only have one primary `imageId`.
 - **Composite Keys**: The `creators` table uses a unique constraint on `(slug, lang)` to ensure that a creator's profile URL is unique for each language.
 
@@ -400,6 +408,8 @@ The admin panel uses icons from the `lucide-react` library to provide quick, int
 | **`Calendar`** | Sidebar link to manage the Roadmap or date-related fields. | Admin Sidebar, Dashboard |
 | **`HelpCircle`** | Sidebar link to manage the FAQ section. | Admin Sidebar, Dashboard |
 | **`History`** | Sidebar link to navigates to the Action Logs page. | Admin Sidebar, Dashboard |
+| **`Wrench`** | Sidebar link to navigates to the Maintenance page. | Admin Sidebar, Dashboard |
+| **`Files`** | Sidebar link to navigates to the Pages Overview page. | Admin Sidebar, Dashboard |
 | **`ImageIcon`** | A placeholder for where an image will appear. | Hero, Product, Action Section pages when no image is selected. |
 | **`Music`** | Section icon for managing music/playlist information. | Creators Page |
 | **`Briefcase`** | Section icon for managing featured project information. | Creators Page |
@@ -706,19 +716,30 @@ This section details the homepage content sections that are fully manageable via
 - **Purpose**: To transparently compare Spekulus's features against key competitors in the market.
 - **Homepage Component**: `ComparisonSection` (`/src/components/landing/ComparisonSection.tsx`)
 - **Admin Page**: `/admin/comparison`
-- **Database Table**: `competitorFeatures`
-  ```typescript
-  export const competitorFeatures = pgTable('competitor_features', {
-      id: serial('id').primaryKey(),
-      lang: varchar('lang', { length: 2 }).notNull().references(() => languages.code),
-      feature: text('feature').notNull(),
-      spekulus: boolean('spekulus').default(false).notNull(),
-      himirror: boolean('himirror').default(false).notNull(),
-      simplehuman: boolean('simplehuman').default(false).notNull(),
-      mirrocool: boolean('mirrocool').default(false).notNull(),
-  });
-  ```
-- **Functionality**: The admin panel at `/admin/comparison` allows full CRUD management of the features list. Admins can:
+- **Database Tables**:
+  - `comparisonSections`: Stores the section's title and subtitle for each language.
+    ```typescript
+    export const comparisonSections = pgTable('comparison_sections', {
+        id: serial('id').primaryKey(),
+        lang: varchar('lang', { length: 2 }).notNull().references(() => languages.code).unique(),
+        title: text('title').notNull(),
+        subtitle: text('subtitle').notNull(),
+    });
+    ```
+  - `competitorFeatures`: Stores the individual feature rows.
+    ```typescript
+    export const competitorFeatures = pgTable('competitor_features', {
+        id: serial('id').primaryKey(),
+        lang: varchar('lang', { length: 2 }).notNull().references(() => languages.code),
+        feature: text('feature').notNull(),
+        spekulus: boolean('spekulus').default(false).notNull(),
+        himirror: boolean('himirror').default(false).notNull(),
+        simplehuman: boolean('simplehuman').default(false).notNull(),
+        mirrocool: boolean('mirrocool').default(false).notNull(),
+    });
+    ```
+- **Functionality**: The admin panel at `/admin/comparison` allows full CRUD management of the features list and the section's text. Admins can:
+  - Edit the section's main `title` and `subtitle`.
   - Add new feature rows.
   - Edit the `feature` description text for each row.
   - Toggle the boolean checkmarks for each product (`spekulus`, `himirror`, etc.).
@@ -763,6 +784,3 @@ This section details specific UI/UX enhancements made to the admin panel for bet
 - **Location**: `/admin/creators`
 - **Description**: The creator management page was redesigned to use an `Accordion` component. Each creator profile is now a separate, collapsible item.
 - **Purpose**: This change dramatically improves the organization of the page, preventing it from becoming an overwhelmingly long form. Editors can now focus on one creator at a time by expanding their specific accordion item. Each accordion trigger displays the creator's name and a badge indicating their visibility status ("Visible" or "Hidden").
-```
-      
-    
