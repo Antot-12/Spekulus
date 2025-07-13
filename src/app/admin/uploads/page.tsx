@@ -112,7 +112,7 @@ export default function UploadsAdminPage() {
             return (a.filename || '').localeCompare(b.filename || '');
           case 'newest':
           default:
-            return new Date(b.createdAt).getTime() - new Date(b.createdAt).getTime();
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         }
       });
   }, [files, searchTerm, sortMode]);
