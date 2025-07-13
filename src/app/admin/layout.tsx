@@ -38,16 +38,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     setIsClient(true);
-    try {
-      if (localStorage.getItem('admin_token') === 'true') {
-        setIsAuthenticated(true);
-      } else {
-        router.replace('/login');
-      }
-    } catch (e) {
-      router.replace('/login');
+  }, []);
+  
+  useEffect(() => {
+    if (isClient) {
+        try {
+          if (localStorage.getItem('admin_token') === 'true') {
+            setIsAuthenticated(true);
+          } else {
+            router.replace('/login');
+          }
+        } catch (e) {
+          router.replace('/login');
+        }
     }
-  }, [router]);
+  }, [router, isClient]);
   
   useEffect(() => {
     setPageTitle(getPageTitle(pathname));
