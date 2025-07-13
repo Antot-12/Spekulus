@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, Files } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { logAction } from '@/lib/logger';
@@ -94,7 +94,7 @@ export default function PagesAdminPage() {
             <CardHeader>
                 <div className="flex flex-wrap gap-4 justify-between items-center">
                     <div>
-                        <CardTitle>Pages Overview</CardTitle>
+                        <CardTitle className="flex items-center gap-2"><Files /> Pages Overview</CardTitle>
                         <CardDescription>Manage the status and visibility of your site's pages. Changes are saved automatically.</CardDescription>
                     </div>
                 </div>
