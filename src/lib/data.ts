@@ -295,7 +295,7 @@ const rawRoadmapEvents: Record<Language, PartialBy<RoadmapEvent, 'id'>[]> = {
     { date: "Q4 2025", title: "Запуск магазину віджетів", description: "Запуск магазину віджетів Spekulus для сторонніх віджетів та кастомних модулів." },
     { date: "Q2 2026", title: "Інструмент для макіяжу зі ШІ", description: "Впровадження віртуального асистента для макіяжу на основі ШІ з розпізнаванням обличчя." },
     { date: "Q3 2026", title: "Офіційний випуск продукту", description: "Розумне дзеркало Spekulus стає доступним для широкого загалу." },
-    { date: "Q4 2026", title: "Вихід на словацький ринок", description: "Початковий запуск Spekulus у Словаччині як перший крок регіональної експансії." },
+    { date: "Q4 2026", title: "Вихід на словацький ринок", description: "Початковий запуск Spekulus у Словаччині як перший крок регіональної експанзії." },
   ],
   sk: [
     { date: "2024-04-28", title: "Vytvorenie nápadu", description: "Zrod Spekulus. Definovanie počiatočného konceptu a misie." },
