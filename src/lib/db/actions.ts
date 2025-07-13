@@ -21,7 +21,6 @@ import {
   PartnerSectionData,
 } from '../data'
 import { eq, and, notInArray, sql as sqlBuilder } from 'drizzle-orm'
-import 'dotenv/config'
 
 const sql = neon(process.env.DATABASE_URL!)
 const db = drizzle(sql, { schema })
