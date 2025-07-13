@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import type { PartnerSectionData } from '@/lib/data';
 import { ArrowRight, Handshake, Expand } from 'lucide-react';
 import NextImage from 'next/image';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 export function PartnerSection({ data }: { data: PartnerSectionData | null }) {
   if (!data) return null;
@@ -44,6 +44,9 @@ export function PartnerSection({ data }: { data: PartnerSectionData | null }) {
                     </div>
                  </DialogTrigger>
                  <DialogContent className="max-w-4xl p-2 bg-transparent border-none shadow-none">
+                    <DialogHeader>
+                        <DialogTitle className="sr-only">{data.title}</DialogTitle>
+                    </DialogHeader>
                      <img src={`/api/images/${data.imageId}`} alt={data.title} className="max-h-[90vh] w-auto h-auto rounded-lg mx-auto" />
                  </DialogContent>
                </Dialog>
