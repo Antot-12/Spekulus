@@ -326,33 +326,35 @@ export default function CreatorsAdminPage() {
         ) : (
           creators.map(creator => (
             <AccordionItem value={String(creator.id)} key={creator.id} className="border rounded-md bg-card">
-              <AccordionTrigger className="p-4 hover:no-underline">
-                  <div className="flex items-center gap-4 text-left">
-                     <ChevronDown className="h-5 w-5 shrink-0 transition-transform duration-200 text-primary" />
-                     <div className="flex-grow">
-                        <h3 className="font-semibold text-lg">{creator.name}</h3>
-                        <p className="text-sm text-muted-foreground">{creator.role}</p>
-                     </div>
-                  </div>
-                   <div className="flex items-center gap-2">
-                     <Badge variant={creator.isVisible ? "default" : "secondary"}>
-                        {creator.isVisible ? "Visible" : "Hidden"}
-                     </Badge>
-                     <AlertDialog onOpenChange={e => e.stopPropagation()}>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()} className="hover:bg-destructive/10 text-destructive/70 hover:text-destructive"><Trash2 className="w-4 h-4" /></Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle></AlertDialogHeader>
-                            <AlertDialogDescription>This deletes "{creator.name}" from this language after saving changes. This action is not reversible.</AlertDialogDescription>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleCreatorDelete(creator.id)}>Delete Profile</AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                   </div>
-              </AccordionTrigger>
+              <div className="flex items-center p-4">
+                <AccordionTrigger className="flex-grow p-0 hover:no-underline">
+                    <div className="flex items-center gap-4 text-left">
+                       <ChevronDown className="h-5 w-5 shrink-0 transition-transform duration-200 text-primary" />
+                       <div className="flex-grow">
+                          <h3 className="font-semibold text-lg">{creator.name}</h3>
+                          <p className="text-sm text-muted-foreground">{creator.role}</p>
+                       </div>
+                    </div>
+                </AccordionTrigger>
+                 <div className="flex items-center gap-2 pl-4">
+                   <Badge variant={creator.isVisible ? "default" : "secondary"}>
+                      {creator.isVisible ? "Visible" : "Hidden"}
+                   </Badge>
+                   <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="hover:bg-destructive/10 text-destructive/70 hover:text-destructive"><Trash2 className="w-4 h-4" /></Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                          <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle></AlertDialogHeader>
+                          <AlertDialogDescription>This deletes "{creator.name}" from this language after saving changes. This action is not reversible.</AlertDialogDescription>
+                          <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleCreatorDelete(creator.id)}>Delete Profile</AlertDialogAction>
+                          </AlertDialogFooter>
+                      </AlertDialogContent>
+                  </AlertDialog>
+                 </div>
+              </div>
               <AccordionContent className="p-6 pt-0 space-y-6">
                 <div className="flex items-center justify-between rounded-lg border p-4 bg-muted/20">
                     <Label htmlFor={`visible-${creator.id}`} className="text-base flex items-center gap-2">
