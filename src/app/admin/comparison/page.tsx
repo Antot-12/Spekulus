@@ -6,7 +6,7 @@ import type { CompetitorFeature, Language } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Trash2, PlusCircle, Save, Loader2, Check, X, Swords } from 'lucide-react';
+import { Trash2, PlusCircle, Save, Loader2, Swords } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -14,9 +14,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Switch } from '@/components/ui/switch';
 import { logAction } from '@/lib/logger';
 import { getCompetitorFeatures, updateCompetitorFeatures } from '@/lib/db/actions';
-import { initialData } from '@/lib/data';
-
-type AllFeaturesData = Record<Language, CompetitorFeature[]>;
 
 const LanguageFlag = ({ lang }: { lang: Language }) => {
     const flags: Record<string, string> = { en: '🇬🇧', uk: '🇺🇦', sk: '🇸🇰' };
@@ -28,82 +25,78 @@ const competitors = ['spekulus', 'himirror', 'simplehuman', 'mirrocool'] as cons
 
 export default function ComparisonAdminPage() {
     const { toast } = useToast();
-    const [allData, setAllData] = useState<AllFeaturesData | null>(null);
+    const [features, setFeatures] = useState<CompetitorFeature[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [selectedLang, setSelectedLang] = useState<Language>('en');
 
-    const features = allData?.[selectedLang] ?? [];
-
-    const fetchData = useCallback(async () => {
+    const fetchData = useCallback(async (lang: Language) => {
         setIsLoading(true);
-        const languages: Language[] = ['en', 'uk', 'sk'];
-        const promises = languages.map(lang => getCompetitorFeatures(lang));
-        const results = await Promise.all(promises);
-        
-        const newAllData = languages.reduce((acc, lang, index) => {
-            const resultData = results[index];
-            if (resultData && resultData.length > 0) acc[lang] = resultData;
-            else acc[lang] = initialData.competitorFeaturesData[lang];
-            return acc;
-        }, {} as AllFeaturesData);
+        try {
+            const data = await getCompetitorFeatures(lang);
+            setFeatures(data);
+        } catch (error) {
+            toast({ title: "Fetch Error", description: "Could not load comparison data.", variant: "destructive" });
+            setFeatures([]);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [toast]);
 
-        setAllData(newAllData);
-        setIsLoading(false);
-    }, []);
-
-    useEffect(() => { fetchData(); }, [fetchData]);
+    useEffect(() => { 
+        fetchData(selectedLang);
+    }, [selectedLang, fetchData]);
 
     const handleSave = async () => {
-        if (!allData) return;
         setIsSaving(true);
         try {
-            await updateCompetitorFeatures(selectedLang, allData[selectedLang]);
+            await updateCompetitorFeatures(selectedLang, features);
             toast({ title: "Saved!", description: `Comparison table for ${languageNames[selectedLang]} has been saved.`});
             logAction('Comparison Update', 'Success', `Saved comparison table for ${languageNames[selectedLang]}.`);
+            fetchData(selectedLang);
         } catch (error) {
              toast({ title: "Save Failed", description: "Could not save changes.", variant: 'destructive' });
         } finally {
             setIsSaving(false);
         }
     };
-    
-    const updateState = (newFeatures: CompetitorFeature[]) => {
-        setAllData(prev => prev ? { ...prev, [selectedLang]: newFeatures } : null);
-    };
 
     const handleFeatureTextChange = (id: number, value: string) => {
         const updated = features.map(item =>
             item.id === id ? { ...item, feature: value } : item
         );
-        updateState(updated);
+        setFeatures(updated);
     };
 
     const handleToggle = (id: number, competitor: typeof competitors[number]) => {
         const updated = features.map(item =>
             item.id === id ? { ...item, [competitor]: !item[competitor] } : item
         );
-        updateState(updated);
+        setFeatures(updated);
     }
 
     const handleFeatureAdd = () => {
+        // Use a temporary negative ID for new items to avoid key conflicts
         const newFeature: CompetitorFeature = { 
-            id: Date.now(),
+            id: -Date.now(),
             feature: 'New Awesome Feature',
+            lang: selectedLang,
             spekulus: true,
             himirror: false,
             simplehuman: false,
             mirrocool: false,
         };
-        updateState([...features, newFeature]);
+        setFeatures(prev => [...prev, newFeature]);
         toast({ title: "Feature Added", description: "Remember to save your changes." });
     };
     
     const handleFeatureDelete = (id: number) => {
         const itemToDelete = features.find(item => item.id === id);
-        updateState(features.filter(item => item.id !== id));
-        toast({ title: "Feature Deleted", variant: 'destructive', description: "Remember to save changes."});
-        logAction('Comparison Update', 'Success', `Deleted feature "${itemToDelete?.feature}" for ${languageNames[selectedLang]}.`);
+        setFeatures(features.filter(item => item.id !== id));
+        toast({ title: "Feature Removed", variant: 'destructive', description: "Remember to save changes to confirm deletion."});
+        if (itemToDelete) {
+          logAction('Comparison Update', 'Success', `Marked feature "${itemToDelete?.feature}" for deletion in ${languageNames[selectedLang]}.`);
+        }
     };
 
     return (
@@ -158,7 +151,7 @@ export default function ComparisonAdminPage() {
                                         </TableCell>
                                     ))}
                                     <TableCell className="text-right">
-                                        <Button variant="destructive" size="icon" onClick={() => handleFeatureDelete(feature.id)}><Trash2 className="w-4 h-4"/></Button>
+                                        <Button variant="ghost" size="icon" onClick={() => handleFeatureDelete(feature.id)} className="text-destructive hover:text-destructive"><Trash2 className="w-4 h-4"/></Button>
                                     </TableCell>
                                 </TableRow>
                             ))

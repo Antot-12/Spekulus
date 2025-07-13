@@ -50,10 +50,12 @@ export async function getProductData(lang: Language) {
     where: eq(schema.productComponents.lang, lang),
     orderBy: (p, { asc }) => [asc(p.id)]
   })
+  // This structure is intentionally kept for compatibility with the component
   return { components }
 }
 
 export async function updateProductComponents(lang: Language, components: ProductComponent[]) {
+  // This is a "delete and replace" strategy for simplicity
   await db.delete(schema.productComponents).where(eq(schema.productComponents.lang, lang))
   if (components.length) {
     const rows = components.map(({ id, ...rest }) => ({ ...rest, lang }))
@@ -254,13 +256,20 @@ export async function getCompetitorFeatures(lang: Language) {
     });
 }
 
-export async function updateCompetitorFeatures(lang: Language, features: CompetitorFeature[]) {
+export async function updateCompetitorFeatures(lang: Language, features: Omit<CompetitorFeature, 'lang'>[]) {
+    // Delete all features for the given language
     await db.delete(schema.competitorFeatures).where(eq(schema.competitorFeatures.lang, lang));
-    if (features.length) {
-        const rows = features.map(({ id, ...rest }) => ({...rest, lang }));
-        await db.insert(schema.competitorFeatures).values(rows);
+
+    // Re-insert the updated features if any exist
+    if (features.length > 0) {
+        const rowsToInsert = features.map(({ id, ...rest }) => ({
+            ...rest,
+            lang: lang,
+        }));
+        await db.insert(schema.competitorFeatures).values(rowsToInsert);
     }
 }
+
 
 export async function getPartnerSectionData(lang: Language) {
     return await db.query.partnerSections.findFirst({
