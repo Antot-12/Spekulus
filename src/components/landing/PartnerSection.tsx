@@ -27,14 +27,12 @@ export function PartnerSection({ data }: { data: PartnerSectionData | null }) {
           </div>
           <div className="relative aspect-square max-w-md mx-auto w-full opacity-0 animate-fade-in-up" style={{ animationDelay: '400ms' }}>
             {data.imageId && (
-              <div className="overflow-hidden rounded-lg h-full w-full">
-                <NextImage
-                  src={`/api/images/${data.imageId}`}
-                  alt={data.title}
-                  fill
-                  className="object-contain"
-                />
-              </div>
+              <NextImage
+                src={`/api/images/${data.imageId}`}
+                alt={data.title}
+                fill
+                className="object-contain drop-shadow-2xl"
+              />
             )}
           </div>
         </div>
