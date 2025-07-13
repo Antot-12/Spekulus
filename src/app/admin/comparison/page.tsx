@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import type { CompetitorFeature, ComparisonSectionData, Language } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +16,7 @@ import { logAction } from '@/lib/logger';
 import { getCompetitorFeatures, updateCompetitorFeatures, getComparisonSectionData, updateComparisonSectionData } from '@/lib/db/actions';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { initialData } from '@/lib/data';
 
 const LanguageFlag = ({ lang }: { lang: Language }) => {
     const flags: Record<string, string> = { en: '🇬🇧', uk: '🇺🇦', sk: '🇸🇰' };
@@ -40,37 +41,37 @@ export default function ComparisonAdminPage() {
     const [isSaving, setIsSaving] = useState(false);
     const [selectedLang, setSelectedLang] = useState<Language>('en');
 
-    const fetchData = useCallback(async (lang: Language) => {
-        setIsLoading(true);
-        try {
-            const [featuresData, sectionInfo] = await Promise.all([
-                getCompetitorFeatures(lang),
-                getComparisonSectionData(lang),
-            ]);
-            setFeatures(featuresData);
-            setSectionData(sectionInfo);
-        } catch (error) {
-            toast({ title: "Fetch Error", description: "Could not load comparison data.", variant: "destructive" });
-            setFeatures([]);
-            setSectionData(null);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [toast]);
-
-    useEffect(() => { 
-        fetchData(selectedLang);
-    }, [selectedLang]);
+    useEffect(() => {
+      const fetchData = async (lang: Language) => {
+          setIsLoading(true);
+          try {
+              const [featuresData, sectionInfo] = await Promise.all([
+                  getCompetitorFeatures(lang),
+                  getComparisonSectionData(lang),
+              ]);
+              setFeatures(featuresData.length > 0 ? featuresData : initialData.competitorFeaturesData[lang]);
+              setSectionData(sectionInfo || initialData.comparisonSectionData[lang]);
+          } catch (error) {
+              toast({ title: "Fetch Error", description: "Could not load comparison data.", variant: "destructive" });
+              setFeatures(initialData.competitorFeaturesData[lang]);
+              setSectionData(initialData.comparisonSectionData[lang]);
+          } finally {
+              setIsLoading(false);
+          }
+      };
+      
+      fetchData(selectedLang);
+    }, [selectedLang, toast]);
 
     const handleSave = async () => {
         if (!sectionData) return;
         setIsSaving(true);
         try {
-            // Filter out new items with negative IDs before sending to DB
-            const featuresToSave = features.map(({ id, ...rest }) => ({
-                id: id > 0 ? id : undefined, // Omit temp negative IDs
-                ...rest,
-            }));
+            const featuresToSave = features.map(({ id, ...rest }) => {
+                const newFeature = { ...rest };
+                if (id < 0) return newFeature;
+                return { id, ...newFeature };
+            });
 
             await Promise.all([
                 updateCompetitorFeatures(selectedLang, featuresToSave),
@@ -78,7 +79,6 @@ export default function ComparisonAdminPage() {
             ]);
             toast({ title: "Saved!", description: `Comparison table for ${languageNames[selectedLang]} has been saved.`});
             logAction('Comparison Update', 'Success', `Saved comparison table for ${languageNames[selectedLang]}.`);
-            fetchData(selectedLang);
         } catch (error) {
              toast({ title: "Save Failed", description: "Could not save changes.", variant: 'destructive' });
         } finally {
@@ -101,7 +101,6 @@ export default function ComparisonAdminPage() {
     }
 
     const handleFeatureAdd = () => {
-        // Use a temporary negative ID for new items to avoid key conflicts
         const newFeature: CompetitorFeature = { 
             id: -Date.now(),
             feature: 'New Awesome Feature',
