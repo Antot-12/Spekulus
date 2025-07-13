@@ -103,8 +103,8 @@ export default async function Home() {
       <ActionSection data={actionSectionData} />
       <WhySpekulusSection data={scenarios} lang={lang} />
       <ComparisonSection sectionData={comparisonSectionData} featuresData={competitorFeatures} lang={lang} />
-      <RoadmapSection data={roadmapEvents} lang={lang} />
       <CooperationSection />
+      <RoadmapSection data={roadmapEvents} lang={lang} />
       <NewsletterSection />
       <FaqSection initialFaqs={faqs} />
       <DevNotesSection />

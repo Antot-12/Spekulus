@@ -56,7 +56,7 @@ export function CooperationSection() {
   }
 
   return (
-    <section id="cooperation" className="py-16 md:py-24 bg-background">
+    <section id="cooperation" className="py-16 md:py-24 bg-muted/20">
       <div className="container mx-auto px-4 grid md:grid-cols-2 gap-12 items-center">
         <div className="opacity-0 animate-fade-in-up">
             <div className="flex items-center gap-3 mb-4 text-primary">
