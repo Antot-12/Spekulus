@@ -2,8 +2,9 @@
 'use client';
 import { Button } from '@/components/ui/button';
 import type { PartnerSectionData } from '@/lib/data';
-import { ArrowRight, Handshake } from 'lucide-react';
+import { ArrowRight, Handshake, Expand } from 'lucide-react';
 import NextImage from 'next/image';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 
 export function PartnerSection({ data }: { data: PartnerSectionData | null }) {
   if (!data) return null;
@@ -26,14 +27,26 @@ export function PartnerSection({ data }: { data: PartnerSectionData | null }) {
               </Button>
             )}
           </div>
-          <div className="relative aspect-square max-w-md mx-auto w-full opacity-0 animate-fade-in-up" style={{ animationDelay: '400ms' }}>
+          <div className="relative aspect-square max-w-md mx-auto w-full opacity-0 animate-fade-in-up group" style={{ animationDelay: '400ms' }}>
             {data.imageId && (
-              <NextImage
-                src={`/api/images/${data.imageId}`}
-                alt={data.title}
-                fill
-                className="object-contain"
-              />
+               <Dialog>
+                 <DialogTrigger asChild>
+                    <div className="cursor-pointer overflow-hidden rounded-lg">
+                      <NextImage
+                        src={`/api/images/${data.imageId}`}
+                        alt={data.title}
+                        fill
+                        className="object-contain transition-transform duration-300 group-hover:scale-105"
+                      />
+                       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <Expand className="w-10 h-10 text-white drop-shadow-lg" />
+                      </div>
+                    </div>
+                 </DialogTrigger>
+                 <DialogContent className="max-w-4xl p-2 bg-transparent border-none shadow-none">
+                     <img src={`/api/images/${data.imageId}`} alt={data.title} className="max-h-[90vh] w-auto h-auto rounded-lg mx-auto" />
+                 </DialogContent>
+               </Dialog>
             )}
           </div>
         </div>
