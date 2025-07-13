@@ -54,7 +54,7 @@
 - **[21. New Content Sections](#21-new-content-sections)**
   - [21.1. Scenarios ("Why Spekulus?")](#211-scenarios-why-spekulus)
   - [21.2. Competitor Comparison Table](#212-competitor-comparison-table)
-  - [21.3. Partner / Investor CTA](#213-partner--investor-cta)
+  - [21.3. Cooperation Request Section](#213-cooperation-request-section)
 - **[22. Admin Panel Features](#22-admin-panel-features)**
   - [22.1. Admin Dashboard Link to Homepage](#221-admin-dashboard-link-to-homepage)
   - [22.2. Reusable File Picker](#222-reusable-file-picker)
@@ -208,10 +208,15 @@ The schema is defined in `/src/lib/db/schema.ts` using Drizzle ORM.
   - `feature (text)`: The name of the feature being compared.
   - `spekulus, himirror, simplehuman, mirrocool (boolean)`: Flags indicating support.
 
-- **`partnerSections`**: The "Partner with Us" call-to-action section.
+- **`cooperationRequests`**: Stores submissions from the "Cooperate With Us" form.
+  - `id, name, email, phone, message, status, submittedAt`: Standard fields for a contact form submission.
+
+- **`newsletterSections`**: The "Stay in the Loop" call-to-action section.
   - `lang (varchar, FK -> languages.code, unique)`: Language association.
-  - `title, text, ctaLabel, ctaUrl (text)`: All text content for the section.
-  - `imageId (integer, FK -> files.id)`: An optional accompanying image.
+  - `title, subtitle, privacy_notice (text)`: All text content for the section.
+
+- **`newsletterSubscriptions`**: Stores email addresses from the newsletter signup form.
+  - `id, email, subscribedAt`: Stores the subscribed email and timestamp.
 
 - **`actionSections`**: The "See in Action" section on the homepage.
   - `lang (varchar, FK -> languages.code, unique)`: Language association.
@@ -248,7 +253,7 @@ The schema is defined in `/src/lib/db/schema.ts` using Drizzle ORM.
 ### Entity Relationships (ER Summary)
 
 - **One-to-Many**: A `languages` record can be associated with many records in other tables (e.g., one 'en' language has many `faqItems`, `roadmapEvents`, etc.).
-- **One-to-One**: Some tables like `heroSections`, `actionSections`, and `partnerSections` have a unique constraint on the `lang` key, creating a one-to-one relationship between a language and that section's content.
+- **One-to-One**: Some tables like `heroSections`, `actionSections`, and `newsletterSections` have a unique constraint on the `lang` key, creating a one-to-one relationship between a language and that section's content.
 - **One-to-Many (Files)**: A `files` record can be referenced by many other records across different tables (`heroSections`, `creators`, etc.), but each content item (like a single creator profile) can only have one primary `imageId`.
 - **Composite Keys**: The `creators` table uses a unique constraint on `(slug, lang)` to ensure that a creator's profile URL is unique for each language.
 
@@ -401,7 +406,8 @@ The admin panel uses icons from the `lucide-react` library to provide quick, int
 | **`Camera`** | Sidebar link to manage the "In Action" or Gallery sections. | Admin Sidebar, Dashboard; Creators Page |
 | **`Swords`** | Sidebar link to manage the Competitor Comparison table. | Admin Sidebar, Dashboard |
 | **`MessageSquareQuote`** | Sidebar link to manage the Scenarios section. | Admin Sidebar, Dashboard |
-| **`Handshake`** | Sidebar link to manage the Partner CTA section. | Admin Sidebar, Dashboard |
+| **`Handshake`** | Sidebar link to manage the Cooperation Requests. | Admin Sidebar, Dashboard |
+| **`Mail`** | Sidebar link to manage the Newsletter section. | Admin Sidebar, Dashboard |
 | **`MonitorPlay`** | Dashboard link to view the live homepage. | Admin Dashboard |
 | **`FileText`** | Sidebar link to manage Dev Notes. | Admin Sidebar, Dashboard; Creators Page |
 | **`Users`** | Sidebar link to manage Creator profiles. | Admin Sidebar, Dashboard; Creators Page |
@@ -509,8 +515,13 @@ Currently, the project does not have an automated testing suite. This is a key a
 ### 8.7. Internationalization (i18n) Guidelines
 
 - **Structure**: All static translations are stored in `/src/lib/translations.ts`. The structure is a nested object, first keyed by language code (`en`, `uk`, `sk`), then by page or component.
+- **Dynamic Content**: For content stored in the database, each table includes a `lang` column (`varchar(2)`) which acts as a foreign key to the `languages` table. This allows storing a separate version of each content item for each supported language.
+- **Fetching Data**: Server actions like `getHeroData(lang)` always accept a `lang` parameter to fetch the correct version of the content.
+- **Client-Side Translations**:
+    1.  **`LanguageContext`**: The root layout wraps the application in a `LanguageContext.Provider`, which stores the current language and the corresponding static translation object.
+    2.  **`useLanguage` Hook**: Client components use the `useLanguage()` hook to access the current `language` and `translations` object. This avoids the need to pass translations down through props.
 - **Adding New Translations**:
-    1.  Add the new key-value pair to the `en` (English) object first.
+    1.  Add the new key-value pair to the `en` (English) object in `translations.ts` first.
     2.  Add the corresponding translations to the `uk` and `sk` objects.
     3.  Use the `useLanguage` hook in a client component to access the translations: `const { translations } = useLanguage();`.
 - **Fallback Logic**: There is no automatic fallback. If a translation key is missing for a specific language, it will cause a runtime error. It is crucial to ensure all keys exist for all languages.
@@ -588,11 +599,13 @@ Currently, the project does not have an automated testing suite. This is a key a
 - **ARIA Attributes**: Use `aria-label` for icon-only buttons to provide a text description. The ShadCN UI components used in this project handle many ARIA attributes automatically.
 - **Focus Management**: Ensure all interactive elements have clear `focus-visible` styles (the default blue ring). Custom components should maintain this behavior.
 - **Keyboard Navigation**: All interactive elements should be reachable and operable via the keyboard.
+- **Responsiveness**: The site is designed to be fully responsive using Tailwind CSS's mobile-first breakpoint system (`sm`, `md`, `lg`, `xl`). Flexbox and Grid are used extensively to create fluid layouts.
 
 ### 13. Asset & Image Handling
 
 - **Storage**: All uploaded files are stored in the `files` table in the database as `bytea` (binary data).
 - **Serving**: Files are served via the `/api/images/[id]` route, which retrieves the binary data from the database.
+- **Reusability**: Because files are stored in a central table, they can be reused across multiple components and content types without re-uploading. The Admin Panel includes a `FilePickerDialog` modal that allows content editors to select an existing file instead of uploading a new one.
 - **Formats**: While the system accepts any file type, it's recommended to use optimized web formats like **WebP** for images and **PDF** for documents.
 - **Naming**: File naming should be descriptive and use hyphens instead of spaces (e.g., `creator-profile-anton.webp`).
 
@@ -746,23 +759,23 @@ This section details the homepage content sections that are fully manageable via
   - Delete features.
   - The homepage table renders this data dynamically, showing check or cross icons based on the boolean values.
 
-#### 21.3. Partner / Investor CTA
-- **Purpose**: A call-to-action section to attract potential partners and investors.
-- **Homepage Component**: `PartnerSection` (`/src/components/landing/PartnerSection.tsx`)
-- **Admin Page**: `/admin/partner`
-- **Database Table**: `partnerSections`
+#### 21.3. Cooperation Request Section
+- **Purpose**: A dedicated form to attract and manage potential partners and investors.
+- **Homepage Component**: `CooperationSection` (`/src/components/landing/CooperationSection.tsx`)
+- **Admin Page**: `/admin/cooperation`
+- **Database Table**: `cooperationRequests`
   ```typescript
-  export const partnerSections = pgTable('partner_sections', {
-      id: serial('id').primaryKey(),
-      lang: varchar('lang', { length: 2 }).notNull().references(() => languages.code).unique(),
-      title: text('title').notNull(),
-      text: text('text').notNull(),
-      ctaLabel: text('cta_label').notNull(),
-      ctaUrl: text('cta_url'),
-      imageId: integer('image_id').references(() => files.id, { onDelete: 'set null' }),
+  export const cooperationRequests = pgTable('cooperation_requests', {
+    id: serial('id').primaryKey(),
+    name: text('name').notNull(),
+    email: text('email').notNull(),
+    phone: text('phone'),
+    message: text('message').notNull(),
+    status: requestStatusEnum('status').default('pending').notNull(),
+    submittedAt: timestamp('submitted_at').defaultNow().notNull(),
   });
   ```
-- **Functionality**: A dedicated admin form allows editing the title, descriptive text, button label, and button URL for each language. It also includes an image uploader to add a visual element to the section.
+- **Functionality**: A public form on the homepage allows users to submit partnership inquiries. These submissions are stored in the database and can be viewed, managed, and their status updated (e.g., "pending" to "replied") in the `/admin/cooperation` admin page. The server action `createCooperationRequest` also triggers an email notification to the site admin via Resend upon successful submission.
 
 ---
 
