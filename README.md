@@ -82,13 +82,13 @@ RESEND_API_KEY="re_..."
 ```
 
 **4. Push the database schema:**
-Drizzle ORM manages our database. This command will sync your `schema.ts` file with your Neon database.
+This command reads your schema definition file (`/src/lib/db/schema.ts`) and creates the corresponding tables in your Neon database.
 ```bash
 npm run db:push
 ```
 
 **5. Seed the database:**
-This command populates your database with the initial content (text, roadmap events, etc.) needed to run the site.
+This command populates your new tables with the initial content (text, roadmap events, etc.) needed to run the site for the first time.
 ```bash
 npm run db:seed
 ```
@@ -99,6 +99,24 @@ You're all set! Start the development server to see the site in action.
 npm run dev
 ```
 The site will be available at `http://localhost:3000`.
+
+---
+
+## 🧠 How It Works
+
+This project uses a modern web architecture that is both powerful and easy to develop with.
+
+*   **Frontend**: The user interface is built with **Next.js** and **React**. Components are server-rendered by default, which means faster load times and better SEO.
+*   **Data Flow**: Instead of traditional REST APIs, we use **Next.js Server Actions**. This allows the frontend to call secure, server-side functions directly, simplifying the process of reading from and writing to the database.
+*   **Database**: All site content is stored in a **Neon Serverless Postgres** database. This makes the data easy to manage and update.
+*   **ORM**: **Drizzle ORM** is used to communicate with the database. It provides a type-safe way to write database queries, which helps prevent bugs.
+
+### The Admin Panel
+
+The Admin Panel is the heart of the site's content management.
+
+*   **Access**: You can access the login page at `/login`. Use the `ADMIN_USERNAME` and `ADMIN_PASSWORD` you set in your `.env` file.
+*   **Functionality**: Once logged in, you can navigate to different sections (Hero, FAQ, Roadmap, etc.) and edit the content for all supported languages. The changes are saved directly to the database and are reflected on the public site immediately.
 
 ---
 
