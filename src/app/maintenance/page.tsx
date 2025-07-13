@@ -16,12 +16,21 @@ export default function MaintenancePage({ message, endsAt }: MaintenancePageProp
   useEffect(() => {
     if (endsAt) {
       const updateTimer = () => {
-        const distance = formatDistanceToNow(new Date(endsAt), { addSuffix: true });
-        setTimeLeft(distance);
+        const now = new Date();
+        const endsAtDate = new Date(endsAt);
+        if (now > endsAtDate) {
+           setTimeLeft("should be back online now.");
+           clearInterval(interval);
+           // Optionally trigger a page refresh
+           setTimeout(() => window.location.reload(), 2000);
+        } else {
+           const distance = formatDistanceToNow(endsAtDate, { addSuffix: true });
+           setTimeLeft(`back online ${distance}.`);
+        }
       };
 
       updateTimer();
-      const interval = setInterval(updateTimer, 1000 * 60); // Update every minute
+      const interval = setInterval(updateTimer, 1000);
       return () => clearInterval(interval);
     }
   }, [endsAt]);
@@ -38,7 +47,7 @@ export default function MaintenancePage({ message, endsAt }: MaintenancePageProp
       
       {timeLeft && (
         <p className="text-primary font-semibold mb-8">
-          Expected to be back online {timeLeft}.
+          Expected to be {timeLeft}
         </p>
       )}
 

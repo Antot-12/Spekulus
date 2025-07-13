@@ -1,3 +1,4 @@
+
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
@@ -26,23 +27,24 @@ export default async function RootLayout({
   let maintenanceSettings: MaintenanceSettings = { isActive: false, message: '', endsAt: null };
 
   try {
-    // Attempt to fetch maintenance settings
     maintenanceSettings = await getMaintenanceSettings();
   } catch (error) {
     console.warn('Could not fetch maintenance settings. This is expected if the database schema has not been pushed yet. Defaulting to live mode.');
-    // Default to maintenance mode being off if the table doesn't exist.
-    // This allows the server to start so `npm run db:push` can be run.
     maintenanceSettings = { isActive: false, message: 'Maintenance mode check failed.', endsAt: null };
   }
   
   if (maintenanceSettings.isActive) {
-    return (
-       <html lang="en" className="dark">
-         <body>
-           <MaintenancePage message={maintenanceSettings.message} endsAt={maintenanceSettings.endsAt} />
-         </body>
-       </html>
-    )
+    // Check if the timer has expired
+    const isExpired = maintenanceSettings.endsAt && new Date() > new Date(maintenanceSettings.endsAt);
+    if (!isExpired) {
+      return (
+         <html lang="en" className="dark">
+           <body>
+             <MaintenancePage message={maintenanceSettings.message} endsAt={maintenanceSettings.endsAt ? new Date(maintenanceSettings.endsAt) : null} />
+           </body>
+         </html>
+      )
+    }
   }
 
   return (

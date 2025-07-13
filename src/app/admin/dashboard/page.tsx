@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { FileText, Calendar, HelpCircle, ArrowRight, Users, LayoutGrid, Sparkles, Camera, Home, Cpu, History, UploadCloud, Swords, Handshake, MessageSquareQuote, MonitorPlay, Wrench, Files } from "lucide-react";
+import { FileText, Calendar, HelpCircle, ArrowRight, Users, Sparkles, Camera, Home, Cpu, History, UploadCloud, Swords, Handshake, MessageSquareQuote, MonitorPlay, Wrench, Files } from "lucide-react";
 
 const dashboardItems = [
   { href: "/", icon: <MonitorPlay />, title: "View Live Site", description: "Go to the public homepage to see your changes live.", buttonText: "Go to Homepage", isExternal: true },

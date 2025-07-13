@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarContent, SidebarInset, SidebarTrigger, SidebarFooter } from '@/components/ui/sidebar';
 import Link from 'next/link';
-import { LayoutDashboard, FileText, Calendar, HelpCircle, LogOut, Loader2, Users, LayoutGrid, Sparkles, Camera, Home, Cpu, History, UploadCloud, Swords, Handshake, MessageSquareQuote, Wrench, Files } from 'lucide-react';
+import { LayoutDashboard, FileText, Calendar, HelpCircle, LogOut, Loader2, Users, Sparkles, Camera, Home, Cpu, History, UploadCloud, Swords, Handshake, MessageSquareQuote, Wrench, Files } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { logAction } from '@/lib/logger';
 
