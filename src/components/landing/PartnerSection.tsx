@@ -26,7 +26,7 @@ export function PartnerSection({ data }: { data: PartnerSectionData | null }) {
               </Button>
             )}
           </div>
-          <div className="relative aspect-square max-w-md mx-auto w-full opacity-0 animate-fade-in-up group" style={{ animationDelay: '400ms' }}>
+          <div className="relative aspect-square max-w-lg mx-auto w-full opacity-0 animate-fade-in-up group" style={{ animationDelay: '400ms' }}>
             {data.imageId && (
               <NextImage
                 src={`/api/images/${data.imageId}`}
