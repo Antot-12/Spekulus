@@ -328,7 +328,7 @@ export default function UploadsAdminPage() {
                 {paginatedFiles.map((file) => (
                   <Card key={file.id} className="group relative overflow-hidden flex flex-col">
                      <div className="flex flex-col flex-grow">
-                      <div className="resize overflow-auto">
+                      <div className="overflow-hidden resize">
                         <FilePreview file={file} />
                       </div>
                       <div className="p-4 border-t flex-grow flex flex-col justify-between">
