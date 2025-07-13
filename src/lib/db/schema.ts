@@ -79,6 +79,13 @@ export const scenarios = pgTable('scenarios', {
     answer: text('answer').notNull(),
 });
 
+export const comparisonSections = pgTable('comparison_sections', {
+    id: serial('id').primaryKey(),
+    lang: varchar('lang', { length: 2 }).notNull().references(() => languages.code).unique(),
+    title: text('title').notNull(),
+    subtitle: text('subtitle').notNull(),
+});
+
 export const competitorFeatures = pgTable('competitor_features', {
     id: serial('id').primaryKey(),
     lang: varchar('lang', { length: 2 }).notNull().references(() => languages.code),

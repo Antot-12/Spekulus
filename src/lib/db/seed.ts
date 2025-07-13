@@ -13,6 +13,7 @@ async function main() {
 
   // Clear existing data
   await db.delete(schema.partnerSections);
+  await db.delete(schema.comparisonSections);
   await db.delete(schema.competitorFeatures);
   await db.delete(schema.scenarios);
   await db.delete(schema.creators);
@@ -104,6 +105,12 @@ async function main() {
       }
   }
   console.log("Scenarios seeded.");
+  
+  // Seed comparison section text
+  for (const lang of ['en', 'uk', 'sk'] as const) {
+      await db.insert(schema.comparisonSections).values({ ...initialData.comparisonSectionData[lang], lang }).onConflictDoNothing();
+  }
+  console.log("Comparison section text seeded.");
 
   // Seed competitor features
   for (const lang of ['en', 'uk', 'sk'] as const) {

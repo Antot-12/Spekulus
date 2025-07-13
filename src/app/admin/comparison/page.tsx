@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import type { CompetitorFeature, Language } from '@/lib/data';
+import type { CompetitorFeature, ComparisonSectionData, Language } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -13,7 +13,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
 import { logAction } from '@/lib/logger';
-import { getCompetitorFeatures, updateCompetitorFeatures } from '@/lib/db/actions';
+import { getCompetitorFeatures, updateCompetitorFeatures, getComparisonSectionData, updateComparisonSectionData } from '@/lib/db/actions';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
 
 const LanguageFlag = ({ lang }: { lang: Language }) => {
     const flags: Record<string, string> = { en: '🇬🇧', uk: '🇺🇦', sk: '🇸🇰' };
@@ -22,10 +24,18 @@ const LanguageFlag = ({ lang }: { lang: Language }) => {
 
 const languageNames: Record<Language, string> = { en: 'English', uk: 'Ukrainian', sk: 'Slovak' };
 const competitors = ['spekulus', 'himirror', 'simplehuman', 'mirrocool'] as const;
+const competitorLabels: Record<typeof competitors[number], string> = {
+    spekulus: 'Spekulus',
+    himirror: 'HiMirror',
+    simplehuman: 'Simplehuman',
+    mirrocool: 'MirroCool'
+};
+
 
 export default function ComparisonAdminPage() {
     const { toast } = useToast();
     const [features, setFeatures] = useState<CompetitorFeature[]>([]);
+    const [sectionData, setSectionData] = useState<ComparisonSectionData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [selectedLang, setSelectedLang] = useState<Language>('en');
@@ -33,11 +43,16 @@ export default function ComparisonAdminPage() {
     const fetchData = useCallback(async (lang: Language) => {
         setIsLoading(true);
         try {
-            const data = await getCompetitorFeatures(lang);
-            setFeatures(data);
+            const [featuresData, sectionInfo] = await Promise.all([
+                getCompetitorFeatures(lang),
+                getComparisonSectionData(lang),
+            ]);
+            setFeatures(featuresData);
+            setSectionData(sectionInfo);
         } catch (error) {
             toast({ title: "Fetch Error", description: "Could not load comparison data.", variant: "destructive" });
             setFeatures([]);
+            setSectionData(null);
         } finally {
             setIsLoading(false);
         }
@@ -48,9 +63,13 @@ export default function ComparisonAdminPage() {
     }, [selectedLang, fetchData]);
 
     const handleSave = async () => {
+        if (!sectionData) return;
         setIsSaving(true);
         try {
-            await updateCompetitorFeatures(selectedLang, features);
+            await Promise.all([
+                updateCompetitorFeatures(selectedLang, features),
+                updateComparisonSectionData(selectedLang, sectionData)
+            ]);
             toast({ title: "Saved!", description: `Comparison table for ${languageNames[selectedLang]} has been saved.`});
             logAction('Comparison Update', 'Success', `Saved comparison table for ${languageNames[selectedLang]}.`);
             fetchData(selectedLang);
@@ -80,7 +99,6 @@ export default function ComparisonAdminPage() {
         const newFeature: CompetitorFeature = { 
             id: -Date.now(),
             feature: 'New Awesome Feature',
-            lang: selectedLang,
             spekulus: true,
             himirror: false,
             simplehuman: false,
@@ -98,6 +116,13 @@ export default function ComparisonAdminPage() {
           logAction('Comparison Update', 'Success', `Marked feature "${itemToDelete?.feature}" for deletion in ${languageNames[selectedLang]}.`);
         }
     };
+    
+    const handleSectionDataChange = (field: 'title' | 'subtitle', value: string) => {
+        if (sectionData) {
+            setSectionData({ ...sectionData, [field]: value });
+        }
+    };
+
 
     return (
         <Card className="opacity-0 animate-fade-in-up">
@@ -105,7 +130,7 @@ export default function ComparisonAdminPage() {
             <div className="flex flex-wrap gap-4 justify-between items-center">
                 <div>
                     <CardTitle className="flex items-center gap-2"><Swords /> Manage Comparison Table</CardTitle>
-                    <CardDescription>Edit the features for the competitor comparison table.</CardDescription>
+                    <CardDescription>Edit the features and text for the competitor comparison table.</CardDescription>
                 </div>
                 <div className="flex gap-2">
                     <Select value={selectedLang} onValueChange={(value) => setSelectedLang(value as Language)}>
@@ -116,7 +141,6 @@ export default function ComparisonAdminPage() {
                            <SelectItem value="sk"><LanguageFlag lang="sk" /> {languageNames['sk']}</SelectItem>
                         </SelectContent>
                     </Select>
-                    <Button onClick={handleFeatureAdd}><PlusCircle className="mr-2 h-4 w-4"/> Add Feature</Button>
                     <Button onClick={handleSave} disabled={isSaving}>
                         {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4"/>}
                         Save Changes
@@ -125,40 +149,64 @@ export default function ComparisonAdminPage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="border rounded-md overflow-x-auto">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead className="min-w-[200px]">Feature</TableHead>
-                            {competitors.map(c => <TableHead key={c} className="text-center capitalize">{c}</TableHead>)}
-                            <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {isLoading ? (
-                            [...Array(3)].map((_, i) => (
-                                <TableRow key={i}><TableCell colSpan={6}><Skeleton className="h-10 w-full" /></TableCell></TableRow>
-                            ))
-                        ) : (
-                            features.map((feature) => (
-                                <TableRow key={feature.id}>
-                                    <TableCell>
-                                        <Input value={feature.feature} onChange={(e) => handleFeatureTextChange(feature.id, e.target.value)} />
-                                    </TableCell>
-                                    {competitors.map(c => (
-                                        <TableCell key={c} className="text-center">
-                                            <Switch checked={!!feature[c]} onCheckedChange={() => handleToggle(feature.id, c)} aria-label={`${c} switch`} />
-                                        </TableCell>
-                                    ))}
-                                    <TableCell className="text-right">
-                                        <Button variant="ghost" size="icon" onClick={() => handleFeatureDelete(feature.id)} className="text-destructive hover:text-destructive"><Trash2 className="w-4 h-4"/></Button>
-                                    </TableCell>
+            {isLoading || !sectionData ? (
+                <div className="space-y-4">
+                    <Skeleton className="h-10 w-1/3" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-48 w-full" />
+                </div>
+            ) : (
+                <>
+                <div className="space-y-4 p-4 border rounded-lg">
+                    <h3 className="text-lg font-semibold">Section Text</h3>
+                     <div className="space-y-2">
+                        <Label htmlFor="sectionTitle">Title</Label>
+                        <Input id="sectionTitle" value={sectionData.title} onChange={e => handleSectionDataChange('title', e.target.value)} />
+                     </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="sectionSubtitle">Subtitle</Label>
+                        <Input id="sectionSubtitle" value={sectionData.subtitle} onChange={e => handleSectionDataChange('subtitle', e.target.value)} />
+                     </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                        <h3 className="text-lg font-semibold">Features</h3>
+                        <Button onClick={handleFeatureAdd} size="sm"><PlusCircle className="mr-2 h-4 w-4"/> Add Feature</Button>
+                    </div>
+                    <div className="border rounded-md overflow-x-auto">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead className="min-w-[200px]">Feature</TableHead>
+                                    {competitors.map(c => <TableHead key={c} className="text-center capitalize">{competitorLabels[c]}</TableHead>)}
+                                    <TableHead className="text-right w-[50px]">Delete</TableHead>
                                 </TableRow>
-                            ))
-                        )}
-                    </TableBody>
-                </Table>
-            </div>
+                            </TableHeader>
+                            <TableBody>
+                                {features.map((feature) => (
+                                    <TableRow key={feature.id}>
+                                        <TableCell>
+                                            <Input value={feature.feature} onChange={(e) => handleFeatureTextChange(feature.id, e.target.value)} />
+                                        </TableCell>
+                                        {competitors.map(c => (
+                                            <TableCell key={c} className="text-center">
+                                                <Switch checked={!!feature[c]} onCheckedChange={() => handleToggle(feature.id, c)} aria-label={`${c} switch`} />
+                                            </TableCell>
+                                        ))}
+                                        <TableCell className="text-right">
+                                            <Button variant="ghost" size="icon" onClick={() => handleFeatureDelete(feature.id)} className="text-destructive hover:text-destructive"><Trash2 className="w-4 h-4"/></Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </div>
+                </>
+            )}
           </CardContent>
         </Card>
     );

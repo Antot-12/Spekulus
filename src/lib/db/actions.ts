@@ -17,6 +17,7 @@ import {
   FaqItem,
   Scenario,
   CompetitorFeature,
+  ComparisonSectionData,
   PartnerSectionData,
 } from '../data'
 import { eq, and, notInArray, sql as sqlBuilder } from 'drizzle-orm'
@@ -247,6 +248,22 @@ export async function updateScenarios(lang: Language, scenarios: Scenario[]) {
     const rows = scenarios.map(({ id, ...rest }) => ({ ...rest, lang }));
     await db.insert(schema.scenarios).values(rows);
   }
+}
+
+export async function getComparisonSectionData(lang: Language): Promise<ComparisonSectionData | null> {
+    return await db.query.comparisonSections.findFirst({
+        where: eq(schema.comparisonSections.lang, lang),
+    });
+}
+
+export async function updateComparisonSectionData(lang: Language, data: Omit<ComparisonSectionData, 'id'>) {
+    const payload = { ...data };
+    await db.insert(schema.comparisonSections)
+        .values({ lang, ...payload })
+        .onConflictDoUpdate({
+            target: schema.comparisonSections.lang,
+            set: payload,
+        });
 }
 
 export async function getCompetitorFeatures(lang: Language) {

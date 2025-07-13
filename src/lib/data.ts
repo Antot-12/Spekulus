@@ -186,6 +186,12 @@ export type CompetitorFeature = {
     mirrocool: boolean;
 }
 
+export type ComparisonSectionData = {
+  id: number;
+  title: string;
+  subtitle: string;
+}
+
 // ==================================
 // PARTNER CTA
 // ==================================
@@ -212,7 +218,7 @@ const rawDevNotes: Record<Language, PartialBy<DevNote, 'id'>[]> = {
       date: new Date("2024-07-22"),
       title: "Backend Integration Nears Completion",
       summary: "The backend integration for our new stress detection API is now 75% complete. The team is now shifting focus to calibration and fine-tuning for the next sprint.",
-      content: "We're excited to report significant progress on the new stress detection API. The core logic is in place, and we have successfully connected the frontend data streams to the backend processing services.\n\nOur next major hurdle is calibration. This involves testing with a diverse dataset to ensure accuracy across different lighting conditions and user demographics. We're on track for an internal beta next month.\n\n> We believe this feature will be a game-changer for proactive wellness management.\n\nStay tuned for more updates!",
+      content: "We're excited to report significant progress on the new stress detection API. The core logic is in place, and we have successfully connected the frontend data streams to the backend processing services.\\n\\nOur next major hurdle is calibration. This involves testing with a diverse dataset to ensure accuracy across different lighting conditions and user demographics. We're on track for an internal beta next month.\\n\\n> We believe this feature will be a game-changer for proactive wellness management.\\n\\nStay tuned for more updates!",
       author: "Anton Shyrko",
       tags: ["Backend", "API", "Update"],
       isVisible: true,
@@ -223,7 +229,7 @@ const rawDevNotes: Record<Language, PartialBy<DevNote, 'id'>[]> = {
       date: new Date("2024-07-18"),
       title: "Refactoring the Skin Analysis Model",
       summary: "To improve performance in low-light conditions, we've begun refactoring the skin analysis model. Early results are very promising, showing a significant reduction in noise.",
-      content: "User feedback indicated that our skin analysis feature could be unreliable in sub-optimal lighting. To address this, we are undertaking a complete refactor of the underlying machine learning model.\n\nBy incorporating new data augmentation techniques and a more robust architecture, we're already seeing a **40% improvement in accuracy** during our internal benchmarks. The image below shows a comparison of the old model (left) vs. the new model (right) on a low-light sample.\n\nThis enhancement will ensure that Spekulus provides reliable insights regardless of the environment.",
+      content: "User feedback indicated that our skin analysis feature could be unreliable in sub-optimal lighting. To address this, we are undertaking a complete refactor of the underlying machine learning model.\\n\\nBy incorporating new data augmentation techniques and a more robust architecture, we're already seeing a **40% improvement in accuracy** during our internal benchmarks. The image below shows a comparison of the old model (left) vs. the new model (right) on a low-light sample.\\n\\nThis enhancement will ensure that Spekulus provides reliable insights regardless of the environment.",
       author: "Maksym Stetsenko",
       tags: ["AI/ML", "Research", "Update"],
       isVisible: true,
@@ -236,7 +242,7 @@ const rawDevNotes: Record<Language, PartialBy<DevNote, 'id'>[]> = {
         date: new Date("2024-07-22"),
         title: "Інтеграція бекенду майже завершена",
         summary: "Інтеграція бекенду для нашого нового API виявлення стресу завершена на 75%. Команда переходить до калібрування та налаштування на наступний спринт.",
-        content: "Ми раді повідомити про значний прогрес у розробці нового API для виявлення стресу. Основна логіка реалізована, і ми успішно підключили потоки даних з фронтенду до сервісів обробки на бекенді.\n\nНаступною великою перешкодою є калібрування. Це включає тестування з різноманітним набором даних для забезпечення точності за різних умов освітлення та демографічних характеристик користувачів. Ми плануємо вийти на внутрішню бету наступного місяця.\n\n> Ми віримо, що ця функція кардинально змінить підхід до проактивного управління здоров'ям.\n\nСлідкуйте за новинами!",
+        content: "Ми раді повідомити про значний прогрес у розробці нового API для виявлення стресу. Основна логіка реалізована, і ми успішно підключили потоки даних з фронтенду до сервісів обробки на бекенді.\\n\\nНаступною великою перешкодою є калібрування. Це включає тестування з різноманітним набором даних для забезпечення точності за різних умов освітлення та демографічних характеристик користувачів. Ми плануємо вийти на внутрішню бету наступного місяця.\\n\\n> Ми віримо, що ця функція кардинально змінить підхід до проактивного управління здоров'ям.\\n\\nСлідкуйте за новинами!",
         author: "Антон Ширко",
         tags: ["Бекенд", "API", "Оновлення"],
     },
@@ -245,7 +251,7 @@ const rawDevNotes: Record<Language, PartialBy<DevNote, 'id'>[]> = {
         date: new Date("2024-07-18"),
         title: "Рефакторинг моделі аналізу шкіри",
         summary: "Для покращення продуктивності в умовах недостатнього освітлення ми розпочали рефакторинг моделі аналізу шкіри. Перші результати дуже перспективні, показуючи значне зменшення шуму.",
-        content: "Відгуки користувачів показали, що наша функція аналізу шкіри може бути ненадійною при недостатньому освітленні. Щоб вирішити цю проблему, ми проводимо повний рефакторинг базової моделі машинного навчання.\n\nЗавдяки впровадженню нових технік аугментації даних та більш надійної архітектури, ми вже бачимо **40% покращення точності** під час наших внутрішніх тестів. На зображенні нижче показано порівняння старої моделі (ліворуч) та нової моделі (праворуч) на зразку з низьким освітленням.\n\nЦе вдосконалення забезпечить надійні дані від Spekulus незалежно від середовища.",
+        content: "Відгуки користувачів показали, що наша функція аналізу шкіри може бути ненадійною при недостатньому освітленні. Щоб вирішити цю проблему, ми проводимо повний рефакторинг базової моделі машинного навчання.\\n\\nЗавдяки впровадженню нових технік аугментації даних та більш надійної архітектури, ми вже бачимо **40% покращення точності** під час наших внутрішніх тестів. На зображенні нижче показано порівняння старої моделі (ліворуч) та нової моделі (праворуч) на зразку з низьким освітленням.\\n\\nЦе вдосконалення забезпечить надійні дані від Spekulus незалежно від середовища.",
         author: "Максим Стеценко",
         tags: ["AI/ML", "Дослідження", "Оновлення"],
     },
@@ -256,7 +262,7 @@ const rawDevNotes: Record<Language, PartialBy<DevNote, 'id'>[]> = {
         date: new Date("2024-07-22"),
         title: "Integrácia backendu sa blíži ku koncu",
         summary: "Integrácia backendu pre naše nové API na detekciu stresu je teraz na 75% hotová. Tím sa teraz zameriava na kalibráciu a jemné ladenie na ďalší šprint.",
-        content: "S radosťou oznamujeme významný pokrok v našom novom API na detekciu stresu. Jadro logiky je na mieste a úspešne sme prepojili dátové toky z frontendu so službami na spracovanie na backende.\n\nNašou ďalšou veľkou prekážkou je kalibrácia. To zahŕňa testovanie s rôznorodým súborom údajov, aby sa zabezpečila presnosť v rôznych svetelných podmienkach a u rôznych demografických skupín používateľov. Sme na dobrej ceste k internej beta verzii budúci mesiac.\n\n> Veríme, že táto funkcia zmení pravidlá hry v proaktívnom manažmente wellnessu.\n\nZostaňte naladení na ďalšie aktualizácie!",
+        content: "S radosťou oznamujeme významný pokrok v našom novom API na detekciu stresu. Jadro logiky je na mieste a úspešne sme prepojili dátové toky z frontendu so službami na spracovanie na backende.\\n\\nNašou ďalšou veľkou prekážkou je kalibrácia. To zahŕňa testovanie s rôznorodým súborom údajov, aby sa zabezpečila presnosť v rôznych svetelných podmienkach a u rôznych demografických skupín používateľov. Sme na dobrej ceste k internej beta verzii budúci mesiac.\\n\\n> Veríme, že táto funkcia zmení pravidlá hry v proaktívnom manažmente wellnessu.\\n\\nZostaňte naladení na ďalšie aktualizácie!",
         author: "Anton Shyrko",
         tags: ["Backend", "API", "Aktualizácia"],
     },
@@ -265,7 +271,7 @@ const rawDevNotes: Record<Language, PartialBy<DevNote, 'id'>[]> = {
         date: new Date("2024-07-18"),
         title: "Refaktorovanie modelu analýzy pleti",
         summary: "S cieľom zlepšiť výkon v podmienkach slabého osvetlenia sme začali refaktorovať model analýzy pleti. Prvé výsledky sú veľmi sľubné a ukazujú výrazné zníženie šumu.",
-        content: "Spätná väzba od používateľov naznačila, že naša funkcia analýzy pleti môže byť nespoľahlivá v neoptimálnom osvetlení. Na riešenie tohto problému sme sa pustili do kompletného refaktorovania základného modelu strojového učenia.\n\nZačlenením nových techník augmentácie dát a robustnejšej architektúry už teraz vidíme **40% zlepšenie presnosti** počas našich interných testov. Obrázok nižšie ukazuje porovnanie starého modelu (vľavo) a nového modelu (vpravo) na vzorke so slabým osvetlením.\n\nToto vylepšenie zabezpečí, že Spekulus bude poskytovať spoľahlivé poznatky bez ohľadu na prostredie.",
+        content: "Spätná väzba od používateľov naznačila, že naša funkcia analýzy pleti môže byť nespoľahlivá v neoptimálnom osvetlení. Na riešenie tohto problému sme sa pustili do kompletného refaktorovania základného modelu strojového učenia.\\n\\nZačlenením nových techník augmentácie dát a robustnejšej architektúry už teraz vidíme **40% zlepšenie presnosti** počas našich interných testov. Obrázok nižšie ukazuje porovnanie starého modelu (vľavo) a nového modelu (vpravo) na vzorke so slabým osvetlením.\\n\\nToto vylepšenie zabezpečí, že Spekulus bude poskytovať spoľahlivé poznatky bez ohľadu na prostredie.",
         author: "Maksym Stetsenko",
         tags: ["AI/ML", "Výskum", "Aktualizácia"],
     },
@@ -332,7 +338,7 @@ const rawCreatorsData: Record<Language, PartialBy<Creator, 'id'>[]> = {
       slug: 'anton-shyrko',
       name: 'Anton Shyrko',
       role: 'CEO & Team Lead',
-      bio: "Anton is the visionary behind Spekulus, guiding the team with a steady hand and a passion for innovative technology. He coordinates the overall project strategy, leads decision-making, and ensures the team's alignment with our ambitious goals. He believes in transparent development and building products that genuinely improve people's daily lives.\n\n### Core Philosophies\n\n- **User-Centric Design**: Every feature must solve a real user problem.\n- **Open Collaboration**: The best ideas can come from anywhere.\n- **Sustainable Growth**: Building a lasting company that values its people.",
+      bio: "Anton is the visionary behind Spekulus, guiding the team with a steady hand and a passion for innovative technology. He coordinates the overall project strategy, leads decision-making, and ensures the team's alignment with our ambitious goals. He believes in transparent development and building products that genuinely improve people's daily lives.\\n\\n### Core Philosophies\\n\\n- **User-Centric Design**: Every feature must solve a real user problem.\\n- **Open Collaboration**: The best ideas can come from anywhere.\\n- **Sustainable Growth**: Building a lasting company that values its people.",
       location: "Kyiv, Ukraine",
       languages: ["Ukrainian", "English", "Slovak"],
       contributions: [
@@ -379,7 +385,7 @@ const rawCreatorsData: Record<Language, PartialBy<Creator, 'id'>[]> = {
       slug: 'anton-shyrko',
       name: 'Антон Ширко',
       role: 'CEO & Керівник команди',
-      bio: "Антон — візіонер, що стоїть за Spekulus, він керує командою твердою рукою та пристрастю до інноваційних технологій. Він координує загальну стратегію проєкту, очолює прийняття рішень та забезпечує відповідність команди нашим амбітним цілям. Він вірить у прозору розробку та створення продуктів, які справді покращують повсякденне життя людей.\n\n### Основні філософії\n\n- **Дизайн, орієнтований на користувача**: Кожна функція повинна вирішувати реальну проблему користувача.\n- **Відкрита співпраця**: Найкращі ідеї можуть прийти звідки завгодно.\n- **Сталий розвиток**: Побудова довготривалої компанії, яка цінує своїх людей.",
+      bio: "Антон — візіонер, що стоїть за Spekulus, він керує командою твердою рукою та пристрастю до інноваційних технологій. Він координує загальну стратегію проєкту, очолює прийняття рішень та забезпечує відповідність команди нашим амбітним цілям. Він вірить у прозору розробку та створення продуктів, які справді покращують повсякденне життя людей.\\n\\n### Основні філософії\\n\\n- **Дизайн, орієнтований на користувача**: Кожна функція повинна вирішувати реальну проблему користувача.\\n- **Відкрита співпраця**: Найкращі ідеї можуть прийти звідки завгодно.\\n- **Сталий розвиток**: Побудова довготривалої компанії, яка цінує своїх людей.",
       location: "Київ, Україна",
       socials: {}
     },
@@ -389,7 +395,7 @@ const rawCreatorsData: Record<Language, PartialBy<Creator, 'id'>[]> = {
       slug: 'anton-shyrko',
       name: 'Anton Shyrko',
       role: 'CEO & Vedúci tímu',
-      bio: "Anton je vizionárom za projektom Spekulus, vedie tím pevnou rukou a s vášňou pre inovatívne technológie. Koordinuje celkovú stratégiu projektu, vedie rozhodovanie a zabezpečuje súlad tímu s našimi ambicióznymi cieľmi. Verí v transparentný vývoj a budovanie produktov, ktoré skutočne zlepšujú každodenný život ľudí.\n\n### Základné filozofie\n\n- **Dizajn zameraný na používateľa**: Každá funkcia musí riešiť skutočný problém používateľa.\n- **Otvorená spolupráca**: Najlepšie nápady môžu prísť odkiaľkoľvek.\n- **Udržateľný rast**: Budovanie trvalej spoločnosti, ktorá si váži svojich ľudí.",
+      bio: "Anton je vizionárom za projektom Spekulus, vedie tím pevnou rukou a s vášňou pre inovatívne technológie. Koordinuje celkovú stratégiu projektu, vedie rozhodovanie a zabezpečuje súlad tímu s našimi ambicióznymi cieľmi. Verí v transparentný vývoj a budovanie produktov, ktoré skutočne zlepšujú každodenný život ľudí.\\n\\n### Základné filozofie\\n\\n- **Dizajn zameraný na používateľa**: Každá funkcia musí riešiť skutočný problém používateľa.\\n- **Otvorená spolupráca**: Najlepšie nápady môžu prísť odkiaľkoľvek.\\n- **Udržateľný rast**: Budovanie trvalej spoločnosti, ktorá si váži svojich ľudí.",
       location: "Kyjev, Ukrajina",
       socials: {}
     },
@@ -555,6 +561,21 @@ const rawScenariosData: Record<Language, Scenario[]> = {
   ],
 };
 
+const rawComparisonSectionData: Record<Language, Omit<ComparisonSectionData, 'id'>> = {
+    en: {
+        title: "How We Compare",
+        subtitle: "A side-by-side look at how Spekulus stacks up against the competition.",
+    },
+    uk: {
+        title: "Як ми порівнюємося",
+        subtitle: "Порівняльний погляд на те, як Spekulus виглядає на тлі конкурентів.",
+    },
+    sk: {
+        title: "Ako sa porovnávame",
+        subtitle: "Pohľad vedľa seba na to, ako Spekulus obstojí v porovnaní s konkurenciou.",
+    },
+};
+
 const rawCompetitorFeaturesData: Record<Language, CompetitorFeature[]> = {
     en: [
         { id: 1, feature: "AI Skin Analysis", spekulus: true, himirror: true, simplehuman: false, mirrocool: false },
@@ -718,6 +739,7 @@ export const initialData = {
     heroFeaturesData,
     productSectionData,
     scenariosData: rawScenariosData,
+    comparisonSectionData: rawComparisonSectionData,
     competitorFeaturesData: rawCompetitorFeaturesData,
     partnerSectionData: rawPartnerSectionData,
 };

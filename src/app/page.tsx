@@ -20,6 +20,7 @@ import {
   getRoadmapEvents,
   getFaqs,
   getScenarios,
+  getComparisonSectionData,
   getCompetitorFeatures,
   getPartnerSectionData,
 } from '@/lib/db/actions';
@@ -36,6 +37,7 @@ export default async function Home() {
     roadmapEvents,
     faqs,
     scenarios,
+    comparisonSectionData,
     competitorFeatures,
     partnerSectionData,
   ] = await Promise.all([
@@ -46,6 +48,7 @@ export default async function Home() {
     getRoadmapEvents(lang),
     getFaqs(lang),
     getScenarios(lang),
+    getComparisonSectionData(lang),
     getCompetitorFeatures(lang),
     getPartnerSectionData(lang),
   ]);
@@ -85,6 +88,10 @@ export default async function Home() {
   if (!scenarios || scenarios.length === 0) {
     scenarios = initialData.scenariosData[lang];
   }
+  
+  if (!comparisonSectionData) {
+    comparisonSectionData = initialData.comparisonSectionData[lang];
+  }
 
   if (!competitorFeatures || competitorFeatures.length === 0) {
     competitorFeatures = initialData.competitorFeaturesData[lang];
@@ -102,7 +109,7 @@ export default async function Home() {
       <AdvantagesSection data={advantagesData} lang={lang} />
       <ActionSection data={actionSectionData} />
       <WhySpekulusSection data={scenarios} lang={lang} />
-      <ComparisonSection data={competitorFeatures} lang={lang} />
+      <ComparisonSection sectionData={comparisonSectionData} featuresData={competitorFeatures} lang={lang} />
       <PartnerSection data={partnerSectionData} />
       <RoadmapSection data={roadmapEvents} lang={lang} />
       <FaqSection initialFaqs={faqs} />
