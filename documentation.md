@@ -20,46 +20,48 @@
   - [2.2. Database Management (Drizzle ORM)](#22-database-management-drizzle-orm)
   - [2.3. Running the AI (Genkit)](#23-running-the-ai-genkit)
 - **[3. Project Structure](#3-project-structure)**
-- **[4. Database Design & Schema](#4-database-design--schema)**
-  - [Tables](#tables)
-  - [Entity Relationships (ER Summary)](#entity-relationships-er-summary)
-- **[5. Backend & Data Flow](#5-backend--data-flow)**
-  - [5.1. Server Actions (`/src/lib/db/actions.ts`)](#51-server-actions-srclibdbactionsts)
-  - [5.2. API Routes (`/src/app/api/`)](#52-api-routes-srcappapi)
-- **[6. Admin Panel](#6-admin-panel)**
-  - [6.1. Admin Panel Iconography](#61-admin-panel-iconography)
-- **[7. AI Integration (Genkit)](#7-ai-integration-genkit)**
-- **[8. Advanced Technical Documentation](#8-advanced-technical-documentation)**
-  - [8.1. Project Architecture & Design Patterns](#81-project-architecture--design-patterns)
-  - [8.2. Developer Workflow: Adding a "Testimonials" Section](#82-developer-workflow-adding-a-testimonials-section)
-  - [8.3. Testing Strategy](#83-testing-strategy)
-  - [8.4. Deployment Instructions](#84-deployment-instructions)
-  - [8.5. Logs, Monitoring & Error Reporting](#85-logs-monitoring--error-reporting)
-  - [8.6. Access Control & Security Notes](#86-access-control--security-notes)
-  - [8.7. Internationalization (i18n) Guidelines](#87-internationalization-i18n-guidelines)
-  - [8.8. Versioning, Branching, & Release Strategy](#88-versioning-branching--release-strategy)
-  - [8.9. Contribution Guidelines](#89-contribution-guidelines)
-- **[9. Glossary](#9-glossary)**
-- **[10. Changelog & Versioning](#10-changelog--versioning)**
-- **[11. Performance Optimization](#11-performance-optimization)**
-- **[12. Accessibility (a11y) Guidelines](#12-accessibility-a11y-guidelines)**
-- **[13. Asset & Image Handling](#13-asset--image-handling)**
-- **[14. Rate Limiting & Anti-Spam](#14-rate-limiting--anti-spam)**
-- **[15. Analytics & Telemetry](#15-analytics--telemetry)**
-- **[16. Feature Flags](#16-feature-flags)**
-- **[17. Known Issues & Limitations](#17-known-issues--limitations)**
-- **[18. Tech Stack & Versions Summary](#18-tech-stack--versions-summary)**
-- **[19. Architecture Diagram](#19-architecture-diagram)**
-- **[20. Technical Roadmap (Planned Features)](#20-technical-roadmap-planned-features)**
-- **[21. New Content Sections](#21-new-content-sections)**
-  - [21.1. Scenarios ("Why Spekulus?")](#211-scenarios-why-spekulus)
-  - [21.2. Competitor Comparison Table](#212-competitor-comparison-table)
-  - [21.3. Cooperation Request Section](#213-cooperation-request-section)
-  - [21.4. Stay in the Loop (Newsletter)](#214-stay-in-the-loop-newsletter)
-- **[22. Admin Panel Features](#22-admin-panel-features)**
-  - [22.1. Admin Dashboard Link to Homepage](#221-admin-dashboard-link-to-homepage)
-  - [22.2. Reusable File Picker](#222-reusable-file-picker)
-  - [22.3. Collapsible Creator Profiles](#223-collapsible-creator-profiles)
+- **[4. UI Styling & Theming](#4-ui-styling--theming)**
+- **[5. Database Design & Schema](#5-database-design--schema)**
+  - [5.1. Tables](#51-tables)
+  - [5.2. Entity Relationships (ER Summary)](#52-entity-relationships-er-summary)
+- **[6. Backend & Data Flow](#6-backend--data-flow)**
+  - [6.1. Server Actions (`/src/lib/db/actions.ts`)](#61-server-actions-srclibdbactionsts)
+  - [6.2. API Routes (`/src/app/api/`)](#62-api-routes-srcappapi)
+- **[7. Admin Panel](#7-admin-panel)**
+  - [7.1. Admin Panel Iconography](#71-admin-panel-iconography)
+- **[8. AI Integration (Genkit)](#8-ai-integration-genkit)**
+  - [8.1. Creator Chat Flow](#81-creator-chat-flow)
+- **[9. Advanced Technical Documentation](#9-advanced-technical-documentation)**
+  - [9.1. Project Architecture & Design Patterns](#91-project-architecture--design-patterns)
+  - [9.2. Developer Workflow: Adding a "Testimonials" Section](#92-developer-workflow-adding-a-testimonials-section)
+  - [9.3. Testing Strategy](#93-testing-strategy)
+  - [9.4. Deployment Instructions](#94-deployment-instructions)
+  - [9.5. Logs, Monitoring & Error Reporting](#95-logs-monitoring--error-reporting)
+  - [9.6. Access Control & Security Notes](#96-access-control--security-notes)
+  - [9.7. Internationalization (i18n) Guidelines](#97-internationalization-i18n-guidelines)
+  - [9.8. Versioning, Branching, & Release Strategy](#98-versioning-branching--release-strategy)
+  - [9.9. Contribution Guidelines](#99-contribution-guidelines)
+- **[10. Glossary](#10-glossary)**
+- **[11. Changelog & Versioning](#11-changelog--versioning)**
+- **[12. Performance Optimization](#12-performance-optimization)**
+- **[13. Accessibility (a11y) Guidelines](#13-accessibility-a11y-guidelines)**
+- **[14. Asset & Image Handling](#14-asset--image-handling)**
+- **[15. Rate Limiting & Anti-Spam](#15-rate-limiting--anti-spam)**
+- **[16. Analytics & Telemetry](#16-analytics--telemetry)**
+- **[17. Feature Flags](#17-feature-flags)**
+- **[18. Known Issues & Limitations](#18-known-issues--limitations)**
+- **[19. Tech Stack & Versions Summary](#19-tech-stack--versions-summary)**
+- **[20. Architecture Diagram](#20-architecture-diagram)**
+- **[21. Technical Roadmap (Planned Features)](#21-technical-roadmap-planned-features)**
+- **[22. New Content Sections](#22-new-content-sections)**
+  - [22.1. Scenarios ("Why Spekulus?")](#221-scenarios-why-spekulus)
+  - [22.2. Competitor Comparison Table](#222-competitor-comparison-table)
+  - [22.3. Cooperation Request Section](#223-cooperation-request-section)
+  - [22.4. Stay in the Loop (Newsletter)](#224-stay-in-the-loop-newsletter)
+- **[23. Admin Panel Features](#23-admin-panel-features)**
+  - [23.1. Admin Dashboard Link to Homepage](#231-admin-dashboard-link-to-homepage)
+  - [23.2. Reusable File Picker](#232-reusable-file-picker)
+  - [23.3. Collapsible Creator Profiles](#233-collapsible-creator-profiles)
 
 ---
 
@@ -159,16 +161,27 @@ The project follows a standard Next.js App Router structure.
 └── ...
 ```
 
-- **Dynamic Routing:** The app uses folders with square brackets like `/creators/[slug]` to handle dynamic content pages. The slug is used to fetch specific data from the database.
+- **Dynamic Routing:** The app uses folders with square brackets like `/creators/[slug]` and `/dev-notes/[slug]` to handle dynamic content pages. The slug is used to fetch specific data from the database.
 - **Language Support:** Internationalization is managed via the `LanguageContext` and `translations.ts` file, allowing components to display text in the user-selected language.
 
 ---
 
-## 4. Database Design & Schema
+## 4. UI Styling & Theming
+
+The project's visual identity is managed through a combination of Tailwind CSS, ShadCN UI, and a custom theme file.
+
+- **Tailwind CSS**: The primary utility-first CSS framework used for all styling.
+- **ShadCN UI**: A collection of reusable, unstyled components that serve as the building blocks for the UI. These are located in `/src/components/ui/`.
+- **Custom Theme (`globals.css`)**: The core color palette and styling variables are defined in `/src/app/globals.css`. It uses HSL CSS variables for easy theming (e.g., `--primary`, `--background`, `--card`). All custom component styling should leverage these variables rather than hard-coding colors to ensure design consistency.
+- **Fonts**: The project uses 'Inter' for body text and 'Space Grotesk' for headlines, as defined in `tailwind.config.ts` and imported in the root `layout.tsx`.
+
+---
+
+## 5. Database Design & Schema
 
 The schema is defined in `/src/lib/db/schema.ts` using Drizzle ORM.
 
-### Tables
+### 5.1. Tables
 
 - **`languages`**: Stores the supported languages.
   - `code (varchar, PK)`: The 2-letter language code (e.g., 'en').
@@ -255,7 +268,7 @@ The schema is defined in `/src/lib/db/schema.ts` using Drizzle ORM.
 - **`maintenanceSettings`**: A single-row table to control site-wide maintenance mode. Includes a message and an optional auto-deactivation timer (`endsAt`).
 - **`pages`**: A table to control the status (active, hidden, maintenance) of individual site pages.
 
-### Entity Relationships (ER Summary)
+### 5.2. Entity Relationships (ER Summary)
 
 - **One-to-Many**: A `languages` record can be associated with many records in other tables (e.g., one 'en' language has many `faqItems`, `roadmapEvents`, etc.).
 - **One-to-One**: Some tables like `heroSections`, `actionSections`, and `newsletterSections` have a unique constraint on the `lang` key, creating a one-to-one relationship between a language and that section's content.
@@ -264,13 +277,13 @@ The schema is defined in `/src/lib/db/schema.ts` using Drizzle ORM.
 
 ---
 
-## 5. Backend & Data Flow
+## 6. Backend & Data Flow
 
 The application backend uses a hybrid approach:
 1.  **Next.js Server Actions**: The primary method for data fetching and mutations. These are server-side functions that can be called directly from client components, simplifying data flow and eliminating the need for most traditional API endpoints.
 2.  **API Routes**: A small number of traditional RESTful API routes are used for specific tasks like file handling and authentication where a dedicated endpoint is more suitable.
 
-### 5.1. Server Actions (`/src/lib/db/actions.ts`)
+### 6.1. Server Actions (`/src/lib/db/actions.ts`)
 
 These functions execute securely on the server and are the main bridge between the client and the database.
 
@@ -294,7 +307,7 @@ These functions execute securely on the server and are the main bridge between t
   - `uploadFile(fileBuffer, filename, mimeType)`: Takes raw file data, inserts it into the `files` table, and returns the new file `id`.
   - `getFileData(id)`: Retrieves the raw file data and metadata from the `files` table based on its `id`.
 
-### 5.2. API Routes (`/src/app/api/`)
+### 6.2. API Routes (`/src/app/api/`)
 
 A few traditional API routes exist for specific purposes where a standard HTTP endpoint is beneficial. The frontend communicates with these routes using the standard `fetch()` API. All routes return JSON responses with a `success: boolean` flag and an `error: string` message on failure.
 
@@ -315,7 +328,7 @@ A few traditional API routes exist for specific purposes where a standard HTTP e
 
 ---
 #### **`POST /api/upload`**
-- **Purpose**: Handles file uploads from the admin panel. It takes a file, calls the `uploadFile` server action to store it in the database, and returns the new file ID.
+- **Purpose**: Handles file uploads from the admin panel. It takes a file, calls the `uploadFile` server action to store it in the database, and returns the new file ID. This separation keeps the API route clean and delegates the core database logic to the dedicated actions file.
 - **Method**: `POST`
 - **Request Body**: `FormData` containing a single `file` field.
 - **Success Response**:
@@ -355,7 +368,7 @@ A few traditional API routes exist for specific purposes where a standard HTTP e
 
 ---
 
-## 6. Admin Panel
+## 7. Admin Panel
 
 The admin panel is a protected section for managing all dynamic site content.
 
@@ -371,7 +384,7 @@ The admin panel is a protected section for managing all dynamic site content.
   3. When an admin makes a change (e.g., types in an input), the component's React state is updated.
   4. Clicking "Save" calls the corresponding `update...` server action, passing the current state to the server, which then writes it to the database.
 
-### 6.1. Admin Panel Iconography
+### 7.1. Admin Panel Iconography
 
 The admin panel uses icons from the `lucide-react` library to provide quick, intuitive visual cues for actions and navigation. All icons are SVGs, ensuring they are sharp at any resolution.
 
@@ -430,20 +443,23 @@ The admin panel uses icons from the `lucide-react` library to provide quick, int
 
 ---
 
-## 7. AI Integration (Genkit)
+## 8. AI Integration (Genkit)
 
 The project uses Genkit for its AI features.
 
 - **Configuration**: The core Genkit setup is in `/src/ai/genkit.ts`, which configures the Google AI plugin.
 - **Flows**: Specific AI tasks are defined as "flows" in `/src/ai/flows/`.
-  - **`creator-chat-flow.ts`**: Powers the "Ask Me Anything" widget on creator profile pages. It takes a creator's bio, skills, and featured project along with a user's question, and prompts the LLM to answer in the first-person persona of the creator.
-- **Usage**: These flows are exported as server actions and can be called directly from client components, just like the database actions.
+
+### 8.1. Creator Chat Flow
+- **File**: `creator-chat-flow.ts`
+- **Purpose**: Powers the "Ask Me Anything" widget on creator profile pages.
+- **How it Works**: The flow takes a creator's profile data (bio, skills, project details) and a user's question as input. It then uses a structured prompt to instruct the LLM to answer in the first-person persona of that specific creator, using *only* the provided information. This ensures the AI's responses are contextually relevant and grounded in the creator's actual data, preventing it from inventing information. The result is an engaging, interactive experience for users exploring team member profiles.
 
 ---
 
-## 8. Advanced Technical Documentation
+## 9. Advanced Technical Documentation
 
-### 8.1. Project Architecture & Design Patterns
+### 9.1. Project Architecture & Design Patterns
 
 - **Architectural Approach**: The project employs a **modular monolith** architecture. It's a single Next.js application, but it's organized with a strong separation of concerns to maintain clarity and scalability. The structure is feature-based within the `app` and `components` directories (e.g., `/admin/faq`, `/components/landing/FaqSection`).
 - **Design Patterns**:
@@ -456,7 +472,7 @@ The project uses Genkit for its AI features.
     3.  **Database (Drizzle/Neon)**: The server action uses Drizzle ORM to build and execute a SQL query against the Neon Postgres database.
     4.  **AI (Genkit)**: For AI features, a component calls a flow from `/src/ai/flows/`. Genkit then communicates with the Google AI API and returns the result.
 
-### 8.2. Developer Workflow: Adding a "Testimonials" Section
+### 9.2. Developer Workflow: Adding a "Testimonials" Section
 
 This example illustrates the end-to-end process for adding a new content section to the site.
 
@@ -479,7 +495,7 @@ This example illustrates the end-to-end process for adding a new content section
 8.  **Frontend Component (`/components/landing/TestimonialsSection.tsx`)**: Create the public-facing React component to display the testimonials.
 9.  **Homepage (`/app/page.tsx`)**: Import and render the new `TestimonialsSection` component, fetching its data from the `getTestimonials` server action.
 
-### 8.3. Testing Strategy
+### 9.3. Testing Strategy
 
 Currently, the project does not have an automated testing suite. This is a key area for future improvement.
 
@@ -489,24 +505,24 @@ Currently, the project does not have an automated testing suite. This is a key a
   - **End-to-End (E2E) Tests (Playwright/Cypress)**: To simulate user flows, such as logging into the admin panel, creating a new FAQ, and verifying it appears on the public site.
 - **Setup Instructions (Future)**: A testing framework would be added to `package.json`. A `tests` directory would be created at the root, mirroring the `src` structure.
 
-### 8.4. Deployment Instructions
+### 9.4. Deployment Instructions
 
 - **Service**: The project is configured for easy deployment on **Vercel**, which is the recommended hosting provider for Next.js applications.
 - **Process**:
     1.  Connect the GitHub repository to a new Vercel project.
-    2.  Vercel will automatically detect that it is a Next.js project.
-    3.  Add the required environment variables (`DATABASE_URL`, `ADMIN_USERNAME`, etc.) in the Vercel project settings.
+    2.  Vercel will automatically detect that it is a Next.js project and apply the correct build settings.
+    3.  Add the required environment variables (`DATABASE_URL`, `ADMIN_USERNAME`, etc.) in the Vercel project settings. These are crucial for the application to connect to the database and for admin authentication.
     4.  Pushing to the `main` branch will trigger a production deployment. Pushing to any other branch will create a preview deployment.
 - **Secrets Management**: All secrets (API keys, database URLs) must be stored as environment variables in the Vercel dashboard and never hard-coded.
 
-### 8.5. Logs, Monitoring & Error Reporting
+### 9.5. Logs, Monitoring & Error Reporting
 
 - **Logging**:
     - **Vercel Logs**: All `console.log`, `console.warn`, and `console.error` statements in server-side code (server actions, API routes) are automatically captured and can be viewed in the Vercel dashboard for both production and preview deployments.
     - **Admin Action Logs**: The application includes a custom logging solution for admin actions, visible on the `/admin/logs` page. It uses `localStorage` and is designed to provide a client-side audit trail for content editors.
 - **Error Reporting**: No external error reporting service (like Sentry) is currently integrated. Errors are logged to the Vercel console.
 
-### 8.6. Access Control & Security Notes
+### 9.6. Access Control & Security Notes
 
 - **Admin Route Protection**: Access to the `/admin` section is controlled by a simple client-side check in `/src/app/admin/layout.tsx`. It looks for a specific key (`admin_token`) in `localStorage`.
 - **Maintenance Mode**: The application includes a robust maintenance mode system.
@@ -518,7 +534,7 @@ Currently, the project does not have an automated testing suite. This is a key a
     - **CSRF Protection**: Standard form submissions are protected against Cross-Site Request Forgery by Next.js Server Actions.
     - **Secrets**: Ensure the `.env` file is never committed to version control.
 
-### 8.7. Internationalization (i18n) Guidelines
+### 9.7. Internationalization (i18n) Guidelines
 
 - **Structure**: All static translations are stored in `/src/lib/translations.ts`. The structure is a nested object, first keyed by language code (`en`, `uk`, `sk`), then by page or component.
 - **Dynamic Content**: For content stored in the database, each table includes a `lang` column (`varchar(2)`) which acts as a foreign key to the `languages` table. This allows storing a separate version of each content item for each supported language.
@@ -532,7 +548,7 @@ Currently, the project does not have an automated testing suite. This is a key a
     3.  Use the `useLanguage` hook in a client component to access the translations: `const { translations } = useLanguage();`.
 - **Fallback Logic**: There is no automatic fallback. If a translation key is missing for a specific language, it will cause a runtime error. It is crucial to ensure all keys exist for all languages.
 
-### 8.8. Versioning, Branching, & Release Strategy
+### 9.8. Versioning, Branching, & Release Strategy
 
 - **Git Workflow**: The project uses a simple **GitHub Flow** model.
     1.  The `main` branch is always considered production-ready.
@@ -542,7 +558,7 @@ Currently, the project does not have an automated testing suite. This is a key a
 - **Commit Messages**: Commits should follow the **Conventional Commits** specification (e.g., `feat: Add testimonials section`, `fix: Correct typo in footer`).
 - **Versioning**: The project does not currently use semantic versioning tags, but this can be added in the future as the project matures.
 
-### 8.9. Contribution Guidelines
+### 9.9. Contribution Guidelines
 
 - **Onboarding**:
     1.  Clone the repository.
@@ -559,7 +575,7 @@ Currently, the project does not have an automated testing suite. This is a key a
 
 ---
 
-### 9. Glossary
+### 10. Glossary
 
 - **a11y**: Abbreviation for "accessibility," referring to the practice of making websites usable by people with disabilities.
 - **Flow**: A term from Genkit for an end-to-end AI function that can be called from the application (e.g., `creatorChatFlow`).
@@ -569,7 +585,7 @@ Currently, the project does not have an automated testing suite. This is a key a
 - **Server Action**: A Next.js feature allowing server-side code to be executed directly from client components, without manually creating API endpoints.
 - **Slug**: A URL-friendly string used as a unique identifier for a resource, such as `my-first-post` in `/dev-notes/my-first-post`.
 
-### 10. Changelog & Versioning
+### 11. Changelog & Versioning
 
 - **Versioning Scheme**: The project should adopt **Semantic Versioning (SemVer)** `MAJOR.MINOR.PATCH` (e.g., `1.2.3`).
     - `MAJOR` version when you make incompatible API changes.
@@ -592,14 +608,14 @@ Currently, the project does not have an automated testing suite. This is a key a
   - Updated `documentation.md` with details on the new testimonials table.
   ```
 
-### 11. Performance Optimization
+### 12. Performance Optimization
 
 - **Framework**: The use of Next.js with the App Router and Server Components by default minimizes the amount of JavaScript sent to the client, improving initial load times.
 - **Images**: The `next/image` component is used for automatic image optimization (resizing, format conversion like WebP), but is not yet implemented everywhere. This is a key area for improvement.
 - **Database**: Drizzle ORM is efficient, but complex queries should be benchmarked. Adding database indexes to frequently queried columns (like `slug` and `lang`) is critical for performance at scale.
 - **Caching**: Vercel automatically caches static assets. API Routes use `Cache-Control` headers (e.g., `/api/images/[id]`) for efficient browser and CDN caching.
 
-### 12. Accessibility (a11y) Guidelines
+### 13. Accessibility (a11y) Guidelines
 
 - **Semantic HTML**: Use appropriate HTML5 tags (`<main>`, `<nav>`, `<article>`, etc.) to provide structure for screen readers.
 - **ARIA Attributes**: Use `aria-label` for icon-only buttons to provide a text description. The ShadCN UI components used in this project handle many ARIA attributes automatically.
@@ -607,7 +623,7 @@ Currently, the project does not have an automated testing suite. This is a key a
 - **Keyboard Navigation**: All interactive elements should be reachable and operable via the keyboard.
 - **Responsiveness**: The site is designed to be fully responsive using Tailwind CSS's mobile-first breakpoint system (`sm`, `md`, `lg`, `xl`). Flexbox and Grid are used extensively to create fluid layouts.
 
-### 13. Asset & Image Handling
+### 14. Asset & Image Handling
 
 - **Storage**: All uploaded files are stored in the `files` table in the database as `bytea` (binary data).
 - **Serving**: Files are served via the `/api/images/[id]` route, which retrieves the binary data from the database.
@@ -615,34 +631,34 @@ Currently, the project does not have an automated testing suite. This is a key a
 - **Formats**: While the system accepts any file type, it's recommended to use optimized web formats like **WebP** for images and **PDF** for documents.
 - **Naming**: File naming should be descriptive and use hyphens instead of spaces (e.g., `creator-profile-anton.webp`).
 
-### 14. Rate Limiting & Anti-Spam
+### 15. Rate Limiting & Anti-Spam
 
 - **Current Status**: There is **no rate limiting or anti-spam protection** implemented on public endpoints like `/api/contact` or `/api/auth/login`.
 - **Future Improvements**:
     - **Rate Limiting**: Implement a package like `rate-limiter-flexible` with a Redis or Postgres store to limit requests to sensitive endpoints.
     - **Anti-Spam**: For the contact form, integrate a service like Google reCAPTCHA or use a simple honeypot field to deter bots.
 
-### 15. Analytics & Telemetry
+### 16. Analytics & Telemetry
 
 - **Current Status**: No analytics or telemetry systems are currently integrated.
 - **Future Plan**:
     - **Vercel Speed Insights & Analytics**: These can be enabled with one click in the Vercel dashboard to monitor Web Vitals and track page views, respecting user privacy.
     - **Google Analytics**: If more detailed event tracking is needed, a Google Analytics script could be added in the root `layout.tsx`, managed via a React Context or a third-party library to handle user consent (GDPR).
 
-### 16. Feature Flags
+### 17. Feature Flags
 
 - **Current Status**: There is no formal feature flag system in place.
 - **Implementation**: Feature visibility is currently handled by simple boolean flags in the database (e.g., `isVisible` on `devNotes` or `creators` tables) or by commenting out components in the code.
 - **Future Plan**: For more complex A/B testing or gradual rollouts, a dedicated feature flag service like LaunchDarkly, PostHog, or a custom solution using the database could be implemented.
 
-### 17. Known Issues & Limitations
+### 18. Known Issues & Limitations
 
 - **Admin Authentication**: The current admin auth is client-side only and not secure for production. (See "Access Control & Security Notes").
 - **Missing Tests**: The lack of an automated testing suite increases the risk of regressions.
 - **Translation Fallbacks**: There is no system to fall back to English if a translation key is missing for another language, which can cause runtime errors.
 - **Image Optimization**: The project uses the raw `/api/images/[id]` endpoint, bypassing Next.js's powerful `next/image` optimization. This should be refactored.
 
-### 18. Tech Stack & Versions Summary
+### 19. Tech Stack & Versions Summary
 
 - **Framework**: Next.js 15.3.3
 - **Language**: TypeScript 5
@@ -654,48 +670,42 @@ Currently, the project does not have an automated testing suite. This is a key a
 - **Forms**: React Hook Form 7.54.2 with Zod 3.24.2 for validation
 - **Deployment**: Vercel
 
-### 19. Architecture Diagram
+### 20. Architecture Diagram
 
 This diagram illustrates the high-level interaction between the different parts of the Spekulus application.
 
 ```mermaid
 graph TD
     subgraph Browser
-        A[User]
+        A[User] --> B{React UI Components}
     end
 
-    subgraph Vercel/Next.js
-        B[Frontend: React Components in /app]
-        C[API Layer: /app/api]
-        D[Backend Logic: Server Actions in /lib/db]
+    subgraph "Server (Vercel/Next.js)"
+        B -- "Calls Server Action" --> D[Server Actions /lib/db/actions.ts]
+        B -- "Makes API Request" --> C{API Routes /app/api}
+
+        C -- "Calls Server Action" --> D
+
+        D -- "Queries (Drizzle ORM)" --> E[Neon DB]
+        D -- "Calls AI Flow" --> G[Genkit Flows /src/ai/flows]
     end
 
-    subgraph External Services
-        E[Database: Neon Postgres]
-        F[AI: Google AI API]
+    subgraph "External Services"
+        E
+        F[Google AI API]
     end
 
-    subgraph Genkit
-      G[Genkit Flows in /src/ai/flows]
-    end
-
-    A -- Interacts with --> B
-    B -- Calls --> D
-    B -- Fetches from --> C
-    C -- Calls --> D
-    D -- Queries/Mutates --> E[DB: Neon Postgres]
-    B -- Calls AI Flow --> G
-    G -- Communicates with --> F
+    G -- "Communicates with" --> F
 ```
 
-- **User**: Interacts with the React components.
-- **Frontend**: Client and Server Components in `/app` render the UI. They call Server Actions or API Routes for data.
-- **API Layer**: A few dedicated REST endpoints for tasks like file uploads and serving.
-- **Backend Logic (Server Actions)**: The primary way the application communicates with the database. Contains all Drizzle ORM queries.
+- **User**: Interacts with the React components in the browser.
+- **React UI Components**: Client and Server Components in `/app` and `/components` render the UI. They call Server Actions or fetch from API Routes to get or modify data.
+- **API Routes**: A few dedicated REST endpoints for tasks like file uploads. They often call Server Actions to interact with the database, maintaining a single data access layer.
+- **Server Actions**: The primary way the application communicates with the database and AI services. Contains all Drizzle ORM queries and Genkit flow calls.
 - **Database**: The Neon Postgres database, the single source of truth for all content.
 - **Genkit/AI**: AI features are handled by Genkit flows, which communicate with the Google AI API.
 
-### 20. Technical Roadmap (Planned Features)
+### 21. Technical Roadmap (Planned Features)
 
 This section tracks planned technical improvements, distinct from the public-facing product roadmap.
 
@@ -711,11 +721,11 @@ This section tracks planned technical improvements, distinct from the public-fac
 
 ---
 
-### 21. New Content Sections
+### 22. New Content Sections
 
 This section details the homepage content sections that are fully manageable via the Admin Panel.
 
-#### 21.1. Scenarios ("Why Spekulus?")
+#### 22.1. Scenarios ("Why Spekulus?")
 - **Purpose**: To explain real-world problems and show how Spekulus provides smart, practical solutions.
 - **Homepage Component**: `WhySpekulusSection` (`/src/components/landing/WhySpekulusSection.tsx`)
 - **Admin Page**: `/admin/scenarios`
@@ -731,7 +741,7 @@ This section details the homepage content sections that are fully manageable via
   ```
 - **Functionality**: Admins can add, edit, and delete scenario cards for each language. Each scenario consists of an icon, a question (the problem), and an answer (the solution).
 
-#### 21.2. Competitor Comparison Table
+#### 22.2. Competitor Comparison Table
 - **Purpose**: To transparently compare Spekulus's features against key competitors in the market.
 - **Homepage Component**: `ComparisonSection` (`/src/components/landing/ComparisonSection.tsx`)
 - **Admin Page**: `/admin/comparison`
@@ -745,7 +755,7 @@ This section details the homepage content sections that are fully manageable via
   - Add, edit, and delete features (table rows).
   - Toggle the boolean checkmarks for each feature and competitor. The underlying `feature_support` JSONB field allows for future extensions, like adding tooltips or status labels (e.g., "Coming Soon").
 
-#### 21.3. Cooperation Request Section
+#### 22.3. Cooperation Request Section
 - **Purpose**: A dedicated form to attract and manage potential partners and investors.
 - **Homepage Component**: `CooperationSection` (`/src/components/landing/CooperationSection.tsx`)
 - **Admin Page**: `/admin/cooperation`
@@ -766,7 +776,7 @@ This section details the homepage content sections that are fully manageable via
   - **Email Notification**: If the `RESEND_API_KEY` is set in `.env`, the `createCooperationRequest` server action will also send an email notification to the site admin.
   - **Admin Management**: Submissions can be viewed, managed, and their status updated (e.g., "pending" to "replied") in the `/admin/cooperation` admin page.
 
-#### 21.4. Stay in the Loop (Newsletter)
+#### 22.4. Stay in the Loop (Newsletter)
 - **Purpose**: A simple email capture form for users who want to subscribe to a newsletter.
 - **Homepage Component**: `NewsletterSection` (`/src/components/landing/NewsletterSection.tsx`)
 - **Admin Page**: `/admin/newsletter`
@@ -785,21 +795,21 @@ This section details the homepage content sections that are fully manageable via
 
 ---
 
-### 22. Admin Panel Features
+### 23. Admin Panel Features
 
 This section details specific UI/UX enhancements made to the admin panel for better usability.
 
-#### 22.1. Admin Dashboard Link to Homepage
+#### 23.1. Admin Dashboard Link to Homepage
 - **Location**: `/admin/dashboard`
 - **Description**: The first card in the admin dashboard grid is "View Live Site". This provides a direct, one-click link to the public homepage (`/`).
 - **Purpose**: This was added to improve the content editing workflow, allowing administrators to quickly navigate from the admin panel to the live site to see their changes in context.
 
-#### 22.2. Reusable File Picker
+#### 23.2. Reusable File Picker
 - **Component**: `FilePickerDialog` (`/src/app/admin/creators/FilePickerDialog.tsx`)
 - **Description**: A reusable dialog component that allows selecting a previously uploaded file from the `files` table instead of re-uploading it.
 - **Functionality**: The picker dialog displays a searchable grid of all uploaded files. When a file is selected, its `id` is passed back to the parent form, which then updates the relevant `imageId` field. This is used across all content management pages where images are present (e.g., Hero, Creators, Notes).
 
-#### 22.3. Collapsible Creator Profiles
+#### 23.3. Collapsible Creator Profiles
 - **Location**: `/admin/creators`
 - **Description**: The creator management page was redesigned to use an `Accordion` component. Each creator profile is now a separate, collapsible item.
 - **Purpose**: This change dramatically improves the organization of the page, preventing it from becoming an overwhelmingly long form. Editors can now focus on one creator at a time by expanding their specific accordion item. Each accordion trigger displays the creator's name and a badge indicating their visibility status ("Visible" or "Hidden").
