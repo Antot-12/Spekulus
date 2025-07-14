@@ -747,16 +747,17 @@ This section details the homepage content sections that are fully manageable via
 - **Admin Page**: `/admin/comparison`
 - **Database Tables**:
   - `comparisonSections`: Stores the section's title and subtitle for each language.
-  - `competitors`: Stores the dynamic list of competitor columns.
-  - `competitorFeatures`: Stores the individual feature rows and their support status for each competitor.
-- **Functionality**: The admin panel at `/admin/comparison` allows full dynamic management of the table. Admins can:
-  - Edit the section's main `title` and `subtitle`.
-  - Add, edit, and delete competitors (table columns).
-  - Add, edit, and delete features (table rows).
-  - Toggle the boolean checkmarks for each feature and competitor. The underlying `feature_support` JSONB field allows for future extensions, like adding tooltips or status labels (e.g., "Coming Soon").
+  - `competitors`: Stores the dynamic list of competitor columns (`id`, `slug`, `name`, `order`).
+  - `competitorFeatures`: Stores the individual feature rows (`feature`) and their support status (`feature_support`).
+- **Functionality**: The admin panel at `/admin/comparison` allows for complete dynamic management of the table. Admins can:
+  - **Edit Section Text**: Modify the main `title` and `subtitle` for the section.
+  - **Manage Competitors**: Add new competitors (which creates a new column), edit their names, and delete them. Deleting a competitor removes the column and all associated feature data.
+  - **Manage Features**: Add new features (table rows), edit their names, and delete them.
+  - **Toggle Support**: For each feature and competitor, toggle a boolean checkmark. The underlying `feature_support` JSONB field allows for future extensions, such as adding tooltips or status labels (e.g., "Coming Soon", "Premium").
+- **Data Sync**: All changes made in the admin panel are saved to the database and are immediately reflected on the public-facing comparison table.
 
 #### 22.3. Cooperation Request Section
-- **Purpose**: A dedicated form to attract and manage potential partners and investors.
+- **Purpose**: A dedicated form for potential partners, investors, or collaborators to submit inquiries.
 - **Homepage Component**: `CooperationSection` (`/src/components/landing/CooperationSection.tsx`)
 - **Admin Page**: `/admin/cooperation`
 - **Database Table**: `cooperationRequests`
@@ -765,23 +766,23 @@ This section details the homepage content sections that are fully manageable via
     id: serial('id').primaryKey(),
     name: text('name').notNull(),
     email: text('email').notNull(),
-    phone: text('phone'),
+    phone: text('phone'), // Optional
     message: text('message').notNull(),
     status: requestStatusEnum('status').default('pending').notNull(),
     submittedAt: timestamp('submitted_at').defaultNow().notNull(),
   });
   ```
-- **Functionality**: A public form on the homepage allows users to submit partnership inquiries.
-  - **Data Storage**: Submissions are stored in the `cooperation_requests` table.
-  - **Email Notification**: If the `RESEND_API_KEY` is set in `.env`, the `createCooperationRequest` server action will also send an email notification to the site admin.
-  - **Admin Management**: Submissions can be viewed, managed, and their status updated (e.g., "pending" to "replied") in the `/admin/cooperation` admin page.
+- **Functionality**:
+  - **Public Form**: Users can submit their proposals through a form on the homepage.
+  - **Data Storage & Notification**: Submissions are saved to the `cooperation_requests` table. If the `RESEND_API_KEY` is configured in the `.env` file, the system also sends an email notification to the administrator (`spekulus.mirror@gmail.com`).
+  - **Admin Management**: The `/admin/cooperation` page provides a full interface to view all submissions. Admins can see the details of each request, mark them as "pending" or "replied", and delete them.
 
 #### 22.4. Stay in the Loop (Newsletter)
-- **Purpose**: A simple email capture form for users who want to subscribe to a newsletter.
+- **Purpose**: A simple email capture form for users interested in receiving updates.
 - **Homepage Component**: `NewsletterSection` (`/src/components/landing/NewsletterSection.tsx`)
 - **Admin Page**: `/admin/newsletter`
 - **Database Tables**:
-  - `newsletterSections`: Stores the editable text for the section.
+  - `newsletterSections`: Stores the editable text content for each language.
     ```typescript
     export const newsletterSections = pgTable('newsletter_sections', {
       // ... id, lang, title, subtitle, privacy_notice
@@ -790,8 +791,9 @@ This section details the homepage content sections that are fully manageable via
     ```
   - `newsletterSubscriptions`: Stores the collected email addresses.
 - **Functionality**:
-  - **Content Management**: Admins can edit the section's title, subtitle, privacy notice, and the call-to-action button text from the `/admin/newsletter` page.
-  - **Data Storage**: Submitted emails are stored in the `newsletterSubscriptions` table. Currently, there is no automatic email sending functionality tied to this form; it is purely for data collection.
+  - **Content Management**: From the `/admin/newsletter` page, administrators can edit the section's title, subtitle, privacy notice, and the call-to-action button text for each supported language.
+  - **Data Collection**: When a user submits their email, the `subscribeToNewsletter` server action saves it to the `newsletterSubscriptions` table.
+  - **Email Service**: This feature is currently for data collection only. No automatic email marketing service (like Mailchimp) is integrated. The collected emails would need to be exported from the database to be used in a campaign.
 
 ---
 
