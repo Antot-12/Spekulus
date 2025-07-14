@@ -10,7 +10,8 @@ import {
   customType,
   primaryKey,
   unique,
-  pgEnum
+  pgEnum,
+  index
 } from 'drizzle-orm/pg-core'
 
 const bytea = customType<{ data: Buffer; driverData: string }>({
@@ -232,3 +233,35 @@ export const creators = pgTable(
   },
   t => ({ slugLangUnique: unique().on(t.slug, t.lang) })
 )
+
+// Audit Log Schema
+export const changeTypeEnum = pgEnum('change_type', ['CONTENT', 'SEO', 'SETTINGS', 'UI_VISIBILITY']);
+export const logSourceEnum = pgEnum('log_source', ['WEB_ADMIN', 'API', 'SYSTEM']);
+export const logStatusEnum = pgEnum('log_status', ['SUCCESS', 'FAILURE']);
+
+export const auditLogs = pgTable('audit_logs', {
+  id: serial('id').primaryKey(),
+  timestamp: timestamp('timestamp').defaultNow().notNull(),
+  ip: varchar('ip', { length: 255 }),
+  actor: text('actor').notNull(),
+  changeType: changeTypeEnum('change_type').notNull(),
+  action: text('action').notNull(),
+  target: text('target'),
+  before: jsonb('before'),
+  after: jsonb('after'),
+  bulkCount: integer('bulk_count'),
+  source: logSourceEnum('source').default('WEB_ADMIN').notNull(),
+  status: logStatusEnum('status').notNull(),
+  error: text('error'),
+  revertOf: integer('revert_of'),
+}, (table) => {
+  return {
+    timestampIdx: index("timestamp_idx").on(table.timestamp),
+    changeTypeIdx: index("change_type_idx").on(table.changeType),
+    sourceIdx: index("source_idx").on(table.source),
+    targetIdx: index("target_idx").on(table.target), // Basic index for exact matches
+    // Note: GIN/JSONB index on `target` or `before`/`after` is more complex 
+    // and might require raw SQL in migrations if not directly supported by Drizzle Kit.
+    // This setup provides good enough performance for the admin panel's current needs.
+  };
+});

@@ -12,34 +12,72 @@ import { Calendar } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { getLogs, type LogEntry } from '@/lib/logger';
 import { format } from 'date-fns';
 import { DateRange } from 'react-day-picker';
-import { Search, Calendar as CalendarIcon, Download, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, ArrowUpDown, History } from 'lucide-react';
+import { Search, Calendar as CalendarIcon, Download, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, ArrowUpDown, History, Eye } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
+import ReactDiffViewer, { DiffMethod } from 'react-diff-viewer-continued';
+
+// Mock DB action functions - replace with actual server actions
+async function getAuditLogs(params: { page: number, filters: any, sort: any }): Promise<{ logs: any[], total: number }> {
+    // In a real app, this would be a server action fetching from the DB
+    console.log("Fetching logs with params:", params);
+    // MOCK DATA for now
+    const dummyLogs = [
+        { id: 1, timestamp: new Date(), actor: 'admin', action: 'Updated Hero Section', status: 'SUCCESS', target: 'Hero - English', before: { title: 'Old' }, after: { title: 'New' }, changeType: 'CONTENT', source: 'WEB_ADMIN' },
+        { id: 2, timestamp: new Date(), actor: 'admin', action: 'Failed to upload image', status: 'FAILURE', error: 'File too large', target: 'File Upload', changeType: 'CONTENT', source: 'WEB_ADMIN' },
+    ];
+    return { logs: dummyLogs, total: dummyLogs.length };
+}
+
 
 const LOGS_PER_PAGE = 20;
 
 type SortConfig = {
-    key: keyof LogEntry | 'timestamp';
+    key: string;
     direction: 'asc' | 'desc';
 };
 
-const SortableHeader = ({
-    children,
-    sortKey,
-    sortConfig,
-    onSort,
-}: {
-    children: React.ReactNode;
-    sortKey: SortConfig['key'];
-    sortConfig: SortConfig;
-    onSort: (key: SortConfig['key']) => void;
-}) => (
+const DiffViewer = ({ before, after }: { before: any, after: any }) => {
+    const oldValue = JSON.stringify(before, null, 2);
+    const newValue = JSON.stringify(after, null, 2);
+    
+    if (oldValue === newValue) {
+        return <span className="text-muted-foreground">No changes</span>
+    }
+
+    return (
+        <ReactDiffViewer
+            oldValue={oldValue}
+            newValue={newValue}
+            splitView={true}
+            compareMethod={DiffMethod.WORDS}
+            styles={{
+                diffContainer: { fontSize: '0.8rem' },
+                variables: {
+                    dark: {
+                        color: '#fff',
+                        background: '#1e1e1e',
+                        addedBackground: '#0d2816',
+                        addedColor: '#6fcf97',
+                        removedBackground: '#341919',
+                        removedColor: '#eb5757',
+                        wordAddedBackground: '#134022',
+                        wordRemovedBackground: '#502020'
+                    }
+                }
+            }}
+            useDarkTheme={true}
+        />
+    )
+}
+
+const SortableHeader = ({ children, sortKey, sortConfig, onSort }: { children: React.ReactNode; sortKey: string; sortConfig: SortConfig; onSort: (key: string) => void; }) => (
     <TableHead className="cursor-pointer" onClick={() => onSort(sortKey)}>
         <div className="flex items-center gap-2">
             {children}
             {sortConfig.key === sortKey ? (
-                sortConfig.direction === 'asc' ? <ArrowUpDown className="h-3 w-3" /> : <ArrowUpDown className="h-3 w-3" />
+                <ArrowUpDown className="h-3 w-3" />
             ) : (
                 <ArrowUpDown className="h-3 w-3 opacity-30" />
             )}
@@ -47,100 +85,58 @@ const SortableHeader = ({
     </TableHead>
 );
 
-
 export default function LogsAdminPage() {
-    const [logs, setLogs] = useState<LogEntry[]>([]);
-    const [isLoaded, setIsLoaded] = useState(false);
+    const [logs, setLogs] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [totalLogs, setTotalLogs] = useState(0);
 
     // Filtering and Sorting State
     const [searchTerm, setSearchTerm] = useState('');
-    const [actionFilter, setActionFilter] = useState<string>('all');
+    const [changeTypeFilter, setChangeTypeFilter] = useState<string>('all');
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [dateRange, setDateRange] = useState<DateRange | undefined>();
     const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'timestamp', direction: 'desc' });
 
     // Pagination State
     const [currentPage, setCurrentPage] = useState(1);
+    const totalPages = Math.ceil(totalLogs / LOGS_PER_PAGE);
     
-    const loadLogs = useCallback(() => {
-        const allLogs = getLogs();
-        setLogs(allLogs);
-        setIsLoaded(true);
-    }, []);
+    const loadLogs = useCallback(async () => {
+        setIsLoading(true);
+        const filters = {
+            query: searchTerm,
+            changeType: changeTypeFilter,
+            status: statusFilter,
+            dateRange
+        };
+        const sort = { by: sortConfig.key, direction: sortConfig.direction };
+        // const { logs: fetchedLogs, total } = await getAuditLogs({ page: currentPage, filters, sort });
+        // setLogs(fetchedLogs);
+        // setTotalLogs(total);
+        // MOCK
+        const { logs: fetchedLogs, total } = await getAuditLogs({ page: currentPage, filters, sort });
+        setLogs(fetchedLogs)
+        setTotalLogs(total)
+        setIsLoading(false);
+    }, [currentPage, searchTerm, changeTypeFilter, statusFilter, dateRange, sortConfig]);
     
     useEffect(() => {
         loadLogs();
-        window.addEventListener('storage', loadLogs);
-        return () => {
-            window.removeEventListener('storage', loadLogs);
-        };
     }, [loadLogs]);
     
-    const filteredAndSortedLogs = useMemo(() => {
-        let filtered = logs
-            .filter(log => {
-                const searchMatch = searchTerm.length === 0 ||
-                    log.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    log.details.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    (log.path && log.path.toLowerCase().includes(searchTerm.toLowerCase()));
-                
-                const actionMatch = actionFilter === 'all' || log.action === actionFilter;
-                const statusMatch = statusFilter === 'all' || log.status.toLowerCase() === statusFilter;
-                
-                const dateMatch = !dateRange?.from || (
-                    log.timestamp >= dateRange.from.getTime() &&
-                    log.timestamp <= (dateRange.to ? new Date(dateRange.to).setHours(23, 59, 59, 999) : new Date(dateRange.from).setHours(23, 59, 59, 999))
-                );
-
-                return searchMatch && actionMatch && statusMatch && dateMatch;
-            });
-            
-        return [...filtered].sort((a, b) => {
-            const valA = a[sortConfig.key];
-            const valB = b[sortConfig.key];
-            let comparison = 0;
-            if (typeof valA === 'string' && typeof valB === 'string') {
-                comparison = valA.localeCompare(valB);
-            } else if (typeof valA === 'number' && typeof valB === 'number') {
-                comparison = valA - valB;
-            }
-            return sortConfig.direction === 'asc' ? comparison : -comparison;
-        });
-    }, [logs, searchTerm, actionFilter, statusFilter, dateRange, sortConfig]);
-
-    const totalPages = Math.ceil(filteredAndSortedLogs.length / LOGS_PER_PAGE);
-    const paginatedLogs = filteredAndSortedLogs.slice((currentPage - 1) * LOGS_PER_PAGE, currentPage * LOGS_PER_PAGE);
-    const allActionTypes = useMemo(() => [...new Set(logs.map(log => log.action))], [logs]);
-    
-    const handleSort = (key: SortConfig['key']) => {
+    const handleSort = (key: string) => {
         setSortConfig(prev => ({ key, direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc' }));
+        setCurrentPage(1); // Reset to first page on sort
     };
-
+    
     const exportToCSV = () => {
-        const headers = ['Timestamp', 'User', 'Action', 'Status', 'Details', 'Path'];
-        const rows = filteredAndSortedLogs.map(log => [
-            `"${format(new Date(log.timestamp), 'yyyy-MM-dd HH:mm:ss')}"`,
-            `"${log.user}"`,
-            `"${log.action}"`,
-            `"${log.status}"`,
-            `"${log.details.replace(/"/g, '""')}"`,
-            `"${log.path || ''}"`
-        ]);
-
-        const csvContent = "data:text/csv;charset=utf-8," 
-            + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-            
-        const link = document.createElement('a');
-        link.setAttribute('href', encodeURI(csvContent));
-        link.setAttribute('download', `spekulus_logs_${format(new Date(), 'yyyy-MM-dd')}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        // This should trigger a server-side download in a real implementation
+        alert("CSV export functionality would be handled by a dedicated API route.");
     };
-
+    
     const getStatusBadgeVariant = (status: string): 'default' | 'destructive' | 'secondary' => {
-        if (status === 'Success') return 'default';
-        if (status === 'Failure') return 'destructive';
+        if (status === 'SUCCESS') return 'default';
+        if (status === 'FAILURE') return 'destructive';
         return 'secondary';
     };
     
@@ -157,19 +153,22 @@ export default function LogsAdminPage() {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                         <Input placeholder="Search user or details..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10" />
                     </div>
-                    <Select value={actionFilter} onValueChange={setActionFilter}>
-                        <SelectTrigger className="w-full sm:w-[160px]"><SelectValue placeholder="Filter by action..."/></SelectTrigger>
+                    <Select value={changeTypeFilter} onValueChange={setChangeTypeFilter}>
+                        <SelectTrigger className="w-full sm:w-[160px]"><SelectValue placeholder="Filter by type..."/></SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all">All Actions</SelectItem>
-                            {allActionTypes.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}
+                            <SelectItem value="all">All Change Types</SelectItem>
+                            <SelectItem value="CONTENT">Content</SelectItem>
+                            <SelectItem value="SETTINGS">Settings</SelectItem>
+                            <SelectItem value="UI_VISIBILITY">UI Visibility</SelectItem>
+                            <SelectItem value="SEO">SEO</SelectItem>
                         </SelectContent>
                     </Select>
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
                         <SelectTrigger className="w-full sm:w-[120px]"><SelectValue placeholder="Filter by status..."/></SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">All Statuses</SelectItem>
-                            <SelectItem value="success">Success</SelectItem>
-                            <SelectItem value="failure">Failure</SelectItem>
+                            <SelectItem value="SUCCESS">Success</SelectItem>
+                            <SelectItem value="FAILURE">Failure</SelectItem>
                         </SelectContent>
                     </Select>
                     <Popover>
@@ -190,24 +189,43 @@ export default function LogsAdminPage() {
                         <TableHeader>
                             <TableRow>
                                 <SortableHeader sortKey="timestamp" sortConfig={sortConfig} onSort={handleSort}>Timestamp</SortableHeader>
-                                <SortableHeader sortKey="user" sortConfig={sortConfig} onSort={handleSort}>User</SortableHeader>
+                                <SortableHeader sortKey="actor" sortConfig={sortConfig} onSort={handleSort}>Actor</SortableHeader>
                                 <SortableHeader sortKey="action" sortConfig={sortConfig} onSort={handleSort}>Action</SortableHeader>
                                 <SortableHeader sortKey="status" sortConfig={sortConfig} onSort={handleSort}>Status</SortableHeader>
                                 <TableHead>Details</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {!isLoaded ? [...Array(10)].map((_, i) => (
+                            {isLoading ? [...Array(10)].map((_, i) => (
                                 <TableRow key={i}><TableCell colSpan={5}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
-                            )) : paginatedLogs.length > 0 ? paginatedLogs.map(log => (
+                            )) : logs.length > 0 ? logs.map(log => (
                                 <TableRow key={log.id}>
                                     <TableCell className="font-mono text-xs">{format(new Date(log.timestamp), 'yyyy-MM-dd HH:mm:ss')}</TableCell>
-                                    <TableCell>{log.user}</TableCell>
-                                    <TableCell><Badge variant="secondary">{log.action}</Badge></TableCell>
+                                    <TableCell>{log.actor}</TableCell>
+                                    <TableCell>
+                                      <div>{log.action}</div>
+                                      <div className="text-xs text-muted-foreground">{log.target}</div>
+                                    </TableCell>
                                     <TableCell><Badge variant={getStatusBadgeVariant(log.status)}>{log.status}</Badge></TableCell>
                                     <TableCell className="text-sm text-muted-foreground">
-                                        <p>{log.details}</p>
-                                        {log.path && <p className="text-xs font-mono mt-1">Path: {log.path}</p>}
+                                        {log.error ? (
+                                            <span className="text-destructive">{log.error}</span>
+                                        ) : (
+                                            <Dialog>
+                                                <DialogTrigger asChild>
+                                                    <Button variant="ghost" size="sm"><Eye className="mr-2 h-4 w-4"/> View Changes</Button>
+                                                </DialogTrigger>
+                                                <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
+                                                    <DialogHeader>
+                                                        <DialogTitle>Log Details: #{log.id}</DialogTitle>
+                                                        <DialogDescription>Showing changes for action: {log.action}</DialogDescription>
+                                                    </DialogHeader>
+                                                    <div className="flex-grow overflow-y-auto">
+                                                        <DiffViewer before={log.before} after={log.after} />
+                                                    </div>
+                                                </DialogContent>
+                                            </Dialog>
+                                        )}
                                     </TableCell>
                                 </TableRow>
                             )) : (
