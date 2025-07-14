@@ -145,9 +145,9 @@ export default function LogsAdminPage() {
                 <div className="flex flex-wrap gap-2 mb-4 p-4 border rounded-lg bg-muted/50">
                     <div className="relative flex-grow min-w-[200px]">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                        <Input placeholder="Search user or details..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10" />
+                        <Input placeholder="Search user or details..." value={searchTerm} onChange={e => {setSearchTerm(e.target.value); setCurrentPage(1);}} className="pl-10" />
                     </div>
-                    <Select value={changeTypeFilter} onValueChange={setChangeTypeFilter}>
+                    <Select value={changeTypeFilter} onValueChange={(value) => {setChangeTypeFilter(value); setCurrentPage(1);}}>
                         <SelectTrigger className="w-full sm:w-[160px]"><SelectValue placeholder="Filter by type..."/></SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">All Change Types</SelectItem>
@@ -157,7 +157,7 @@ export default function LogsAdminPage() {
                             <SelectItem value="SEO">SEO</SelectItem>
                         </SelectContent>
                     </Select>
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <Select value={statusFilter} onValueChange={(value) => {setStatusFilter(value); setCurrentPage(1);}}>
                         <SelectTrigger className="w-full sm:w-[120px]"><SelectValue placeholder="Filter by status..."/></SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">All Statuses</SelectItem>
@@ -172,7 +172,7 @@ export default function LogsAdminPage() {
                                 {dateRange?.from ? (dateRange.to ? `${format(dateRange.from, "LLL dd, y")} - ${format(dateRange.to, "LLL dd, y")}` : format(dateRange.from, "LLL dd, y")) : <span>Pick a date range</span>}
                             </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start"><Calendar initialFocus mode="range" selected={dateRange} onSelect={setDateRange} numberOfMonths={2} /></PopoverContent>
+                        <PopoverContent className="w-auto p-0" align="start"><Calendar initialFocus mode="range" selected={dateRange} onSelect={(range) => {setDateRange(range); setCurrentPage(1);}} numberOfMonths={2} /></PopoverContent>
                     </Popover>
                     <Button onClick={exportToCSV} variant="outline" className="w-full sm:w-auto"><Download className="mr-2 h-4 w-4" /> Export CSV</Button>
                 </div>
