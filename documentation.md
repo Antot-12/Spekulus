@@ -55,6 +55,7 @@
   - [21.1. Scenarios ("Why Spekulus?")](#211-scenarios-why-spekulus)
   - [21.2. Competitor Comparison Table](#212-competitor-comparison-table)
   - [21.3. Cooperation Request Section](#213-cooperation-request-section)
+  - [21.4. Stay in the Loop (Newsletter)](#214-stay-in-the-loop-newsletter)
 - **[22. Admin Panel Features](#22-admin-panel-features)**
   - [22.1. Admin Dashboard Link to Homepage](#221-admin-dashboard-link-to-homepage)
   - [22.2. Reusable File Picker](#222-reusable-file-picker)
@@ -84,9 +85,10 @@ DATABASE_URL="postgres://..."
 ADMIN_USERNAME="your_admin_username"
 ADMIN_PASSWORD="your_admin_password"
 
-# (Optional) Resend API key for the contact form
+# Resend API key for sending emails from the cooperation form
 RESEND_API_KEY="re_..."
 ```
+The `RESEND_API_KEY` is crucial for enabling email notifications for cooperation requests. Without it, form submissions will be saved to the database but no email will be sent to the administrator.
 
 ### 2.2. Database Management (Drizzle ORM)
 
@@ -203,17 +205,20 @@ The schema is defined in `/src/lib/db/schema.ts` using Drizzle ORM.
   - `lang (varchar, FK -> languages.code, unique)`: Associates the text with a language.
   - `title, subtitle (text)`: Editable text for the section header.
 
+- **`competitors`**: Stores the competitor names and slugs for the comparison table.
+  - `id, slug, name, order`: Defines a dynamic competitor column.
+
 - **`competitorFeatures`**: The features for the competitor comparison table.
   - `lang (varchar, FK -> languages.code)`: Language association.
   - `feature (text)`: The name of the feature being compared.
-  - `spekulus, himirror, simplehuman, mirrocool (boolean)`: Flags indicating support.
+  - `feature_support (jsonb)`: A flexible JSON object to store support status for each competitor by slug (e.g., `{ "spekulus": { "supported": true }, ... }`).
 
 - **`cooperationRequests`**: Stores submissions from the "Cooperate With Us" form.
   - `id, name, email, phone, message, status, submittedAt`: Standard fields for a contact form submission.
 
 - **`newsletterSections`**: The "Stay in the Loop" call-to-action section.
   - `lang (varchar, FK -> languages.code, unique)`: Language association.
-  - `title, subtitle, privacy_notice (text)`: All text content for the section.
+  - `title, subtitle, privacy_notice, button_text (text)`: All text content for the section.
 
 - **`newsletterSubscriptions`**: Stores email addresses from the newsletter signup form.
   - `id, email, subscribedAt`: Stores the subscribed email and timestamp.
@@ -247,7 +252,7 @@ The schema is defined in `/src/lib/db/schema.ts` using Drizzle ORM.
   - All other fields (`name`, `role`, `bio`, etc.) are `text` or `jsonb` to store profile information. `jsonb` is used for arrays (skills, hobbies) and nested objects (socials, music).
   - `imageId, featuredProjectImageId (integer, FK -> files.id)`: Foreign keys for profile and project images.
 
-- **`maintenanceSettings`**: A single-row table to control site-wide maintenance mode.
+- **`maintenanceSettings`**: A single-row table to control site-wide maintenance mode. Includes a message and an optional auto-deactivation timer (`endsAt`).
 - **`pages`**: A table to control the status (active, hidden, maintenance) of individual site pages.
 
 ### Entity Relationships (ER Summary)
@@ -337,15 +342,15 @@ A few traditional API routes exist for specific purposes where a standard HTTP e
 
 ---
 #### **`POST /api/contact`**
-- **Purpose**: Handles submissions from the public contact form on the homepage. It validates the input and uses the Resend API to forward the message to a predefined email address.
+- **Purpose**: Handles submissions from the public **Cooperation Request** form. It validates the input and uses the Resend API to forward the message to a predefined email address.
 - **Method**: `POST`
-- **Request Body**: JSON object `{ "name": "<string>", "email": "<string>", "message": "<string>" }`.
+- **Request Body**: JSON object `{ "name": "<string>", "email": "<string>", "message": "<string>", "phone": "<string>" }`.
 - **Success Response**:
   - `Status`: `200 OK`
   - `Body`: `{ "success": true, "message": "Message sent successfully!" }`
 - **Error Response**:
   - `Status`: `400 Bad Request` for invalid input (e.g., invalid email, message too short).
-  - `Status`: `500 Internal Server Error` if the email fails to send or the server is misconfigured.
+  - `Status`: `500 Internal Server Error` if the email fails to send or the server is misconfigured (missing `RESEND_API_KEY`).
   - `Body`: `{ "success": false, "error": "<error_message>" }`
 
 ---
@@ -504,11 +509,12 @@ Currently, the project does not have an automated testing suite. This is a key a
 ### 8.6. Access Control & Security Notes
 
 - **Admin Route Protection**: Access to the `/admin` section is controlled by a simple client-side check in `/src/app/admin/layout.tsx`. It looks for a specific key (`admin_token`) in `localStorage`.
+- **Maintenance Mode**: The application includes a robust maintenance mode system.
+  - **Site-Wide Mode**: Can be enabled from `/admin/maintenance`. This blocks all public pages. An optional countdown timer can be set, after which the site automatically goes live again.
+  - **Page-Specific Mode**: Individual pages can be set to "maintenance" status from `/admin/pages`. This is useful for taking a single page offline without affecting the rest of the site. The middleware (`/src/middleware.ts`) checks the status of each page before rendering.
 - **Known Limitations & Future Improvements**:
-    - **No Server-Side Session**: The current method is not a secure, server-enforced session. A malicious user could bypass this by manually setting the `localStorage` key.
-    - **Improvement Plan**: Implement a proper authentication solution using JWTs (JSON Web Tokens) or a library like `NextAuth.js`. This would involve:
-        1.  The `/api/auth/login` route returning a signed HTTP-only cookie.
-        2.  Creating a middleware file (`middleware.ts`) to protect all `/admin/**` routes by verifying the cookie on the server for every request.
+    - **No Server-Side Session**: The current admin auth method is not a secure, server-enforced session. A malicious user could bypass this by manually setting the `localStorage` key.
+    - **Improvement Plan**: Implement a proper authentication solution using JWTs (JSON Web Tokens) or a library like `NextAuth.js`.
     - **CSRF Protection**: Standard form submissions are protected against Cross-Site Request Forgery by Next.js Server Actions.
     - **Secrets**: Ensure the `.env` file is never committed to version control.
 
@@ -731,33 +737,13 @@ This section details the homepage content sections that are fully manageable via
 - **Admin Page**: `/admin/comparison`
 - **Database Tables**:
   - `comparisonSections`: Stores the section's title and subtitle for each language.
-    ```typescript
-    export const comparisonSections = pgTable('comparison_sections', {
-        id: serial('id').primaryKey(),
-        lang: varchar('lang', { length: 2 }).notNull().references(() => languages.code).unique(),
-        title: text('title').notNull(),
-        subtitle: text('subtitle').notNull(),
-    });
-    ```
-  - `competitorFeatures`: Stores the individual feature rows.
-    ```typescript
-    export const competitorFeatures = pgTable('competitor_features', {
-        id: serial('id').primaryKey(),
-        lang: varchar('lang', { length: 2 }).notNull().references(() => languages.code),
-        feature: text('feature').notNull(),
-        spekulus: boolean('spekulus').default(false).notNull(),
-        himirror: boolean('himirror').default(false).notNull(),
-        simplehuman: boolean('simplehuman').default(false).notNull(),
-        mirrocool: boolean('mirrocool').default(false).notNull(),
-    });
-    ```
-- **Functionality**: The admin panel at `/admin/comparison` allows full CRUD management of the features list and the section's text. Admins can:
+  - `competitors`: Stores the dynamic list of competitor columns.
+  - `competitorFeatures`: Stores the individual feature rows and their support status for each competitor.
+- **Functionality**: The admin panel at `/admin/comparison` allows full dynamic management of the table. Admins can:
   - Edit the section's main `title` and `subtitle`.
-  - Add new feature rows.
-  - Edit the `feature` description text for each row.
-  - Toggle the boolean checkmarks for each product (`spekulus`, `himirror`, etc.).
-  - Delete features.
-  - The homepage table renders this data dynamically, showing check or cross icons based on the boolean values.
+  - Add, edit, and delete competitors (table columns).
+  - Add, edit, and delete features (table rows).
+  - Toggle the boolean checkmarks for each feature and competitor. The underlying `feature_support` JSONB field allows for future extensions, like adding tooltips or status labels (e.g., "Coming Soon").
 
 #### 21.3. Cooperation Request Section
 - **Purpose**: A dedicated form to attract and manage potential partners and investors.
@@ -775,7 +761,27 @@ This section details the homepage content sections that are fully manageable via
     submittedAt: timestamp('submitted_at').defaultNow().notNull(),
   });
   ```
-- **Functionality**: A public form on the homepage allows users to submit partnership inquiries. These submissions are stored in the database and can be viewed, managed, and their status updated (e.g., "pending" to "replied") in the `/admin/cooperation` admin page. The server action `createCooperationRequest` also triggers an email notification to the site admin via Resend upon successful submission.
+- **Functionality**: A public form on the homepage allows users to submit partnership inquiries.
+  - **Data Storage**: Submissions are stored in the `cooperation_requests` table.
+  - **Email Notification**: If the `RESEND_API_KEY` is set in `.env`, the `createCooperationRequest` server action will also send an email notification to the site admin.
+  - **Admin Management**: Submissions can be viewed, managed, and their status updated (e.g., "pending" to "replied") in the `/admin/cooperation` admin page.
+
+#### 21.4. Stay in the Loop (Newsletter)
+- **Purpose**: A simple email capture form for users who want to subscribe to a newsletter.
+- **Homepage Component**: `NewsletterSection` (`/src/components/landing/NewsletterSection.tsx`)
+- **Admin Page**: `/admin/newsletter`
+- **Database Tables**:
+  - `newsletterSections`: Stores the editable text for the section.
+    ```typescript
+    export const newsletterSections = pgTable('newsletter_sections', {
+      // ... id, lang, title, subtitle, privacy_notice
+      button_text: text('button_text').notNull().default('Subscribe'),
+    });
+    ```
+  - `newsletterSubscriptions`: Stores the collected email addresses.
+- **Functionality**:
+  - **Content Management**: Admins can edit the section's title, subtitle, privacy notice, and the call-to-action button text from the `/admin/newsletter` page.
+  - **Data Storage**: Submitted emails are stored in the `newsletterSubscriptions` table. Currently, there is no automatic email sending functionality tied to this form; it is purely for data collection.
 
 ---
 
