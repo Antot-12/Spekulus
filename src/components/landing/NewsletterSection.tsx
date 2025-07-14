@@ -92,7 +92,7 @@ export function NewsletterSection({ data }: { data: NewsletterSectionData }) {
                     {isSubmitting ? (
                         <Loader2 className="h-5 w-5 animate-spin" />
                     ) : (
-                        "Subscribe"
+                        data.buttonText || 'Subscribe'
                     )}
                     </Button>
                 </form>

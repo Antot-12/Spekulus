@@ -200,6 +200,7 @@ export type NewsletterSectionData = {
   title: string;
   subtitle: string;
   privacy_notice: string;
+  buttonText: string;
 };
 
 
@@ -646,16 +647,19 @@ const rawNewsletterSectionData: Record<Language, Omit<NewsletterSectionData, 'id
     title: 'Stay in the Loop',
     subtitle: 'Subscribe to our newsletter to receive the latest news, updates, and special offers from the Spekulus team.',
     privacy_notice: 'We respect your privacy. No spam, ever.',
+    buttonText: 'Subscribe',
   },
   uk: {
     title: 'Залишайтеся на зв\'язку',
     subtitle: 'Підпишіться на нашу розсилку, щоб отримувати останні новини, оновлення та спеціальні пропозиції від команди Spekulus.',
     privacy_notice: 'Ми поважаємо вашу конфіденційність. Ніякого спаму, ніколи.',
+    buttonText: 'Підписатися',
   },
   sk: {
     title: 'Zostaňte v obraze',
     subtitle: 'Prihláste sa na odber nášho newslettera a dostávajte najnovšie správy, aktualizácie a špeciálne ponuky od tímu Spekulus.',
     privacy_notice: 'Rešpektujeme vaše súkromie. Žiadny spam, nikdy.',
+    buttonText: 'Prihlásiť sa na odber',
   },
 };
 

@@ -139,6 +139,7 @@ export default function NewsletterAdminPage() {
             <Skeleton className="h-10 w-1/3" />
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
           </div>
         ) : (
           <>
@@ -150,6 +151,11 @@ export default function NewsletterAdminPage() {
             <div className="space-y-2">
               <Label htmlFor="subtitle">Section Subtitle</Label>
               <Input id="subtitle" value={data.subtitle} onChange={e => updateLocalData({ subtitle: e.target.value })} />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="buttonText">Button Text</Label>
+              <Input id="buttonText" value={data.buttonText} onChange={e => updateLocalData({ buttonText: e.target.value })} />
             </div>
 
             <div className="space-y-2">

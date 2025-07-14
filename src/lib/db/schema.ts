@@ -121,6 +121,7 @@ export const newsletterSections = pgTable('newsletter_sections', {
   title: text('title').notNull(),
   subtitle: text('subtitle').notNull(),
   privacy_notice: text('privacy_notice').notNull(),
+  button_text: text('button_text').notNull().default('Subscribe'),
 });
 
 export const newsletterSubscriptions = pgTable('newsletter_subscriptions', {

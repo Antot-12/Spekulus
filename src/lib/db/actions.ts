@@ -397,7 +397,10 @@ export async function getNewsletterSectionData(lang: Language): Promise<Newslett
 }
 
 export async function updateNewsletterSectionData(lang: Language, data: Omit<NewsletterSectionData, 'id'>) {
-    const payload = { ...data };
+    const payload = { 
+        ...data,
+        button_text: data.buttonText || 'Subscribe',
+     };
     await db.insert(schema.newsletterSections)
         .values({ lang, ...payload })
         .onConflictDoUpdate({
