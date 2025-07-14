@@ -17,19 +17,8 @@ import { DateRange } from 'react-day-picker';
 import { Search, Calendar as CalendarIcon, Download, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, ArrowUpDown, History, Eye } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
 import ReactDiffViewer, { DiffMethod } from 'react-diff-viewer-continued';
-
-// Mock DB action functions - replace with actual server actions
-async function getAuditLogs(params: { page: number, filters: any, sort: any }): Promise<{ logs: any[], total: number }> {
-    // In a real app, this would be a server action fetching from the DB
-    console.log("Fetching logs with params:", params);
-    // MOCK DATA for now
-    const dummyLogs = [
-        { id: 1, timestamp: new Date(), actor: 'admin', action: 'Updated Hero Section', status: 'SUCCESS', target: 'Hero - English', before: { title: 'Old' }, after: { title: 'New' }, changeType: 'CONTENT', source: 'WEB_ADMIN' },
-        { id: 2, timestamp: new Date(), actor: 'admin', action: 'Failed to upload image', status: 'FAILURE', error: 'File too large', target: 'File Upload', changeType: 'CONTENT', source: 'WEB_ADMIN' },
-    ];
-    return { logs: dummyLogs, total: dummyLogs.length };
-}
-
+import { getAuditLogs } from '@/lib/db/actions';
+import { useToast } from '@/hooks/use-toast';
 
 const LOGS_PER_PAGE = 20;
 
@@ -39,11 +28,13 @@ type SortConfig = {
 };
 
 const DiffViewer = ({ before, after }: { before: any, after: any }) => {
-    const oldValue = JSON.stringify(before, null, 2);
-    const newValue = JSON.stringify(after, null, 2);
+    if (!before && !after) return <span className="text-muted-foreground">No data changes recorded.</span>;
+
+    const oldValue = JSON.stringify(before, null, 2) || "{}";
+    const newValue = JSON.stringify(after, null, 2) || "{}";
     
     if (oldValue === newValue) {
-        return <span className="text-muted-foreground">No changes</span>
+        return <span className="text-muted-foreground">No changes detected in data.</span>
     }
 
     return (
@@ -53,11 +44,11 @@ const DiffViewer = ({ before, after }: { before: any, after: any }) => {
             splitView={true}
             compareMethod={DiffMethod.WORDS}
             styles={{
-                diffContainer: { fontSize: '0.8rem' },
+                diffContainer: { fontSize: '0.8rem', backgroundColor: '#09090b' },
                 variables: {
                     dark: {
-                        color: '#fff',
-                        background: '#1e1e1e',
+                        color: '#fafafa',
+                        background: '#09090b',
                         addedBackground: '#0d2816',
                         addedColor: '#6fcf97',
                         removedBackground: '#341919',
@@ -86,39 +77,43 @@ const SortableHeader = ({ children, sortKey, sortConfig, onSort }: { children: R
 );
 
 export default function LogsAdminPage() {
+    const { toast } = useToast();
     const [logs, setLogs] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [totalLogs, setTotalLogs] = useState(0);
 
-    // Filtering and Sorting State
     const [searchTerm, setSearchTerm] = useState('');
     const [changeTypeFilter, setChangeTypeFilter] = useState<string>('all');
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [dateRange, setDateRange] = useState<DateRange | undefined>();
     const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'timestamp', direction: 'desc' });
-
-    // Pagination State
     const [currentPage, setCurrentPage] = useState(1);
     const totalPages = Math.ceil(totalLogs / LOGS_PER_PAGE);
     
     const loadLogs = useCallback(async () => {
         setIsLoading(true);
-        const filters = {
-            query: searchTerm,
-            changeType: changeTypeFilter,
-            status: statusFilter,
-            dateRange
-        };
-        const sort = { by: sortConfig.key, direction: sortConfig.direction };
-        // const { logs: fetchedLogs, total } = await getAuditLogs({ page: currentPage, filters, sort });
-        // setLogs(fetchedLogs);
-        // setTotalLogs(total);
-        // MOCK
-        const { logs: fetchedLogs, total } = await getAuditLogs({ page: currentPage, filters, sort });
-        setLogs(fetchedLogs)
-        setTotalLogs(total)
-        setIsLoading(false);
-    }, [currentPage, searchTerm, changeTypeFilter, statusFilter, dateRange, sortConfig]);
+        try {
+            const filters = {
+                query: searchTerm,
+                changeType: changeTypeFilter,
+                status: statusFilter,
+                dateRange
+            };
+            const sort = { by: sortConfig.key, direction: sortConfig.direction };
+            const { logs: fetchedLogs, total } = await getAuditLogs({ page: currentPage, filters, sort, pageSize: LOGS_PER_PAGE });
+            setLogs(fetchedLogs);
+            setTotalLogs(total);
+        } catch (error) {
+            console.error("Failed to load audit logs:", error);
+            toast({
+                title: 'Error Loading Logs',
+                description: 'Could not fetch logs from the database.',
+                variant: 'destructive',
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    }, [currentPage, searchTerm, changeTypeFilter, statusFilter, dateRange, sortConfig, toast]);
     
     useEffect(() => {
         loadLogs();
@@ -126,12 +121,12 @@ export default function LogsAdminPage() {
     
     const handleSort = (key: string) => {
         setSortConfig(prev => ({ key, direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc' }));
-        setCurrentPage(1); // Reset to first page on sort
+        setCurrentPage(1);
     };
     
-    const exportToCSV = () => {
-        // This should trigger a server-side download in a real implementation
-        alert("CSV export functionality would be handled by a dedicated API route.");
+    const exportToCSV = async () => {
+        toast({ title: 'Exporting...', description: 'Your CSV download will begin shortly.' });
+        window.location.href = '/api/logs/export';
     };
     
     const getStatusBadgeVariant = (status: string): 'default' | 'destructive' | 'secondary' => {
@@ -147,7 +142,6 @@ export default function LogsAdminPage() {
                 <CardDescription>A detailed audit trail of all actions performed in the admin panel.</CardDescription>
             </CardHeader>
             <CardContent>
-                {/* Filters */}
                 <div className="flex flex-wrap gap-2 mb-4 p-4 border rounded-lg bg-muted/50">
                     <div className="relative flex-grow min-w-[200px]">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -183,7 +177,6 @@ export default function LogsAdminPage() {
                     <Button onClick={exportToCSV} variant="outline" className="w-full sm:w-auto"><Download className="mr-2 h-4 w-4" /> Export CSV</Button>
                 </div>
 
-                {/* Table */}
                 <div className="border rounded-md">
                     <Table>
                         <TableHeader>
@@ -213,14 +206,14 @@ export default function LogsAdminPage() {
                                         ) : (
                                             <Dialog>
                                                 <DialogTrigger asChild>
-                                                    <Button variant="ghost" size="sm"><Eye className="mr-2 h-4 w-4"/> View Changes</Button>
+                                                    <Button variant="ghost" size="sm" disabled={!log.before && !log.after}><Eye className="mr-2 h-4 w-4"/> View Changes</Button>
                                                 </DialogTrigger>
                                                 <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
                                                     <DialogHeader>
                                                         <DialogTitle>Log Details: #{log.id}</DialogTitle>
                                                         <DialogDescription>Showing changes for action: {log.action}</DialogDescription>
                                                     </DialogHeader>
-                                                    <div className="flex-grow overflow-y-auto">
+                                                    <div className="flex-grow overflow-y-auto bg-card rounded-md">
                                                         <DiffViewer before={log.before} after={log.after} />
                                                     </div>
                                                 </DialogContent>
@@ -235,7 +228,6 @@ export default function LogsAdminPage() {
                     </Table>
                 </div>
                 
-                {/* Pagination */}
                 {totalPages > 1 && (
                     <div className="flex items-center justify-between mt-4">
                         <div className="text-sm text-muted-foreground">

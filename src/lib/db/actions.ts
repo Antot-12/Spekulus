@@ -21,7 +21,7 @@ import {
   NewsletterSectionData,
   Competitor,
 } from '../data'
-import { eq, and, notInArray, sql as sqlBuilder } from 'drizzle-orm'
+import { eq, and, notInArray, sql as sqlBuilder, ilike, desc, asc, gte, lte, or } from 'drizzle-orm'
 
 
 const sql = neon(process.env.DATABASE_URL!)
@@ -505,4 +505,96 @@ export async function uploadFile(fileBuffer: Buffer, filename: string, mimeType:
     .values({ data: fileBuffer, filename, mimeType })
     .returning({ id: schema.files.id })
   return row
+}
+
+// ==============================
+// AUDIT LOGS
+// ==============================
+type GetAuditLogsParams = {
+    page: number;
+    filters: {
+        query?: string;
+        changeType?: string;
+        status?: string;
+        dateRange?: { from?: Date; to?: Date };
+    };
+    sort: {
+        by: string;
+        direction: 'asc' | 'desc';
+    };
+    pageSize?: number;
+};
+
+export async function getAuditLogs(params: GetAuditLogsParams): Promise<{ logs: any[], total: number }> {
+    const { page, filters, sort, pageSize = 20 } = params;
+
+    const whereClauses = [];
+
+    if (filters.query) {
+        const queryLower = filters.query.toLowerCase();
+        whereClauses.push(
+            or(
+                ilike(schema.auditLogs.actor, `%${queryLower}%`),
+                ilike(schema.auditLogs.action, `%${queryLower}%`),
+                ilike(schema.auditLogs.target, `%${queryLower}%`)
+            )
+        );
+    }
+    if (filters.changeType && filters.changeType !== 'all') {
+        whereClauses.push(eq(schema.auditLogs.changeType, filters.changeType as any));
+    }
+    if (filters.status && filters.status !== 'all') {
+        whereClauses.push(eq(schema.auditLogs.status, filters.status as any));
+    }
+    if (filters.dateRange?.from) {
+        whereClauses.push(gte(schema.auditLogs.timestamp, filters.dateRange.from));
+    }
+    if (filters.dateRange?.to) {
+        whereClauses.push(lte(schema.auditLogs.timestamp, filters.dateRange.to));
+    }
+
+    const finalWhere = whereClauses.length > 0 ? and(...whereClauses) : undefined;
+
+    const logsQuery = db.select()
+        .from(schema.auditLogs)
+        .where(finalWhere)
+        .limit(pageSize)
+        .offset((page - 1) * pageSize);
+
+    const sortColumn = (schema.auditLogs as any)[sort.by] || schema.auditLogs.timestamp;
+    if (sort.direction === 'asc') {
+        logsQuery.orderBy(asc(sortColumn));
+    } else {
+        logsQuery.orderBy(desc(sortColumn));
+    }
+
+    const logs = await logsQuery;
+
+    const [totalResult] = await db.select({ count: sqlBuilder<number>`count(*)` }).from(schema.auditLogs).where(finalWhere);
+    const total = Number(totalResult.count);
+
+    return { logs, total };
+}
+
+export async function getAuditLogsAsCsv() {
+    const logs = await db.select().from(schema.auditLogs).orderBy(desc(schema.auditLogs.timestamp));
+    if (logs.length === 0) return '';
+
+    const headers = Object.keys(logs[0]);
+    const csvRows = [headers.join(',')];
+
+    for (const log of logs) {
+        const values = headers.map(header => {
+            let value = (log as any)[header];
+            if (value instanceof Date) {
+                value = value.toISOString();
+            } else if (typeof value === 'object' && value !== null) {
+                value = JSON.stringify(value).replace(/"/g, '""');
+            }
+            return `"${value}"`;
+        });
+        csvRows.push(values.join(','));
+    }
+
+    return csvRows.join('\n');
 }
