@@ -22,6 +22,7 @@ import {
   Competitor,
 } from '../data'
 import { eq, and, notInArray, sql as sqlBuilder, ilike, desc, asc, gte, lte, or } from 'drizzle-orm'
+import { logAction } from '../logger'
 
 
 const sql = neon(process.env.DATABASE_URL!)
@@ -67,11 +68,36 @@ export async function getMaintenanceSettings(): Promise<MaintenanceSettings> {
     return newSettings || { isActive: false, message: '', endsAt: null };
 }
 
-export async function updateMaintenanceSettings(data: Partial<MaintenanceSettings>) {
-    return await db.update(schema.maintenanceSettings)
-        .set({ ...data, updatedAt: new Date() })
-        .where(eq(schema.maintenanceSettings.id, 1))
-        .returning();
+export async function updateMaintenanceSettings(data: Partial<MaintenanceSettings>, actor: string) {
+    const beforeState = await getMaintenanceSettings();
+    try {
+        const [updatedSettings] = await db.update(schema.maintenanceSettings)
+            .set({ ...data, updatedAt: new Date() })
+            .where(eq(schema.maintenanceSettings.id, 1))
+            .returning();
+        
+        await logAction({
+            actor,
+            action: 'Update Maintenance Settings',
+            target: 'Site-wide',
+            changeType: 'SETTINGS',
+            before: beforeState,
+            after: updatedSettings,
+            status: 'SUCCESS'
+        });
+        return updatedSettings;
+    } catch(err: any) {
+        await logAction({
+            actor,
+            action: 'Update Maintenance Settings',
+            target: 'Site-wide',
+            changeType: 'SETTINGS',
+            before: beforeState,
+            status: 'FAILURE',
+            error: err.message
+        });
+        throw err;
+    }
 }
 
 // ==============================
@@ -119,10 +145,34 @@ export async function getPageStatus(path: string): Promise<PageStatus | null> {
     return page?.status || null;
 }
 
-export async function updatePageStatus(path: string, status: PageStatus) {
-    await db.update(schema.pages)
-        .set({ status, updatedAt: new Date() })
-        .where(eq(schema.pages.path, path));
+export async function updatePageStatus(path: string, newStatus: PageStatus, actor: string) {
+    const beforeState = await getPageStatus(path);
+    try {
+        await db.update(schema.pages)
+            .set({ status: newStatus, updatedAt: new Date() })
+            .where(eq(schema.pages.path, path));
+        
+        await logAction({
+            actor,
+            action: 'Update Page Status',
+            target: path,
+            changeType: 'UI_VISIBILITY',
+            before: { status: beforeState },
+            after: { status: newStatus },
+            status: 'SUCCESS'
+        });
+    } catch(err: any) {
+        await logAction({
+            actor,
+            action: 'Update Page Status',
+            target: path,
+            changeType: 'UI_VISIBILITY',
+            before: { status: beforeState },
+            status: 'FAILURE',
+            error: err.message
+        });
+        throw err;
+    }
 }
 
 
@@ -134,16 +184,40 @@ export async function getHeroData(lang: Language): Promise<HeroSectionData | nul
   return { ...hero, features }
 }
 
-export async function updateHeroData(lang: Language, data: Omit<HeroSectionData, 'id'>) {
-  const payload = { title: data.title, subtitle: data.subtitle, imageId: data.imageId ?? null }
-  await db.insert(schema.heroSections).values({ lang, ...payload }).onConflictDoUpdate({
-    target: schema.heroSections.lang,
-    set: payload
-  })
-  await db.delete(schema.heroFeatures).where(eq(schema.heroFeatures.lang, lang))
-  if (data.features.length) {
-    const rows = data.features.map(f => ({ icon: f.icon, text: f.text, lang }))
-    await db.insert(schema.heroFeatures).values(rows)
+export async function updateHeroData(lang: Language, data: Omit<HeroSectionData, 'id'>, actor: string) {
+  const beforeState = await getHeroData(lang);
+  try {
+      const payload = { title: data.title, subtitle: data.subtitle, imageId: data.imageId ?? null }
+      await db.insert(schema.heroSections).values({ lang, ...payload }).onConflictDoUpdate({
+        target: schema.heroSections.lang,
+        set: payload
+      })
+      await db.delete(schema.heroFeatures).where(eq(schema.heroFeatures.lang, lang))
+      if (data.features.length) {
+        const rows = data.features.map(f => ({ icon: f.icon, text: f.text, lang }))
+        await db.insert(schema.heroFeatures).values(rows)
+      }
+      const afterState = await getHeroData(lang);
+      await logAction({
+          actor,
+          action: 'Update Hero Section',
+          target: `Hero - ${lang.toUpperCase()}`,
+          changeType: 'CONTENT',
+          before: beforeState,
+          after: afterState,
+          status: 'SUCCESS'
+      });
+  } catch(err: any) {
+    await logAction({
+      actor,
+      action: 'Update Hero Section',
+      target: `Hero - ${lang.toUpperCase()}`,
+      changeType: 'CONTENT',
+      before: beforeState,
+      status: 'FAILURE',
+      error: err.message
+    });
+    throw err;
   }
 }
 
@@ -156,12 +230,35 @@ export async function getProductData(lang: Language) {
   return { components }
 }
 
-export async function updateProductComponents(lang: Language, components: ProductComponent[]) {
-  // This is a "delete and replace" strategy for simplicity
-  await db.delete(schema.productComponents).where(eq(schema.productComponents.lang, lang))
-  if (components.length) {
-    const rows = components.map(({ id, ...rest }) => ({ ...rest, lang }))
-    await db.insert(schema.productComponents).values(rows)
+export async function updateProductComponents(lang: Language, components: ProductComponent[], actor: string) {
+  const beforeState = await getProductData(lang);
+  try {
+      await db.delete(schema.productComponents).where(eq(schema.productComponents.lang, lang))
+      if (components.length) {
+        const rows = components.map(({ id, ...rest }) => ({ ...rest, lang }))
+        await db.insert(schema.productComponents).values(rows)
+      }
+      const afterState = await getProductData(lang);
+      await logAction({
+          actor,
+          action: 'Update Product Section',
+          target: `Product - ${lang.toUpperCase()}`,
+          changeType: 'CONTENT',
+          before: beforeState,
+          after: afterState,
+          status: 'SUCCESS'
+      });
+  } catch(err: any) {
+    await logAction({
+        actor,
+        action: 'Update Product Section',
+        target: `Product - ${lang.toUpperCase()}`,
+        changeType: 'CONTENT',
+        before: beforeState,
+        status: 'FAILURE',
+        error: err.message
+    });
+    throw err;
   }
 }
 
@@ -172,16 +269,60 @@ export async function getAdvantagesData(lang: Language) {
   })
 }
 
-export async function createAdvantage(lang: Language, advantage: Omit<Advantage, 'id'>) {
-  const [row] = await db.insert(schema.advantages).values({ ...advantage, lang }).returning()
-  return row
+export async function createAdvantage(lang: Language, advantage: Omit<Advantage, 'id'>, actor: string) {
+  try {
+      const [row] = await db.insert(schema.advantages).values({ ...advantage, lang }).returning()
+      await logAction({
+          actor,
+          action: 'Create Advantage',
+          target: `Advantage - ${lang.toUpperCase()}`,
+          changeType: 'CONTENT',
+          after: row,
+          status: 'SUCCESS'
+      });
+      return row;
+  } catch(err: any) {
+    await logAction({
+      actor,
+      action: 'Create Advantage',
+      target: `Advantage - ${lang.toUpperCase()}`,
+      changeType: 'CONTENT',
+      status: 'FAILURE',
+      error: err.message
+    });
+    throw err;
+  }
 }
 
-export async function updateAdvantagesData(lang: Language, advantages: Advantage[]) {
-  await db.delete(schema.advantages).where(eq(schema.advantages.lang, lang))
-  if (advantages.length) {
-    const rows = advantages.map(({ id, ...rest }) => ({ ...rest, lang }))
-    await db.insert(schema.advantages).values(rows)
+export async function updateAdvantagesData(lang: Language, advantages: Advantage[], actor: string) {
+  const beforeState = await getAdvantagesData(lang);
+  try {
+    await db.delete(schema.advantages).where(eq(schema.advantages.lang, lang))
+    if (advantages.length) {
+      const rows = advantages.map(({ id, ...rest }) => ({ ...rest, lang }))
+      await db.insert(schema.advantages).values(rows)
+    }
+    const afterState = await getAdvantagesData(lang);
+    await logAction({
+        actor,
+        action: 'Update Advantages Section',
+        target: `Advantages - ${lang.toUpperCase()}`,
+        changeType: 'CONTENT',
+        before: beforeState,
+        after: afterState,
+        status: 'SUCCESS'
+    });
+  } catch(err: any) {
+    await logAction({
+      actor,
+      action: 'Update Advantages Section',
+      target: `Advantages - ${lang.toUpperCase()}`,
+      changeType: 'CONTENT',
+      before: beforeState,
+      status: 'FAILURE',
+      error: err.message
+    });
+    throw err;
   }
 }
 
@@ -191,22 +332,47 @@ export async function getActionSectionData(lang: Language) {
 
 export async function updateActionSectionData(
   lang: Language,
-  data: Omit<ActionSectionData, 'id'>
+  data: Omit<ActionSectionData, 'id'>,
+  actor: string
 ) {
-  const payload = {
-    title: data.title,
-    subtitle: data.subtitle,
-    description: data.description,
-    visible: data.visible ?? true,
-    buttonText: data.buttonText ?? '',
-    buttonUrl: data.buttonUrl ?? '',
-    buttonVisible: data.buttonVisible ?? true,
-    imageId: data.imageId ?? null
+  const beforeState = await getActionSectionData(lang);
+  try {
+      const payload = {
+        title: data.title,
+        subtitle: data.subtitle,
+        description: data.description,
+        visible: data.visible ?? true,
+        buttonText: data.buttonText ?? '',
+        buttonUrl: data.buttonUrl ?? '',
+        buttonVisible: data.buttonVisible ?? true,
+        imageId: data.imageId ?? null
+      }
+      await db.insert(schema.actionSections).values({ lang, ...payload }).onConflictDoUpdate({
+        target: schema.actionSections.lang,
+        set: payload
+      })
+      const afterState = await getActionSectionData(lang);
+      await logAction({
+        actor,
+        action: 'Update Action Section',
+        target: `Action - ${lang.toUpperCase()}`,
+        changeType: 'CONTENT',
+        before: beforeState,
+        after: afterState,
+        status: 'SUCCESS'
+      });
+  } catch(err: any) {
+    await logAction({
+      actor,
+      action: 'Update Action Section',
+      target: `Action - ${lang.toUpperCase()}`,
+      changeType: 'CONTENT',
+      before: beforeState,
+      status: 'FAILURE',
+      error: err.message
+    });
+    throw err;
   }
-  await db.insert(schema.actionSections).values({ lang, ...payload }).onConflictDoUpdate({
-    target: schema.actionSections.lang,
-    set: payload
-  })
 }
 
 export async function getRoadmapEvents(lang: Language) {
@@ -216,16 +382,60 @@ export async function getRoadmapEvents(lang: Language) {
   })
 }
 
-export async function createRoadmapEvent(lang: Language, e: Omit<RoadmapEvent, 'id'>) {
-  const [row] = await db.insert(schema.roadmapEvents).values({ ...e, lang }).returning()
-  return row
+export async function createRoadmapEvent(lang: Language, e: Omit<RoadmapEvent, 'id'>, actor: string) {
+  try {
+    const [row] = await db.insert(schema.roadmapEvents).values({ ...e, lang }).returning()
+    await logAction({
+        actor,
+        action: 'Create Roadmap Event',
+        target: `Roadmap - ${lang.toUpperCase()}`,
+        changeType: 'CONTENT',
+        after: row,
+        status: 'SUCCESS'
+    });
+    return row
+  } catch(err: any) {
+    await logAction({
+      actor,
+      action: 'Create Roadmap Event',
+      target: `Roadmap - ${lang.toUpperCase()}`,
+      changeType: 'CONTENT',
+      status: 'FAILURE',
+      error: err.message
+    });
+    throw err;
+  }
 }
 
-export async function updateRoadmapEvents(lang: Language, events: Omit<RoadmapEvent, 'id'>[]) {
-  await db.delete(schema.roadmapEvents).where(eq(schema.roadmapEvents.lang, lang))
-  if (events.length) {
-    const rows = events.map(r => ({ ...r, lang }))
-    await db.insert(schema.roadmapEvents).values(rows)
+export async function updateRoadmapEvents(lang: Language, events: Omit<RoadmapEvent, 'id'>[], actor: string) {
+  const beforeState = await getRoadmapEvents(lang);
+  try {
+    await db.delete(schema.roadmapEvents).where(eq(schema.roadmapEvents.lang, lang))
+    if (events.length) {
+      const rows = events.map(r => ({ ...r, lang }))
+      await db.insert(schema.roadmapEvents).values(rows)
+    }
+    const afterState = await getRoadmapEvents(lang);
+    await logAction({
+      actor,
+      action: 'Update Roadmap Events',
+      target: `Roadmap - ${lang.toUpperCase()}`,
+      changeType: 'CONTENT',
+      before: beforeState,
+      after: afterState,
+      status: 'SUCCESS'
+    });
+  } catch(err: any) {
+    await logAction({
+      actor,
+      action: 'Update Roadmap Events',
+      target: `Roadmap - ${lang.toUpperCase()}`,
+      changeType: 'CONTENT',
+      before: beforeState,
+      status: 'FAILURE',
+      error: err.message
+    });
+    throw err;
   }
 }
 
@@ -236,16 +446,60 @@ export async function getFaqs(lang: Language) {
   })
 }
 
-export async function createFaq(lang: Language, faq: Omit<FaqItem, 'id'>) {
-  const [row] = await db.insert(schema.faqItems).values({ ...faq, lang }).returning()
-  return row
+export async function createFaq(lang: Language, faq: Omit<FaqItem, 'id'>, actor: string) {
+  try {
+    const [row] = await db.insert(schema.faqItems).values({ ...faq, lang }).returning()
+    await logAction({
+      actor,
+      action: 'Create FAQ',
+      target: `FAQ - ${lang.toUpperCase()}`,
+      changeType: 'CONTENT',
+      after: row,
+      status: 'SUCCESS'
+    });
+    return row
+  } catch(err: any) {
+    await logAction({
+      actor,
+      action: 'Create FAQ',
+      target: `FAQ - ${lang.toUpperCase()}`,
+      changeType: 'CONTENT',
+      status: 'FAILURE',
+      error: err.message
+    });
+    throw err;
+  }
 }
 
-export async function updateFaqs(lang: Language, faqs: FaqItem[]) {
-  await db.delete(schema.faqItems).where(eq(schema.faqItems.lang, lang))
-  if (faqs.length) {
-    const rows = faqs.map(({ id, ...rest }) => ({ ...rest, lang }))
-    await db.insert(schema.faqItems).values(rows)
+export async function updateFaqs(lang: Language, faqs: FaqItem[], actor: string) {
+  const beforeState = await getFaqs(lang);
+  try {
+    await db.delete(schema.faqItems).where(eq(schema.faqItems.lang, lang))
+    if (faqs.length) {
+      const rows = faqs.map(({ id, ...rest }) => ({ ...rest, lang }))
+      await db.insert(schema.faqItems).values(rows)
+    }
+    const afterState = await getFaqs(lang);
+    await logAction({
+      actor,
+      action: 'Update FAQs',
+      target: `FAQ - ${lang.toUpperCase()}`,
+      changeType: 'CONTENT',
+      before: beforeState,
+      after: afterState,
+      status: 'SUCCESS'
+    });
+  } catch(err: any) {
+    await logAction({
+      actor,
+      action: 'Update FAQs',
+      target: `FAQ - ${lang.toUpperCase()}`,
+      changeType: 'CONTENT',
+      before: beforeState,
+      status: 'FAILURE',
+      error: err.message
+    });
+    throw err;
   }
 }
 
@@ -259,53 +513,98 @@ export async function getCreatorBySlug(lang: Language, slug: string) {
   })
 }
 
-export async function createCreator(lang: Language, data: Omit<Creator, 'id'>) {
+export async function createCreator(lang: Language, data: Omit<Creator, 'id'>, actor: string) {
   const payload = {
     ...data,
     lang,
     imageId: data.imageId ?? null,
     featuredProjectImageId: data.featuredProjectImageId ?? null
   }
-  const [row] = await db.insert(schema.creators).values(payload).returning()
-  return row
+  try {
+    const [row] = await db.insert(schema.creators).values(payload).returning()
+    await logAction({
+      actor,
+      action: 'Create Creator Profile',
+      target: `Creator: ${row.name} (${lang.toUpperCase()})`,
+      changeType: 'CONTENT',
+      after: row,
+      status: 'SUCCESS'
+    });
+    return row
+  } catch(err: any) {
+    await logAction({
+      actor,
+      action: 'Create Creator Profile',
+      target: `Creator: ${data.name} (${lang.toUpperCase()})`,
+      changeType: 'CONTENT',
+      status: 'FAILURE',
+      error: err.message
+    });
+    throw err;
+  }
 }
 
-export async function updateCreators(lang: Language, creatorsData: Creator[]) {
-  const rows = creatorsData.map(c => ({
-    ...c,
-    lang,
-    imageId: c.imageId ?? null,
-    featuredProjectImageId: c.featuredProjectImageId ?? null,
-    gallery: c.gallery ?? [],
-    skills: c.skills ?? [],
-    languages: c.languages ?? [],
-    contributions: c.contributions ?? [],
-    hobbies: c.hobbies ?? [],
-    music: c.music ?? {},
-    socials: c.socials ?? {},
-    education: c.education ?? [],
-    certifications: c.certifications ?? [],
-    achievements: c.achievements ?? [],
-    featuredProject: c.featuredProject ?? { title: '', description: '', url: '' },
-    cvUrl: c.cvUrl ?? '',
-    quote: c.quote ?? '',
-    quoteAuthor: c.quoteAuthor ?? '',
-    isVisible: c.isVisible ?? true
-  }))
-  for (const r of rows) {
-    await db.insert(schema.creators).values(r).onConflictDoUpdate({
-      target: [schema.creators.slug, schema.creators.lang],
-      set: r
-    })
-  }
-  const slugs = creatorsData.map(c => c.slug)
-  if (slugs.length) {
-    await db.delete(schema.creators).where(
-      and(eq(schema.creators.lang, lang), notInArray(schema.creators.slug, slugs))
-    )
-  } else {
-    await db.delete(schema.creators).where(eq(schema.creators.lang, lang))
-  }
+export async function updateCreators(lang: Language, creatorsData: Creator[], actor: string) {
+    const beforeState = await getCreators(lang);
+    try {
+        const rows = creatorsData.map(c => ({
+            ...c,
+            lang,
+            imageId: c.imageId ?? null,
+            featuredProjectImageId: c.featuredProjectImageId ?? null,
+            gallery: c.gallery ?? [],
+            skills: c.skills ?? [],
+            languages: c.languages ?? [],
+            contributions: c.contributions ?? [],
+            hobbies: c.hobbies ?? [],
+            music: c.music ?? {},
+            socials: c.socials ?? {},
+            education: c.education ?? [],
+            certifications: c.certifications ?? [],
+            achievements: c.achievements ?? [],
+            featuredProject: c.featuredProject ?? { title: '', description: '', url: '' },
+            cvUrl: c.cvUrl ?? '',
+            quote: c.quote ?? '',
+            quoteAuthor: c.quoteAuthor ?? '',
+            isVisible: c.isVisible ?? true
+        }));
+
+        for (const r of rows) {
+            await db.insert(schema.creators).values(r).onConflictDoUpdate({
+                target: [schema.creators.slug, schema.creators.lang],
+                set: r
+            });
+        }
+        const slugs = creatorsData.map(c => c.slug);
+        if (slugs.length) {
+            await db.delete(schema.creators).where(
+                and(eq(schema.creators.lang, lang), notInArray(schema.creators.slug, slugs))
+            );
+        } else {
+            await db.delete(schema.creators).where(eq(schema.creators.lang, lang));
+        }
+        const afterState = await getCreators(lang);
+        await logAction({
+            actor,
+            action: 'Update Creator Profiles',
+            target: `Creators - ${lang.toUpperCase()}`,
+            changeType: 'CONTENT',
+            before: beforeState,
+            after: afterState,
+            status: 'SUCCESS'
+        });
+    } catch(err: any) {
+        await logAction({
+            actor,
+            action: 'Update Creator Profiles',
+            target: `Creators - ${lang.toUpperCase()}`,
+            changeType: 'CONTENT',
+            before: beforeState,
+            status: 'FAILURE',
+            error: err.message
+        });
+        throw err;
+    }
 }
 
 export async function getDevNotes() {
@@ -318,17 +617,83 @@ export async function getDevNoteBySlug(slug: string) {
   return await db.query.devNotes.findFirst({ where: eq(schema.devNotes.slug, slug) })
 }
 
-export async function createDevNote(note: Omit<DevNote, 'id'>) {
-  const [row] = await db.insert(schema.devNotes).values(note).returning()
-  return row
+export async function createDevNote(note: Omit<DevNote, 'id'>, actor: string) {
+  try {
+    const [row] = await db.insert(schema.devNotes).values(note).returning()
+    await logAction({
+        actor,
+        action: 'Create Dev Note',
+        target: `Note: ${row.title}`,
+        changeType: 'CONTENT',
+        after: row,
+        status: 'SUCCESS'
+    });
+    return row
+  } catch(err: any) {
+    await logAction({
+      actor,
+      action: 'Create Dev Note',
+      target: `Note: ${note.title}`,
+      changeType: 'CONTENT',
+      status: 'FAILURE',
+      error: err.message
+    });
+    throw err;
+  }
 }
 
-export async function updateDevNote(id: number, note: Partial<Omit<DevNote, 'id'>>) {
-  await db.update(schema.devNotes).set(note).where(eq(schema.devNotes.id, id))
+export async function updateDevNote(id: number, note: Partial<Omit<DevNote, 'id'>>, actor: string) {
+  const beforeState = await db.query.devNotes.findFirst({ where: eq(schema.devNotes.id, id) });
+  try {
+      await db.update(schema.devNotes).set(note).where(eq(schema.devNotes.id, id))
+      const afterState = await db.query.devNotes.findFirst({ where: eq(schema.devNotes.id, id) });
+      await logAction({
+        actor,
+        action: 'Update Dev Note',
+        target: `Note ID: ${id}`,
+        changeType: 'CONTENT',
+        before: beforeState,
+        after: afterState,
+        status: 'SUCCESS'
+      });
+  } catch(err: any) {
+    await logAction({
+      actor,
+      action: 'Update Dev Note',
+      target: `Note ID: ${id}`,
+      changeType: 'CONTENT',
+      before: beforeState,
+      status: 'FAILURE',
+      error: err.message
+    });
+    throw err;
+  }
 }
 
-export async function deleteDevNote(id: number) {
-  await db.delete(schema.devNotes).where(eq(schema.devNotes.id, id))
+export async function deleteDevNote(id: number, actor: string) {
+  const beforeState = await db.query.devNotes.findFirst({ where: eq(schema.devNotes.id, id) });
+  try {
+      await db.delete(schema.devNotes).where(eq(schema.devNotes.id, id));
+      await logAction({
+        actor,
+        action: 'Delete Dev Note',
+        target: `Note ID: ${id}`,
+        changeType: 'CONTENT',
+        before: beforeState,
+        status: 'SUCCESS'
+      });
+  } catch(err: any) {
+    await logAction({
+      actor,
+      action: 'Delete Dev Note',
+      target: `Note ID: ${id}`,
+      changeType: 'CONTENT',
+      before: beforeState,
+      status: 'FAILURE',
+      error: err.message
+    });
+    throw err;
+  }
 }
 
 export async function getScenarios(lang: Language) {
@@ -338,16 +703,60 @@ export async function getScenarios(lang: Language) {
   })
 }
 
-export async function createScenario(lang: Language, scenario: Omit<Scenario, 'id'>) {
-  const [row] = await db.insert(schema.scenarios).values({ ...scenario, lang }).returning();
-  return row;
+export async function createScenario(lang: Language, scenario: Omit<Scenario, 'id'>, actor: string) {
+  try {
+    const [row] = await db.insert(schema.scenarios).values({ ...scenario, lang }).returning();
+    await logAction({
+      actor,
+      action: 'Create Scenario',
+      target: `Scenario - ${lang.toUpperCase()}`,
+      changeType: 'CONTENT',
+      after: row,
+      status: 'SUCCESS'
+    });
+    return row;
+  } catch(err: any) {
+    await logAction({
+      actor,
+      action: 'Create Scenario',
+      target: `Scenario - ${lang.toUpperCase()}`,
+      changeType: 'CONTENT',
+      status: 'FAILURE',
+      error: err.message
+    });
+    throw err;
+  }
 }
 
-export async function updateScenarios(lang: Language, scenarios: Scenario[]) {
-  await db.delete(schema.scenarios).where(eq(schema.scenarios.lang, lang));
-  if (scenarios.length) {
-    const rows = scenarios.map(({ id, ...rest }) => ({ ...rest, lang }));
-    await db.insert(schema.scenarios).values(rows);
+export async function updateScenarios(lang: Language, scenarios: Scenario[], actor: string) {
+  const beforeState = await getScenarios(lang);
+  try {
+    await db.delete(schema.scenarios).where(eq(schema.scenarios.lang, lang));
+    if (scenarios.length) {
+      const rows = scenarios.map(({ id, ...rest }) => ({ ...rest, lang }));
+      await db.insert(schema.scenarios).values(rows);
+    }
+    const afterState = await getScenarios(lang);
+    await logAction({
+      actor,
+      action: 'Update Scenarios Section',
+      target: `Scenarios - ${lang.toUpperCase()}`,
+      changeType: 'CONTENT',
+      before: beforeState,
+      after: afterState,
+      status: 'SUCCESS'
+    });
+  } catch(err: any) {
+    await logAction({
+      actor,
+      action: 'Update Scenarios Section',
+      target: `Scenarios - ${lang.toUpperCase()}`,
+      changeType: 'CONTENT',
+      before: beforeState,
+      status: 'FAILURE',
+      error: err.message
+    });
+    throw err;
   }
 }
 
@@ -361,19 +770,40 @@ export async function getCompetitors() {
     });
 }
 
-export async function updateCompetitors(competitors: Competitor[]) {
-    // This is a full replace for simplicity.
-    // It's not the most efficient, but fine for a small list.
-    await db.delete(schema.competitors);
-    if (competitors.length) {
-        // Filter out temporary negative IDs before inserting
-        const validCompetitors = competitors.map(({ id, ...rest }) => ({
-            ...rest,
-            slug: rest.slug || rest.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-        })).filter(c => c.name);
-        if (validCompetitors.length) {
-           await db.insert(schema.competitors).values(validCompetitors);
+export async function updateCompetitors(competitors: Competitor[], actor: string) {
+    const beforeState = await getCompetitors();
+    try {
+        await db.delete(schema.competitors);
+        if (competitors.length) {
+            const validCompetitors = competitors.map(({ id, ...rest }) => ({
+                ...rest,
+                slug: rest.slug || rest.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+            })).filter(c => c.name);
+            if (validCompetitors.length) {
+               await db.insert(schema.competitors).values(validCompetitors);
+            }
         }
+        const afterState = await getCompetitors();
+        await logAction({
+          actor,
+          action: 'Update Competitors',
+          target: 'Comparison Table',
+          changeType: 'CONTENT',
+          before: beforeState,
+          after: afterState,
+          status: 'SUCCESS'
+        });
+    } catch(err: any) {
+        await logAction({
+          actor,
+          action: 'Update Competitors',
+          target: 'Comparison Table',
+          changeType: 'CONTENT',
+          before: beforeState,
+          status: 'FAILURE',
+          error: err.message
+        });
+        throw err;
     }
 }
 
@@ -384,14 +814,38 @@ export async function getComparisonSectionData(lang: Language): Promise<Comparis
     });
 }
 
-export async function updateComparisonSectionData(lang: Language, data: Omit<ComparisonSectionData, 'id'>) {
-    const payload = { ...data };
-    await db.insert(schema.comparisonSections)
-        .values({ lang, ...payload })
-        .onConflictDoUpdate({
-            target: schema.comparisonSections.lang,
-            set: payload,
+export async function updateComparisonSectionData(lang: Language, data: Omit<ComparisonSectionData, 'id'>, actor: string) {
+    const beforeState = await getComparisonSectionData(lang);
+    try {
+        const payload = { ...data };
+        await db.insert(schema.comparisonSections)
+            .values({ lang, ...payload })
+            .onConflictDoUpdate({
+                target: schema.comparisonSections.lang,
+                set: payload,
+            });
+        const afterState = await getComparisonSectionData(lang);
+        await logAction({
+          actor,
+          action: 'Update Comparison Section Text',
+          target: `Comparison - ${lang.toUpperCase()}`,
+          changeType: 'CONTENT',
+          before: beforeState,
+          after: afterState,
+          status: 'SUCCESS'
         });
+    } catch(err: any) {
+      await logAction({
+        actor,
+        action: 'Update Comparison Section Text',
+        target: `Comparison - ${lang.toUpperCase()}`,
+        changeType: 'CONTENT',
+        before: beforeState,
+        status: 'FAILURE',
+        error: err.message
+      });
+      throw err;
+    }
 }
 
 export async function getCompetitorFeatures(lang: Language) {
@@ -401,17 +855,39 @@ export async function getCompetitorFeatures(lang: Language) {
     });
 }
 
-export async function updateCompetitorFeatures(lang: Language, features: CompetitorFeature[]) {
-    // Delete all features for the given language
-    await db.delete(schema.competitorFeatures).where(eq(schema.competitorFeatures.lang, lang));
+export async function updateCompetitorFeatures(lang: Language, features: CompetitorFeature[], actor: string) {
+    const beforeState = await getCompetitorFeatures(lang);
+    try {
+        await db.delete(schema.competitorFeatures).where(eq(schema.competitorFeatures.lang, lang));
 
-    // Re-insert the updated features if any exist
-    if (features.length > 0) {
-        const rowsToInsert = features.map(({ id, ...rest }) => ({
-            ...rest,
-            lang: lang,
-        }));
-        await db.insert(schema.competitorFeatures).values(rowsToInsert);
+        if (features.length > 0) {
+            const rowsToInsert = features.map(({ id, ...rest }) => ({
+                ...rest,
+                lang: lang,
+            }));
+            await db.insert(schema.competitorFeatures).values(rowsToInsert);
+        }
+        const afterState = await getCompetitorFeatures(lang);
+        await logAction({
+          actor,
+          action: 'Update Comparison Features',
+          target: `Comparison - ${lang.toUpperCase()}`,
+          changeType: 'CONTENT',
+          before: beforeState,
+          after: afterState,
+          status: 'SUCCESS'
+        });
+    } catch(err: any) {
+        await logAction({
+          actor,
+          action: 'Update Comparison Features',
+          target: `Comparison - ${lang.toUpperCase()}`,
+          changeType: 'CONTENT',
+          before: beforeState,
+          status: 'FAILURE',
+          error: err.message
+        });
+        throw err;
     }
 }
 
@@ -424,17 +900,41 @@ export async function getNewsletterSectionData(lang: Language): Promise<Newslett
     });
 }
 
-export async function updateNewsletterSectionData(lang: Language, data: Omit<NewsletterSectionData, 'id'>) {
-    const payload = { 
-        ...data,
-        button_text: data.buttonText || 'Subscribe',
-     };
-    await db.insert(schema.newsletterSections)
-        .values({ lang, ...payload })
-        .onConflictDoUpdate({
-            target: schema.newsletterSections.lang,
-            set: payload,
+export async function updateNewsletterSectionData(lang: Language, data: Omit<NewsletterSectionData, 'id'>, actor: string) {
+    const beforeState = await getNewsletterSectionData(lang);
+    try {
+        const payload = { 
+            ...data,
+            button_text: data.buttonText || 'Subscribe',
+         };
+        await db.insert(schema.newsletterSections)
+            .values({ lang, ...payload })
+            .onConflictDoUpdate({
+                target: schema.newsletterSections.lang,
+                set: payload,
+            });
+        const afterState = await getNewsletterSectionData(lang);
+        await logAction({
+          actor,
+          action: 'Update Newsletter Section',
+          target: `Newsletter - ${lang.toUpperCase()}`,
+          changeType: 'CONTENT',
+          before: beforeState,
+          after: afterState,
+          status: 'SUCCESS'
         });
+    } catch(err: any) {
+        await logAction({
+          actor,
+          action: 'Update Newsletter Section',
+          target: `Newsletter - ${lang.toUpperCase()}`,
+          changeType: 'CONTENT',
+          before: beforeState,
+          status: 'FAILURE',
+          error: err.message
+        });
+        throw err;
+    }
 }
 
 
@@ -443,7 +943,7 @@ export async function subscribeToNewsletter(email: string) {
         await db.insert(schema.newsletterSubscriptions).values({ email }).onConflictDoNothing();
         return { success: true };
     } catch (error) {
-        if (error instanceof Error && 'code' in error && error.code === '23505') { // Unique violation
+        if (error instanceof Error && 'code' in error && (error as any).code === '23505') { // Unique violation
             return { success: true, message: 'Email is already subscribed.' };
         }
         console.error("Newsletter subscription error:", error);
@@ -469,15 +969,82 @@ export async function getCooperationRequests(): Promise<CooperationRequest[]> {
     });
 }
 
-export async function updateCooperationRequestStatus(id: number, status: RequestStatus) {
-    await db.update(schema.cooperationRequests)
-        .set({ status })
-        .where(eq(schema.cooperationRequests.id, id));
+export async function updateCooperationRequestStatus(id: number, status: RequestStatus, actor: string) {
+    const beforeState = await db.query.cooperationRequests.findFirst({ where: eq(schema.cooperationRequests.id, id) });
+    try {
+        await db.update(schema.cooperationRequests)
+            .set({ status })
+            .where(eq(schema.cooperationRequests.id, id));
+        const afterState = await db.query.cooperationRequests.findFirst({ where: eq(schema.cooperationRequests.id, id) });
+        await logAction({
+          actor,
+          action: `Update Cooperation Request Status to ${status.toUpperCase()}`,
+          target: `Request ID: ${id}`,
+          changeType: 'SETTINGS',
+          before: beforeState,
+          after: afterState,
+          status: 'SUCCESS'
+        });
+    } catch(err: any) {
+        await logAction({
+          actor,
+          action: `Update Cooperation Request Status to ${status.toUpperCase()}`,
+          target: `Request ID: ${id}`,
+          changeType: 'SETTINGS',
+          before: beforeState,
+          status: 'FAILURE',
+          error: err.message
+        });
+        throw err;
+    }
 }
 
-export async function deleteCooperationRequest(id: number) {
-    await db.delete(schema.cooperationRequests).where(eq(schema.cooperationRequests.id, id));
+export async function deleteCooperationRequest(id: number, actor: string) {
+    const beforeState = await db.query.cooperationRequests.findFirst({ where: eq(schema.cooperationRequests.id, id) });
+    try {
+        await db.delete(schema.cooperationRequests).where(eq(schema.cooperationRequests.id, id));
+        await logAction({
+          actor,
+          action: 'Delete Cooperation Request',
+          target: `Request ID: ${id}`,
+          changeType: 'CONTENT',
+          before: beforeState,
+          status: 'SUCCESS'
+        });
+    } catch(err: any) {
+        await logAction({
+          actor,
+          action: 'Delete Cooperation Request',
+          target: `Request ID: ${id}`,
+          changeType: 'CONTENT',
+          before: beforeState,
+          status: 'FAILURE',
+          error: err.message
+        });
+        throw err;
+    }
 }
+
+export async function resendCooperationRequestEmail(id: number, actor: string) {
+  // This function would contain logic to resend the email
+  // For now, it just logs the action
+  const request = await db.query.cooperationRequests.findFirst({ where: eq(schema.cooperationRequests.id, id) });
+  if (!request) throw new Error("Request not found");
+  
+  // Placeholder for email sending logic. In a real app, you would use a service like Resend here.
+  // const resend = new Resend(process.env.RESEND_API_KEY);
+  // await resend.emails.send(...)
+  
+  await logAction({
+    actor,
+    action: 'Resend Cooperation Email',
+    target: `Request ID: ${id}`,
+    changeType: 'SETTINGS',
+    after: request,
+    status: 'SUCCESS'
+  });
+}
+
 
 export async function getFileData(id: number) {
   if (isNaN(id)) return null
@@ -494,17 +1061,67 @@ export async function getFiles() {
     }).from(schema.files).orderBy(sqlBuilder`${schema.files.createdAt} desc`);
 }
 
-export async function deleteFile(id: number) {
-    await db.delete(schema.files).where(eq(schema.files.id, id));
+export async function deleteFile(id: number, actor: string) {
+    const beforeState = await db.query.files.findFirst({ where: eq(schema.files.id, id), columns: { id: true, filename: true, mimeType: true }});
+    try {
+        await db.delete(schema.files).where(eq(schema.files.id, id));
+        await logAction({
+            actor,
+            action: 'Delete File',
+            target: `File ID: ${id}`,
+            changeType: 'CONTENT',
+            before: beforeState,
+            status: 'SUCCESS'
+        });
+    } catch(err: any) {
+        await logAction({
+            actor,
+            action: 'Delete File',
+            target: `File ID: ${id}`,
+            changeType: 'CONTENT',
+            before: beforeState,
+            status: 'FAILURE',
+            error: err.message
+        });
+        throw err;
+    }
 }
 
 
-export async function uploadFile(fileBuffer: Buffer, filename: string, mimeType: string) {
-  const [row] = await db
-    .insert(schema.files)
-    .values({ data: fileBuffer, filename, mimeType })
-    .returning({ id: schema.files.id })
-  return row
+export async function uploadFile(fileBuffer: Buffer, filename: string, mimeType: string, actor: string) {
+  try {
+    const [row] = await db
+      .insert(schema.files)
+      .values({ data: fileBuffer, filename, mimeType })
+      .returning({ id: schema.files.id, filename: schema.files.filename, mimeType: schema.files.mimeType })
+    
+    // Log the action without the binary data
+    const logPayload = {
+        ...row,
+        size: fileBuffer.length,
+    };
+
+    await logAction({
+      actor,
+      action: 'Upload File',
+      target: `File: ${row.filename}`,
+      changeType: 'CONTENT',
+      after: logPayload,
+      status: 'SUCCESS'
+    });
+    
+    return row
+  } catch(err: any) {
+    await logAction({
+      actor,
+      action: 'Upload File',
+      target: `File: ${filename}`,
+      changeType: 'CONTENT',
+      status: 'FAILURE',
+      error: err.message
+    });
+    throw err;
+  }
 }
 
 // ==============================
