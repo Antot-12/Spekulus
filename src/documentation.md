@@ -52,16 +52,15 @@
 - **[18. Known Issues & Limitations](#18-known-issues--limitations)**
 - **[19. Tech Stack & Versions Summary](#19-tech-stack--versions-summary)**
 - **[20. Architecture Diagram](#20-architecture-diagram)**
-- **[21. Technical Roadmap (Planned Features)](#21-technical-roadmap-planned-features)**
-- **[22. New Content Sections](#22-new-content-sections)**
-  - [22.1. Scenarios ("Why Spekulus?")](#221-scenarios-why-spekulus)
-  - [22.2. Competitor Comparison Table](#222-competitor-comparison-table)
-  - [22.3. Cooperation Request Section](#223-cooperation-request-section)
-  - [22.4. Stay in the Loop (Newsletter)](#224-stay-in-the-loop-newsletter)
-- **[23. Admin Panel Features](#23-admin-panel-features)**
-  - [23.1. Admin Dashboard Link to Homepage](#231-admin-dashboard-link-to-homepage)
-  - [23.2. Reusable File Picker](#232-reusable-file-picker)
-  - [23.3. Collapsible Creator Profiles](#233-collapsible-creator-profiles)
+- **[21. New Content Sections](#21-new-content-sections)**
+  - [21.1. Scenarios ("Why Spekulus?")](#211-scenarios-why-spekulus)
+  - [21.2. Competitor Comparison Table](#212-competitor-comparison-table)
+  - [21.3. Cooperation Request Section](#213-cooperation-request-section)
+  - [21.4. Stay in the Loop (Newsletter)](#214-stay-in-the-loop-newsletter)
+- **[22. Admin Panel Features](#22-admin-panel-features)**
+  - [22.1. Admin Dashboard Link to Homepage](#221-admin-dashboard-link-to-homepage)
+  - [22.2. Reusable File Picker](#222-reusable-file-picker)
+  - [22.3. Collapsible Creator Profiles](#223-collapsible-creator-profiles)
 
 ---
 
@@ -715,27 +714,13 @@ graph TD
 - **Database**: The Neon Postgres database, the single source of truth for all content.
 - **Genkit/AI**: AI features are handled by Genkit flows, which communicate with the Google AI API.
 
-### 21. Technical Roadmap (Planned Features)
-
-This section tracks planned technical improvements, distinct from the public-facing product roadmap.
-
-| Feature / Improvement | Status | Description |
-| :--- | :--- | :--- |
-| **Secure Admin Auth** | `Planned` | Replace the client-side `localStorage` token with secure, server-side session management (e.g., JWTs in HTTP-only cookies). |
-| **Automated Testing Suite** | `Planned` | Implement Vitest for unit tests and Playwright for E2E tests to improve code quality and prevent regressions. |
-| **Refactor to `next/image`** | `Planned` | Replace all `<img>` tags pointing to `/api/images/[id]` with the `next/image` component to leverage automatic optimization. |
-| **Admin Panel Autosave** | `Planned` | Add an optional autosave feature to admin forms to prevent data loss on long editing sessions. |
-| **Image Resizing/Cropping** | `In Progress` | Allow admins to resize or crop images directly in the upload manager instead of requiring pre-sized images. |
-| **i18n Fallback Logic** | `Planned` | Implement a system where missing translation strings automatically fall back to English to prevent errors. |
-| **CI/CD Pipeline** | `Planned` | Set up a GitHub Actions workflow to run linting and tests automatically on every pull request. |
-
 ---
 
-### 22. New Content Sections
+### 21. New Content Sections
 
 This section details the homepage content sections that are fully manageable via the Admin Panel.
 
-#### 22.1. Scenarios ("Why Spekulus?")
+#### 21.1. Scenarios ("Why Spekulus?")
 - **Purpose**: To explain real-world problems and show how Spekulus provides smart, practical solutions.
 - **Homepage Component**: `WhySpekulusSection` (`/src/components/landing/WhySpekulusSection.tsx`)
 - **Admin Page**: `/admin/scenarios`
@@ -751,7 +736,7 @@ This section details the homepage content sections that are fully manageable via
   ```
 - **Functionality**: Admins can add, edit, and delete scenario cards for each language. Each scenario consists of an icon, a question (the problem), and an answer (the solution).
 
-#### 22.2. Competitor Comparison Table
+#### 21.2. Competitor Comparison Table
 - **Purpose**: To transparently compare Spekulus's features against key competitors in the market.
 - **Homepage Component**: `ComparisonSection` (`/src/components/landing/ComparisonSection.tsx`)
 - **Admin Page**: `/admin/comparison`
@@ -766,7 +751,7 @@ This section details the homepage content sections that are fully manageable via
   - **Toggle Support**: For each feature and competitor, toggle a boolean checkmark. The underlying `feature_support` JSONB field allows for future extensions, such as adding tooltips or status labels (e.g., "Coming Soon", "Premium").
 - **Data Sync**: All changes made in the admin panel are saved to the database and are immediately reflected on the public-facing comparison table.
 
-#### 22.3. Cooperation Request Section
+#### 21.3. Cooperation Request Section
 - **Purpose**: A dedicated form for potential partners, investors, or collaborators to submit inquiries.
 - **Homepage Component**: `CooperationSection` (`/src/components/landing/CooperationSection.tsx`)
 - **Admin Page**: `/admin/cooperation`
@@ -787,7 +772,7 @@ This section details the homepage content sections that are fully manageable via
   - **Data Storage & Notification**: Submissions are saved to the `cooperation_requests` table. If the `RESEND_API_KEY` is configured in the `.env` file, the system also sends an email notification to the administrator (`spekulus.mirror@gmail.com`).
   - **Admin Management**: The `/admin/cooperation` page provides a full interface to view all submissions. Admins can see the details of each request, mark them as "pending" or "replied", and delete them.
 
-#### 22.4. Stay in the Loop (Newsletter)
+#### 21.4. Stay in the Loop (Newsletter)
 - **Purpose**: A simple email capture form for users interested in receiving updates.
 - **Homepage Component**: `NewsletterSection` (`/src/components/landing/NewsletterSection.tsx`)
 - **Admin Page**: `/admin/newsletter`
@@ -807,21 +792,21 @@ This section details the homepage content sections that are fully manageable via
 
 ---
 
-### 23. Admin Panel Features
+### 22. Admin Panel Features
 
 This section details specific UI/UX enhancements made to the admin panel for better usability.
 
-#### 23.1. Admin Dashboard Link to Homepage
+#### 22.1. Admin Dashboard Link to Homepage
 - **Location**: `/admin/dashboard`
 - **Description**: The first card in the admin dashboard grid is "View Live Site". This provides a direct, one-click link to the public homepage (`/`).
 - **Purpose**: This was added to improve the content editing workflow, allowing administrators to quickly navigate from the admin panel to the live site to see their changes in context.
 
-#### 23.2. Reusable File Picker
+#### 22.2. Reusable File Picker
 - **Component**: `FilePickerDialog` (`/src/app/admin/creators/FilePickerDialog.tsx`)
 - **Description**: A reusable dialog component that allows selecting a previously uploaded file from the `files` table instead of re-uploading it.
 - **Functionality**: The picker dialog displays a searchable grid of all uploaded files. When a file is selected, its `id` is passed back to the parent form, which then updates the relevant `imageId` field. This is used across all content management pages where images are present (e.g., Hero, Creators, Notes).
 
-#### 23.3. Collapsible Creator Profiles
+#### 22.3. Collapsible Creator Profiles
 - **Location**: `/admin/creators`
 - **Description**: The creator management page was redesigned to use an `Accordion` component. Each creator profile is now a separate, collapsible item.
 - **Purpose**: This change dramatically improves the organization of the page, preventing it from becoming an overwhelmingly long form. Editors can now focus on one creator at a time by expanding their specific accordion item. Each accordion trigger displays the creator's name and a badge indicating their visibility status ("Visible" or "Hidden").
