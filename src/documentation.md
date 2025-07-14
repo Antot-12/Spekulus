@@ -267,6 +267,15 @@ The schema is defined in `/src/lib/db/schema.ts` using Drizzle ORM.
 
 - **`maintenanceSettings`**: A single-row table to control site-wide maintenance mode. Includes a message and an optional auto-deactivation timer (`endsAt`).
 - **`pages`**: A table to control the status (active, hidden, maintenance) of individual site pages.
+- **`auditLogs`**: A comprehensive log of all administrative actions.
+  - `id (serial, PK)`: Unique log entry ID.
+  - `timestamp (timestamp)`: When the action occurred.
+  - `actor (text)`: Who performed the action (e.g., "admin").
+  - `action (text)`: A human-readable description of the action (e.g., "Update Hero Section").
+  - `target (text)`: The specific entity that was modified (e.g., "Hero - EN").
+  - `before, after (jsonb)`: Snapshots of the data before and after the change.
+  - `status (enum: SUCCESS, FAILURE)`: Whether the action succeeded.
+  - `error (text)`: The error message if the action failed.
 
 ### 5.2. Entity Relationships (ER Summary)
 
@@ -378,6 +387,7 @@ The admin panel is a protected section for managing all dynamic site content.
   3. On success, the client sets `localStorage.setItem('admin_token', 'true')`.
   4. The root admin layout (`/src/app/admin/layout.tsx`) checks for this token on mount. If it's not present, it redirects the user to `/login`.
 - **Structure**: Each page in `/app/admin/` (e.g., `/admin/faq`, `/admin/roadmap`) is a dedicated form for managing a specific content type.
+- **Action Logs**: The `/admin/logs` page provides a detailed, searchable, and filterable audit trail of all actions performed in the admin panel. It records what was changed, who changed it, and when.
 - **Data Handling**: Admin pages are client components (`'use client'`).
   1. They use `useEffect` to fetch initial data for all languages using the server actions from `actions.ts`.
   2. A language switcher allows the admin to edit content for English, Ukrainian, or Slovak.
@@ -519,8 +529,8 @@ Currently, the project does not have an automated testing suite. This is a key a
 
 - **Logging**:
     - **Vercel Logs**: All `console.log`, `console.warn`, and `console.error` statements in server-side code (server actions, API routes) are automatically captured and can be viewed in the Vercel dashboard for both production and preview deployments.
-    - **Admin Action Logs**: The application includes a custom logging solution for admin actions, visible on the `/admin/logs` page. It uses `localStorage` and is designed to provide a client-side audit trail for content editors.
-- **Error Reporting**: No external error reporting service (like Sentry) is currently integrated. Errors are logged to the Vercel console.
+    - **Server-Side Audit Logs**: The application features a robust audit trail system. Every significant create, update, or delete action performed in the admin panel is recorded in the `audit_logs` table in the database. This is handled by the `logAction` function in `/src/lib/logger.ts`, which captures the actor, action, target, status, and JSON snapshots of the data before and after the change.
+    - **Admin Panel Log Viewer**: The `/admin/logs` page provides a powerful UI to search, filter, and view these audit logs, offering a complete history of all content and setting modifications.
 
 ### 9.6. Access Control & Security Notes
 
