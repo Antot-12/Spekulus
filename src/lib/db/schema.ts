@@ -105,14 +105,25 @@ export const comparisonSections = pgTable('comparison_sections', {
     subtitle: text('subtitle').notNull(),
 });
 
+export const competitors = pgTable('competitors', {
+    id: serial('id').primaryKey(),
+    slug: text('slug').unique().notNull(),
+    name: text('name').notNull(),
+    order: integer('order').default(0),
+});
+
+export type FeatureSupport = Record<string, {
+  supported: boolean;
+  tooltip?: string;
+  status?: 'coming_soon' | 'premium' | null;
+  link?: string;
+}>
+
 export const competitorFeatures = pgTable('competitor_features', {
     id: serial('id').primaryKey(),
     lang: varchar('lang', { length: 2 }).notNull().references(() => languages.code),
     feature: text('feature').notNull(),
-    spekulus: boolean('spekulus').default(false).notNull(),
-    himirror: boolean('himirror').default(false).notNull(),
-    simplehuman: boolean('simplehuman').default(false).notNull(),
-    mirrocool: boolean('mirrocool').default(false).notNull(),
+    feature_support: jsonb('feature_support').$type<FeatureSupport>().default({}).notNull(),
 });
 
 export const newsletterSections = pgTable('newsletter_sections', {

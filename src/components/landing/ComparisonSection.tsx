@@ -1,7 +1,7 @@
 
 'use client';
 
-import type { Language, CompetitorFeature, ComparisonSectionData } from '@/lib/data';
+import type { Language, CompetitorFeature, ComparisonSectionData, Competitor } from '@/lib/data';
 import { translations } from '@/lib/translations';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Check, X } from 'lucide-react';
@@ -14,8 +14,10 @@ const Checkmark = ({ checked }: { checked: boolean }) => {
   return <X className="text-destructive mx-auto opacity-70 h-5 w-5" />;
 };
 
-export function ComparisonSection({ sectionData, featuresData, lang }: { sectionData: ComparisonSectionData | null, featuresData: CompetitorFeature[]; lang: Language }) {
+export function ComparisonSection({ sectionData, featuresData, competitors, lang }: { sectionData: ComparisonSectionData | null, featuresData: CompetitorFeature[]; competitors: Competitor[], lang: Language }) {
   const t = translations[lang].comparison;
+  
+  const sortedCompetitors = [...competitors].sort((a,b) => (a.order ?? 0) - (b.order ?? 0));
 
   return (
     <section id="comparison" className="py-16 md:py-24 bg-background">
@@ -31,20 +33,22 @@ export function ComparisonSection({ sectionData, featuresData, lang }: { section
                 <TableHeader>
                   <TableRow className="bg-muted/30 hover:bg-muted/30">
                     <TableHead className="w-[35%] md:w-[40%] font-bold text-lg p-4">{t.feature}</TableHead>
-                    <TableHead className="text-center font-bold text-lg text-primary p-4">{t.spekulus}</TableHead>
-                    <TableHead className="text-center font-semibold text-lg p-4">{t.himirror}</TableHead>
-                    <TableHead className="text-center font-semibold text-lg p-4">{t.simplehuman}</TableHead>
-                    <TableHead className="text-center font-semibold text-lg p-4">{t.mirrocool}</TableHead>
+                    {sortedCompetitors.map(c => (
+                      <TableHead key={c.id} className="text-center font-bold text-lg p-4" style={{ color: c.slug === 'spekulus' ? 'hsl(var(--primary))' : undefined }}>
+                        {c.name}
+                      </TableHead>
+                    ))}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {featuresData.map((item, index) => (
                     <TableRow key={index} className="[&_td]:py-4 [&_td]:px-4 odd:bg-muted/20">
                       <TableCell className="font-medium">{item.feature}</TableCell>
-                      <TableCell className="text-center"><Checkmark checked={item.spekulus} /></TableCell>
-                      <TableCell className="text-center"><Checkmark checked={item.himirror} /></TableCell>
-                      <TableCell className="text-center"><Checkmark checked={item.simplehuman} /></TableCell>
-                      <TableCell className="text-center"><Checkmark checked={item.mirrocool} /></TableCell>
+                      {sortedCompetitors.map(c => (
+                          <TableCell key={c.id} className="text-center">
+                              <Checkmark checked={item.feature_support[c.slug]?.supported ?? false} />
+                          </TableCell>
+                      ))}
                     </TableRow>
                   ))}
                 </TableBody>

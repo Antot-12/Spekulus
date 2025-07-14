@@ -19,6 +19,7 @@ import {
   CompetitorFeature,
   ComparisonSectionData,
   NewsletterSectionData,
+  Competitor,
 } from '../data'
 import { eq, and, notInArray, sql as sqlBuilder } from 'drizzle-orm'
 
@@ -350,6 +351,33 @@ export async function updateScenarios(lang: Language, scenarios: Scenario[]) {
   }
 }
 
+// ==============================
+// COMPARISON TABLE
+// ==============================
+
+export async function getCompetitors() {
+    return await db.query.competitors.findMany({
+        orderBy: (c, { asc }) => [asc(c.order)],
+    });
+}
+
+export async function updateCompetitors(competitors: Competitor[]) {
+    // This is a full replace for simplicity.
+    // It's not the most efficient, but fine for a small list.
+    await db.delete(schema.competitors);
+    if (competitors.length) {
+        // Filter out temporary negative IDs before inserting
+        const validCompetitors = competitors.map(({ id, ...rest }) => ({
+            ...rest,
+            slug: rest.slug || rest.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+        })).filter(c => c.name);
+        if (validCompetitors.length) {
+           await db.insert(schema.competitors).values(validCompetitors);
+        }
+    }
+}
+
+
 export async function getComparisonSectionData(lang: Language): Promise<ComparisonSectionData | null> {
     return await db.query.comparisonSections.findFirst({
         where: eq(schema.comparisonSections.lang, lang),
@@ -373,7 +401,7 @@ export async function getCompetitorFeatures(lang: Language) {
     });
 }
 
-export async function updateCompetitorFeatures(lang: Language, features: Omit<CompetitorFeature, 'lang'>[]) {
+export async function updateCompetitorFeatures(lang: Language, features: CompetitorFeature[]) {
     // Delete all features for the given language
     await db.delete(schema.competitorFeatures).where(eq(schema.competitorFeatures.lang, lang));
 

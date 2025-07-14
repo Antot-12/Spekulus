@@ -24,6 +24,7 @@ import {
   getComparisonSectionData,
   getCompetitorFeatures,
   getNewsletterSectionData,
+  getCompetitors,
 } from '@/lib/db/actions';
 import { initialData } from '@/lib/data';
 
@@ -41,6 +42,7 @@ export default async function Home() {
     comparisonSectionData,
     competitorFeatures,
     newsletterSectionData,
+    competitors,
   ] = await Promise.all([
     getHeroData(lang),
     getProductData(lang),
@@ -52,6 +54,7 @@ export default async function Home() {
     getComparisonSectionData(lang),
     getCompetitorFeatures(lang),
     getNewsletterSectionData(lang),
+    getCompetitors(),
   ]);
 
   if (!heroData) {
@@ -97,6 +100,10 @@ export default async function Home() {
   if (!competitorFeatures || competitorFeatures.length === 0) {
     competitorFeatures = initialData.competitorFeaturesData[lang];
   }
+  
+  if (!competitors || competitors.length === 0) {
+    competitors = initialData.competitorsData;
+  }
 
   if (!newsletterSectionData) {
     newsletterSectionData = initialData.newsletterSectionData[lang];
@@ -110,7 +117,7 @@ export default async function Home() {
       <AdvantagesSection data={advantagesData} lang={lang} />
       <ActionSection data={actionSectionData} />
       <WhySpekulusSection data={scenarios} lang={lang} />
-      <ComparisonSection sectionData={comparisonSectionData} featuresData={competitorFeatures} lang={lang} />
+      <ComparisonSection sectionData={comparisonSectionData} featuresData={competitorFeatures} competitors={competitors} lang={lang} />
       <CooperationSection />
       <RoadmapSection data={roadmapEvents} lang={lang} />
       <NewsletterSection data={newsletterSectionData} />
