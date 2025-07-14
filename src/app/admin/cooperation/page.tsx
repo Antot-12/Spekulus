@@ -11,8 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { Handshake, Trash2, Mail, Phone, MoreHorizontal, CheckCircle, Clock } from 'lucide-react';
-import { getCooperationRequests, updateCooperationRequestStatus, deleteCooperationRequest, CooperationRequest, RequestStatus } from '@/lib/db/actions';
+import { Handshake, Trash2, Mail, Phone, CheckCircle, Clock, Send } from 'lucide-react';
+import { getCooperationRequests, updateCooperationRequestStatus, deleteCooperationRequest, CooperationRequest, RequestStatus, resendCooperationRequestEmail } from '@/lib/db/actions';
 
 const getStatusBadgeVariant = (status: RequestStatus): 'default' | 'secondary' | 'outline' => {
   switch (status) {
@@ -27,6 +27,12 @@ export default function CooperationAdminPage() {
     const { toast } = useToast();
     const [requests, setRequests] = useState<CooperationRequest[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [actor, setActor] = useState('admin');
+
+    useEffect(() => {
+        const adminUser = localStorage.getItem('admin_user') || 'admin';
+        setActor(adminUser);
+    }, []);
 
     const fetchRequests = useCallback(async () => {
         setIsLoading(true);
@@ -49,7 +55,7 @@ export default function CooperationAdminPage() {
         setRequests(prev => prev.map(r => r.id === id ? { ...r, status } : r));
 
         try {
-            await updateCooperationRequestStatus(id, status);
+            await updateCooperationRequestStatus(id, status, actor);
             toast({ title: "Status Updated", description: `Request status changed to ${status}.` });
         } catch (error) {
             setRequests(originalRequests);
@@ -62,13 +68,23 @@ export default function CooperationAdminPage() {
         setRequests(prev => prev.filter(r => r.id !== id));
         
         try {
-            await deleteCooperationRequest(id);
+            await deleteCooperationRequest(id, actor);
             toast({ title: "Request Deleted", variant: "destructive" });
         } catch (error) {
             setRequests(originalRequests);
             toast({ title: "Delete Failed", description: "Could not delete request.", variant: "destructive" });
         }
     };
+    
+    const handleResend = async (request: CooperationRequest) => {
+        toast({ title: "Resending email..."});
+        try {
+            await resendCooperationRequestEmail(request.id, actor);
+            toast({ title: "Email Resent", description: `An email for ${request.name}'s request has been resent.`});
+        } catch (error) {
+            toast({ title: "Resend Failed", description: "Could not resend email. Please check server logs.", variant: "destructive" });
+        }
+    }
 
     return (
         <Card className="opacity-0 animate-fade-in-up">
@@ -141,6 +157,8 @@ export default function CooperationAdminPage() {
                                                 </DialogContent>
                                             </Dialog>
                                             
+                                            <Button variant="ghost" size="sm" onClick={() => handleResend(req)}><Send className="w-4 h-4 mr-2"/> Resend</Button>
+
                                             <AlertDialog>
                                                 <AlertDialogTrigger asChild>
                                                     <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 className="w-4 h-4"/></Button>

@@ -14,7 +14,6 @@ import { MarkdownEditor } from '@/components/ui/markdown-editor';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { logAction } from '@/lib/logger';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from '@/components/ui/badge';
 import { getDevNotes, createDevNote, updateDevNote, deleteDevNote } from '@/lib/db/actions';
@@ -48,6 +47,12 @@ export default function NotesAdminPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [actor, setActor] = useState('admin');
+
+    useEffect(() => {
+        const adminUser = localStorage.getItem('admin_user') || 'admin';
+        setActor(adminUser);
+    }, []);
 
     const fetchNotes = useCallback(async () => {
         setIsLoading(true);
@@ -99,9 +104,8 @@ export default function NotesAdminPage() {
         };
 
         try {
-            await updateDevNote(noteToSave.id, noteToSave);
+            await updateDevNote(noteToSave.id, noteToSave, actor);
             toast({ title: "Note Saved", description: `"${activeNote.title}" has been saved.` });
-            logAction('Notes Update', 'Success', `Saved changes for note '${activeNote.title}'.`);
             await fetchNotes(); 
         } catch (error: any) {
             toast({ title: "Save Failed", description: error.message || "Could not save changes.", variant: 'destructive' });
@@ -125,7 +129,7 @@ export default function NotesAdminPage() {
         };
 
         try {
-            const newNote = await createDevNote(newNoteData);
+            const newNote = await createDevNote(newNoteData, actor);
             if (newNote) {
                 await fetchNotes(); // Refetch to include the new note in the list
                 setActiveNote(newNote);
@@ -140,9 +144,8 @@ export default function NotesAdminPage() {
 
     const handleNoteDelete = async (noteToDelete: DevNote) => {
         try {
-            await deleteDevNote(noteToDelete.id);
+            await deleteDevNote(noteToDelete.id, actor);
             toast({ title: "Note Deleted", variant: 'destructive' });
-            logAction('Notes Update', 'Success', `Deleted note '${noteToDelete.title}'.`);
             if (activeNote?.id === noteToDelete.id) {
                 setActiveNote(null);
             }
@@ -175,15 +178,12 @@ export default function NotesAdminPage() {
             if (result.success) {
                 handleFieldChange('imageId', result.id);
                 toast({ title: "Image Uploaded", description: "Header image has been updated. Save the note to persist this change." });
-                logAction('File Upload', 'Success', `Uploaded image for note '${activeNote.title}': ID ${result.id}`);
             } else {
                 toast({ title: "Upload Failed", description: result.error || "Could not upload image.", variant: 'destructive' });
-                logAction('File Upload', 'Failure', `Failed to upload image for note '${activeNote.title}'. Reason: ${result.error}`);
             }
         } catch (error: any) {
             console.error("Header image upload error:", error);
             toast({ title: "Upload Failed", description: "An error occurred during upload.", variant: 'destructive' });
-            logAction('File Upload', 'Failure', `Failed to upload image for note '${activeNote.title}'. Reason: ${error.message}`);
         } finally {
              if (event.target) event.target.value = '';
         }

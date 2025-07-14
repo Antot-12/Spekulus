@@ -12,7 +12,6 @@ import {
   Trash2,
   Copy,
   Loader2,
-  FileImage,
   Search,
   Link as LinkIcon,
   LayoutGrid,
@@ -38,8 +37,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle as RDialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { getFiles, deleteFile } from '@/lib/db/actions'
-import { logAction } from '@/lib/logger'
+import { getFiles, deleteFile, uploadFile } from '@/lib/db/actions'
 import { format } from 'date-fns'
 
 type FileInfo = {
@@ -78,6 +76,12 @@ export default function UploadsAdminPage() {
   const [sortMode, setSortMode] = useState<SortMode>('newest');
   const [currentPage, setCurrentPage] = useState(1);
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [actor, setActor] = useState('admin');
+
+  useEffect(() => {
+    const adminUser = localStorage.getItem('admin_user') || 'admin';
+    setActor(adminUser);
+  }, []);
 
   const fetchFiles = useCallback(async () => {
     setIsLoading(true)
@@ -120,6 +124,16 @@ export default function UploadsAdminPage() {
   const totalPages = Math.ceil(filteredAndSortedFiles.length / FILES_PER_PAGE);
   const paginatedFiles = filteredAndSortedFiles.slice((currentPage - 1) * FILES_PER_PAGE, currentPage * FILES_PER_PAGE);
 
+  async function streamToBuffer(stream: ReadableStream<Uint8Array>): Promise<Buffer> {
+    const reader = stream.getReader();
+    const chunks: Uint8Array[] = [];
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (value) chunks.push(value);
+    }
+    return Buffer.concat(chunks);
+  }
 
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -128,37 +142,26 @@ export default function UploadsAdminPage() {
     if (!file) return
 
     setIsUploading(true)
-    const formData = new FormData()
-    formData.append('file', file)
-
+    
     toast({
       title: 'Uploading...',
       description: 'Please wait while the file is uploaded.',
     })
 
     try {
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
+      const fileBuffer = await streamToBuffer(file.stream())
+      await uploadFile(fileBuffer, file.name, file.type, actor)
+      toast({
+        title: 'Upload Successful',
+        description: `${file.name} has been uploaded.`,
       })
-      const result = await response.json()
-      if (result.success) {
-        toast({
-          title: 'Upload Successful',
-          description: `${file.name} has been uploaded.`,
-        })
-        logAction('File Upload', 'Success', `Uploaded file: ${file.name}`)
-        fetchFiles() // Refresh the list
-      } else {
-        throw new Error(result.error)
-      }
+      fetchFiles() // Refresh the list
     } catch (error: any) {
       toast({
         title: 'Upload Failed',
         description: error.message || 'An unknown error occurred.',
         variant: 'destructive',
       })
-      logAction('File Upload', 'Failure', error.message)
     } finally {
       setIsUploading(false)
       if (fileInputRef.current) {
@@ -168,19 +171,13 @@ export default function UploadsAdminPage() {
   }
 
   const handleDelete = async (id: number) => {
-    const fileToDelete = files.find((img) => img.id === id)
     try {
-      await deleteFile(id)
+      await deleteFile(id, actor)
       toast({
         title: 'File Deleted',
         description: `File ID ${id} has been deleted.`,
         variant: 'destructive',
       })
-      logAction(
-        'File Delete',
-        'Success',
-        `Deleted file: ${fileToDelete?.filename || `ID ${id}`}`
-      )
       fetchFiles() // Refresh the list
     } catch (error: any) {
       toast({
@@ -188,7 +185,6 @@ export default function UploadsAdminPage() {
         description: error.message || 'Could not delete the file.',
         variant: 'destructive',
       })
-      logAction('File Delete', 'Failure', `Failed to delete file ID ${id}.`)
     }
   }
 

@@ -20,6 +20,7 @@ async function streamToBuffer(stream: ReadableStream<Uint8Array>): Promise<Buffe
 export async function POST(request: NextRequest) {
   const data = await request.formData();
   const file: File | null = data.get('file') as unknown as File;
+  const actor = 'admin'; // In a real app, this would come from session
 
   if (!file) {
     return NextResponse.json({ success: false, error: 'No file uploaded.' }, { status: 400 });
@@ -28,7 +29,8 @@ export async function POST(request: NextRequest) {
   try {
     const fileBuffer = await streamToBuffer(file.stream());
     
-    const result = await uploadFile(fileBuffer, file.name, file.type);
+    // The actor is now passed to the uploadFile action for logging
+    const result = await uploadFile(fileBuffer, file.name, file.type, actor);
     
     if (!result || !result.id) {
         throw new Error("File upload failed to return an ID.");

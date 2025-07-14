@@ -15,7 +15,6 @@ import { MarkdownEditor } from '@/components/ui/markdown-editor';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from '@/components/ui/switch';
-import { logAction } from '@/lib/logger';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { getCreators, updateCreators, createCreator } from '@/lib/db/actions';
@@ -56,6 +55,12 @@ export default function CreatorsAdminPage() {
   const [selectedLang, setSelectedLang] = useState<Language>('en');
   const [activeAccordionItem, setActiveAccordionItem] = useState<string | undefined>();
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const [actor, setActor] = useState('admin');
+
+  useEffect(() => {
+    const adminUser = localStorage.getItem('admin_user') || 'admin';
+    setActor(adminUser);
+  }, []);
 
   const fetchCreators = useCallback(async (lang: Language) => {
     setIsLoading(true);
@@ -77,12 +82,11 @@ export default function CreatorsAdminPage() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      await updateCreators(selectedLang, creators);
+      await updateCreators(selectedLang, creators, actor);
       toast({
         title: "Saved!",
         description: `All creator changes for ${languageNames[selectedLang]} have been saved.`,
       });
-      logAction('Creators Update', 'Success', `Saved all changes for ${languageNames[selectedLang]} creators.`);
       fetchCreators(selectedLang);
     } catch (error: any) {
       console.error("🔥 Save error:", error);
@@ -160,7 +164,7 @@ export default function CreatorsAdminPage() {
     };
 
     try {
-      const newCreator = await createCreator(selectedLang, newCreatorData);
+      const newCreator = await createCreator(selectedLang, newCreatorData, actor);
       if (newCreator?.slug) {
         setCreators(prev => [...prev, newCreator]);
         setActiveAccordionItem(String(newCreator.id));
@@ -207,14 +211,11 @@ export default function CreatorsAdminPage() {
               handleFieldChange(creatorId, 'gallery', newGallery);
         }
         toast({ title: "Uploaded", description: "File uploaded. Save to persist." });
-        logAction('File Upload', 'Success', `Uploaded file for creator ID ${creatorId}.`);
       } else {
         toast({ title: "Upload Failed", description: result.error, variant: 'destructive' });
-        logAction('File Upload', 'Failure', `Failed upload for creator ID ${creatorId}.`);
       }
     } catch {
       toast({ title: "Upload Failed", description: "Error uploading file.", variant: 'destructive' });
-      logAction('File Upload', 'Failure', `Error uploading for creator ID ${creatorId}.`);
     } finally {
       if (event.target) event.target.value = '';
     }
