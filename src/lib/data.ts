@@ -177,13 +177,16 @@ export type Scenario = {
 // ==================================
 // COMPETITOR COMPARISON
 // ==================================
+export type Competitor = {
+    id: number;
+    slug: string;
+    name: string;
+    order: number;
+}
 export type CompetitorFeature = {
     id: number;
     feature: string;
-    spekulus: boolean;
-    himirror: boolean;
-    simplehuman: boolean;
-    mirrocool: boolean;
+    feature_support: Record<string, { supported: boolean }>;
 }
 
 export type ComparisonSectionData = {
@@ -203,18 +206,6 @@ export type NewsletterSectionData = {
   buttonText: string;
 };
 
-
-// ==================================
-// PARTNER CTA
-// ==================================
-export type PartnerSectionData = {
-  id: number;
-  title: string;
-  text: string;
-  ctaLabel: string;
-  ctaUrl?: string | null;
-  imageId?: number | null;
-};
 
 // ==================================
 // INITIAL DATA FOR SEEDING
@@ -588,59 +579,42 @@ const rawComparisonSectionData: Record<Language, Omit<ComparisonSectionData, 'id
     },
 };
 
-const rawCompetitorFeaturesData: Record<Language, CompetitorFeature[]> = {
+const rawCompetitorFeaturesData: Record<Language, Omit<CompetitorFeature, 'id'>[]> = {
     en: [
-        { id: 1, feature: "AI Skin Analysis", spekulus: true, himirror: true, simplehuman: false, mirrocool: false },
-        { id: 2, feature: "Stress Detection", spekulus: true, himirror: false, simplehuman: false, mirrocool: false },
-        { id: 3, feature: "Voice Control", spekulus: true, himirror: true, simplehuman: true, mirrocool: true },
-        { id: 4, feature: "Smart Home Hub", spekulus: true, himirror: false, simplehuman: false, mirrocool: true },
-        { id: 5, feature: "Personalized Lighting", spekulus: true, himirror: true, simplehuman: true, mirrocool: false },
-        { id: 6, feature: "Gesture Control", spekulus: true, himirror: false, simplehuman: false, mirrocool: true },
-        { id: 7, feature: "Third-Party App Store", spekulus: true, himirror: true, simplehuman: false, mirrocool: false },
+        { feature: "AI Skin Analysis", feature_support: { spekulus: { supported: true }, himirror: { supported: true }, simplehuman: { supported: false }, mirrocool: { supported: false } }},
+        { feature: "Stress Detection", feature_support: { spekulus: { supported: true }, himirror: { supported: false }, simplehuman: { supported: false }, mirrocool: { supported: false } }},
+        { feature: "Voice Control", feature_support: { spekulus: { supported: true }, himirror: { supported: true }, simplehuman: { supported: true }, mirrocool: { supported: true } }},
+        { feature: "Smart Home Hub", feature_support: { spekulus: { supported: true }, himirror: { supported: false }, simplehuman: { supported: false }, mirrocool: { supported: true } }},
+        { feature: "Personalized Lighting", feature_support: { spekulus: { supported: true }, himirror: { supported: true }, simplehuman: { supported: true }, mirrocool: { supported: false } }},
+        { feature: "Gesture Control", feature_support: { spekulus: { supported: true }, himirror: { supported: false }, simplehuman: { supported: false }, mirrocool: { supported: true } }},
+        { feature: "Third-Party App Store", feature_support: { spekulus: { supported: true }, himirror: { supported: true }, simplehuman: { supported: false }, mirrocool: { supported: false } }},
     ],
     uk: [
-        { id: 1, feature: "Аналіз шкіри за допомогою ШІ", spekulus: true, himirror: true, simplehuman: false, mirrocool: false },
-        { id: 2, feature: "Виявлення стресу", spekulus: true, himirror: false, simplehuman: false, mirrocool: false },
-        { id: 3, feature: "Голосове керування", spekulus: true, himirror: true, simplehuman: true, mirrocool: true },
-        { id: 4, feature: "Центр розумного будинку", spekulus: true, himirror: false, simplehuman: false, mirrocool: true },
-        { id: 5, feature: "Персоналізоване освітлення", spekulus: true, himirror: true, simplehuman: true, mirrocool: false },
-        { id: 6, feature: "Керування жестами", spekulus: true, himirror: false, simplehuman: false, mirrocool: true },
-        { id: 7, feature: "Магазин сторонніх додатків", spekulus: true, himirror: true, simplehuman: false, mirrocool: false },
+        { feature: "Аналіз шкіри за допомогою ШІ", feature_support: { spekulus: { supported: true }, himirror: { supported: true }, simplehuman: { supported: false }, mirrocool: { supported: false } }},
+        { feature: "Виявлення стресу", feature_support: { spekulus: { supported: true }, himirror: { supported: false }, simplehuman: { supported: false }, mirrocool: { supported: false } }},
+        { feature: "Голосове керування", feature_support: { spekulus: { supported: true }, himirror: { supported: true }, simplehuman: { supported: true }, mirrocool: { supported: true } }},
+        { feature: "Центр розумного будинку", feature_support: { spekulus: { supported: true }, himirror: { supported: false }, simplehuman: { supported: false }, mirrocool: { supported: true } }},
+        { feature: "Персоналізоване освітлення", feature_support: { spekulus: { supported: true }, himirror: { supported: true }, simplehuman: { supported: true }, mirrocool: { supported: false } }},
+        { feature: "Керування жестами", feature_support: { spekulus: { supported: true }, himirror: { supported: false }, simplehuman: { supported: false }, mirrocool: { supported: true } }},
+        { feature: "Магазин сторонніх додатків", feature_support: { spekulus: { supported: true }, himirror: { supported: true }, simplehuman: { supported: false }, mirrocool: { supported: false } }},
     ],
     sk: [
-        { id: 1, feature: "Analýza pleti pomocou AI", spekulus: true, himirror: true, simplehuman: false, mirrocool: false },
-        { id: 2, feature: "Detekcia stresu", spekulus: true, himirror: false, simplehuman: false, mirrocool: false },
-        { id: 3, feature: "Hlasové ovládanie", spekulus: true, himirror: true, simplehuman: true, mirrocool: true },
-        { id: 4, feature: "Centrum inteligentnej domácnosti", spekulus: true, himirror: false, simplehuman: false, mirrocool: true },
-        { id: 5, feature: "Personalizované osvetlenie", spekulus: true, himirror: true, simplehuman: true, mirrocool: false },
-        { id: 6, feature: "Ovládanie gestami", spekulus: true, himirror: false, simplehuman: false, mirrocool: true },
-        { id: 7, feature: "Obchod s aplikáciami tretích strán", spekulus: true, himirror: true, simplehuman: false, mirrocool: false },
+        { feature: "Analýza pleti pomocou AI", feature_support: { spekulus: { supported: true }, himirror: { supported: true }, simplehuman: { supported: false }, mirrocool: { supported: false } }},
+        { feature: "Detekcia stresu", feature_support: { spekulus: { supported: true }, himirror: { supported: false }, simplehuman: { supported: false }, mirrocool: { supported: false } }},
+        { feature: "Hlasové ovládanie", feature_support: { spekulus: { supported: true }, himirror: { supported: true }, simplehuman: { supported: true }, mirrocool: { supported: true } }},
+        { feature: "Centrum inteligentnej domácnosti", feature_support: { spekulus: { supported: true }, himirror: { supported: false }, simplehuman: { supported: false }, mirrocool: { supported: true } }},
+        { feature: "Personalizované osvetlenie", feature_support: { spekulus: { supported: true }, himirror: { supported: true }, simplehuman: { supported: true }, mirrocool: { supported: false } }},
+        { feature: "Ovládanie gestami", feature_support: { spekulus: { supported: true }, himirror: { supported: false }, simplehuman: { supported: false }, mirrocool: { supported: true } }},
+        { feature: "Obchod s aplikáciami tretích strán", feature_support: { spekulus: { supported: true }, himirror: { supported: true }, simplehuman: { supported: false }, mirrocool: { supported: false } }},
     ],
 };
 
-const rawPartnerSectionData: Record<Language, Omit<PartnerSectionData, 'id'>> = {
-    en: {
-        title: "Partner with Us",
-        text: "We are actively seeking strategic partners, investors, and collaborators who share our vision for the future of smart living. If you're interested in helping us scale, innovate, and bring Spekulus to a global market, we'd love to hear from you.",
-        ctaLabel: "Contact Our Founders",
-        ctaUrl: "mailto:spekulus.mirror@gmail.com",
-        imageId: null,
-    },
-    uk: {
-        title: "Станьте нашим партнером",
-        text: "Ми активно шукаємо стратегічних партнерів, інвесторів та співробітників, які поділяють наше бачення майбутнього розумного життя. Якщо ви зацікавлені в допомозі нам масштабуватися, впроваджувати інновації та виводити Spekulus на світовий ринок, ми будемо раді вас почути.",
-        ctaLabel: "Зв'язатися із засновниками",
-        ctaUrl: "mailto:spekulus.mirror@gmail.com",
-        imageId: null,
-    },
-    sk: {
-        title: "Staňte sa naším partnerom",
-        text: "Aktívne hľadáme strategických partnerov, investorov a spolupracovníkov, ktorí zdieľajú našu víziu budúcnosti inteligentného bývania. Ak máte záujem pomôcť nám rásť, inovovať a priniesť Spekulus na globálny trh, radi by sme sa s vami spojili.",
-        ctaLabel: "Kontaktujte našich zakladateľov",
-        ctaUrl: "mailto:spekulus.mirror@gmail.com",
-        imageId: null,
-    },
-};
+const rawCompetitorsData: Competitor[] = [
+    { id: 1, slug: 'spekulus', name: 'Spekulus', order: 0 },
+    { id: 2, slug: 'himirror', name: 'HiMirror', order: 1 },
+    { id: 3, slug: 'simplehuman', name: 'Simplehuman', order: 2 },
+    { id: 4, slug: 'mirrocool', name: 'MirroCool', order: 3 },
+];
 
 const rawNewsletterSectionData: Record<Language, Omit<NewsletterSectionData, 'id'>> = {
   en: {
@@ -774,6 +748,6 @@ export const initialData = {
     scenariosData: rawScenariosData,
     comparisonSectionData: rawComparisonSectionData,
     competitorFeaturesData: rawCompetitorFeaturesData,
-    partnerSectionData: rawPartnerSectionData,
+    competitorsData: rawCompetitorsData,
     newsletterSectionData: rawNewsletterSectionData,
 };
