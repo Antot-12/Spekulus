@@ -1,0 +1,73 @@
+
+import type { Metadata, Viewport } from 'next';
+import './globals.css';
+import { Toaster } from '@/components/ui/toaster';
+import AppWrapper from '@/components/AppWrapper';
+import { getMaintenanceSettings } from '@/lib/db/actions';
+import MaintenancePage from './maintenance/page';
+import type { MaintenanceSettings } from '@/lib/db/actions';
+import { Inter, Space_Grotesk } from 'next/font/google';
+import { cn } from '@/lib/utils';
+
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
+});
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-space-grotesk',
+});
+
+export const metadata: Metadata = {
+  title: 'Spekulus',
+  description: 'Reflect smarter, live better.',
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+};
+
+export default async function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  let maintenanceSettings: MaintenanceSettings = { isActive: false, message: '', endsAt: null };
+
+  try {
+    maintenanceSettings = await getMaintenanceSettings();
+  } catch (error) {
+    console.warn('Could not fetch maintenance settings. Assuming live mode.', error);
+    maintenanceSettings = { isActive: false, message: 'Maintenance mode check failed.', endsAt: null };
+  }
+  
+  // This check MUST be here to handle the automatic deactivation after a timer.
+  const isMaintenanceActive = maintenanceSettings.isActive && (!maintenanceSettings.endsAt || new Date() < new Date(maintenanceSettings.endsAt));
+  
+  if (isMaintenanceActive) {
+    return (
+        <html lang="en" className="dark">
+          <body className={cn(inter.variable, spaceGrotesk.variable)}>
+            <MaintenancePage message={maintenanceSettings.message} endsAt={maintenanceSettings.endsAt ? new Date(maintenanceSettings.endsAt) : null} />
+          </body>
+        </html>
+    )
+  }
+
+  return (
+    <html lang="en" className="dark">
+      <body className={cn('font-body antialiased bg-background text-foreground', inter.variable, spaceGrotesk.variable)}>
+        <AppWrapper>
+          {children}
+        </AppWrapper>
+        <Toaster />
+      </body>
+    </html>
+  );
+}
