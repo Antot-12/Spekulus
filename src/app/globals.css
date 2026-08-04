@@ -6,6 +6,40 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Image loading placeholder - matches site background */
+img[data-nimg] {
+  background-color: hsl(222 83% 9%);
+}
+
+/* Animate fade-in for images */
+@keyframes image-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+img[data-nimg][data-loaded="true"] {
+  animation: image-fade-in 0.3s ease-out;
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.5s ease-out forwards;
+}
+
 @layer base {
   :root {
     --background: 222 83% 4%;

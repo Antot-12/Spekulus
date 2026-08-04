@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getFileData } from '@/lib/db/actions';
 import sharp from 'sharp';
 
-export async function GET(request: NextRequest, context: { params: { id: string } }) {
-  const { id } = context.params;
+export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const { id } = await context.params;
   const { searchParams } = new URL(request.url);
 
   // Get optimization parameters from query string

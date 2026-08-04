@@ -52,7 +52,7 @@ export default async function RootLayout({
   
   if (isMaintenanceActive) {
     return (
-        <html lang="en" className="dark">
+        <html lang="en" className="dark" data-scroll-behavior="smooth">
           <body className={cn(inter.variable, spaceGrotesk.variable)}>
             <MaintenancePage message={maintenanceSettings.message} endsAt={maintenanceSettings.endsAt ? new Date(maintenanceSettings.endsAt) : null} />
           </body>
@@ -61,7 +61,7 @@ export default async function RootLayout({
   }
 
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className="dark" data-scroll-behavior="smooth">
       <body className={cn('font-body antialiased bg-background text-foreground', inter.variable, spaceGrotesk.variable)}>
         <AppWrapper>
           {children}

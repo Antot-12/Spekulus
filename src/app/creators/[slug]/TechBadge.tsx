@@ -78,10 +78,12 @@ export const TechBadge = ({ skill, tech }: TechBadgeProps) => {
 
   const altSrc: Record<string, string[]> = {
     pascal: [
-      'https://worldvectorlogo.com/logos/pascal.svg',
       'https://cdn-icons-png.flaticon.com/512/5968/5968350.png'
     ],
     azure: [
+      'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/azure/azure-original.svg'
+    ],
+    microsoftazure: [
       'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/azure/azure-original.svg'
     ],
     'azure devops': [
@@ -91,6 +93,9 @@ export const TechBadge = ({ skill, tech }: TechBadgeProps) => {
       'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nodejs/nodejs-original.svg'
     ],
     nodejs: [
+      'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nodejs/nodejs-original.svg'
+    ],
+    nodedotjs: [
       'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nodejs/nodejs-original.svg'
     ],
     'node.js': [
