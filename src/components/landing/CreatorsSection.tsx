@@ -12,6 +12,7 @@ import { ArrowRight, Github, Twitter, Linkedin } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
 import { getCreators } from '@/lib/db/actions';
 import { getBlurDataURL } from '@/lib/blurPlaceholder';
+import { getImageUrl } from '@/lib/cloudinary';
 
 export function CreatorsSection() {
   const { language, translations } = useLanguage();
@@ -75,7 +76,7 @@ export function CreatorsSection() {
                           }}
                         >
                           <Image
-                              src={`/api/images/${creator.imageId}`}
+                              src={getImageUrl(creator.imageId)}
                               alt={creator.name}
                               fill
                               sizes="(max-width: 640px) 160px, 160px"

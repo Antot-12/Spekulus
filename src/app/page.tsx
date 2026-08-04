@@ -1,7 +1,3 @@
-
-'use client';
-
-import { useState, useEffect, useCallback } from 'react';
 import { HeroSection } from '@/components/landing/HeroSection';
 import { ProductSection } from '@/components/landing/ProductSection';
 import { RoadmapSection } from '@/components/landing/RoadmapSection';
@@ -15,8 +11,6 @@ import { WhySpekulusSection } from '@/components/landing/WhySpekulusSection';
 import { ComparisonSection } from '@/components/landing/ComparisonSection';
 import { NewsletterSection } from '@/components/landing/NewsletterSection';
 import { CooperationSection } from '@/components/landing/CooperationSection';
-import { ImagePreloader } from '@/components/ImagePreloader';
-import { useLanguage } from '@/contexts/LanguageContext';
 import {
   getHeroData,
   getProductData,
@@ -31,131 +25,83 @@ import {
   getCompetitors,
   getCooperationSectionData,
 } from '@/lib/db/actions';
-import { initialData } from '@/lib/data';
-import type { HeroSectionData, ProductSectionData, Advantage, ActionSectionData, RoadmapEvent, FaqItem, Scenario, ComparisonSectionData, CompetitorFeature, NewsletterSectionData, Competitor, CooperationSectionData } from '@/lib/data';
-import { Skeleton } from '@/components/ui/skeleton';
+import { initialData, Language } from '@/lib/data';
+import { cookies } from 'next/headers';
 
-const LoadingSkeleton = () => (
-    <div className="container mx-auto px-4 py-12 space-y-24">
-        <div className="space-y-4">
-            <Skeleton className="h-96 w-full" />
-            <div className="grid grid-cols-4 gap-4">
-                <Skeleton className="h-8 w-full" />
-                <Skeleton className="h-8 w-full" />
-                <Skeleton className="h-8 w-full" />
-                <Skeleton className="h-8 w-full" />
-            </div>
-        </div>
-        <div className="space-y-8">
-             <Skeleton className="h-12 w-1/2 mx-auto" />
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                <Skeleton className="h-64 w-full" />
-                <Skeleton className="h-64 w-full" />
-                <Skeleton className="h-64 w-full" />
-                <Skeleton className="h-64 w-full" />
-             </div>
-        </div>
-    </div>
-);
+// Server Component - data fetched on server, HTML rendered immediately
+export default async function Home() {
+  // Get language from cookie (default to 'en')
+  const cookieStore = await cookies();
+  const lang = (cookieStore.get('language')?.value || 'en') as Language;
 
+  // Fetch all data in parallel on the server
+  const [
+    heroData,
+    productData,
+    advantagesData,
+    actionSectionData,
+    roadmapEvents,
+    faqs,
+    scenarios,
+    comparisonSectionData,
+    competitorFeatures,
+    newsletterSectionData,
+    cooperationSectionData,
+    competitors,
+  ] = await Promise.all([
+    getHeroData(lang),
+    getProductData(lang),
+    getAdvantagesData(lang),
+    getActionSectionData(lang),
+    getRoadmapEvents(lang),
+    getFaqs(lang),
+    getScenarios(lang),
+    getComparisonSectionData(lang),
+    getCompetitorFeatures(lang),
+    getNewsletterSectionData(lang),
+    getCooperationSectionData(lang),
+    getCompetitors(),
+  ]);
 
-export default function Home() {
-  const { language } = useLanguage();
-  const [isLoading, setIsLoading] = useState(true);
-  
-  const [heroData, setHeroData] = useState<HeroSectionData | null>(null);
-  const [productData, setProductData] = useState<ProductSectionData | null>(null);
-  const [advantagesData, setAdvantagesData] = useState<Advantage[] | null>(null);
-  const [actionSectionData, setActionSectionData] = useState<ActionSectionData | null>(null);
-  const [roadmapEvents, setRoadmapEvents] = useState<RoadmapEvent[] | null>(null);
-  const [faqs, setFaqs] = useState<FaqItem[] | null>(null);
-  const [scenarios, setScenarios] = useState<Scenario[] | null>(null);
-  const [comparisonSectionData, setComparisonSectionData] = useState<ComparisonSectionData | null>(null);
-  const [competitorFeatures, setCompetitorFeatures] = useState<CompetitorFeature[] | null>(null);
-  const [newsletterSectionData, setNewsletterSectionData] = useState<NewsletterSectionData | null>(null);
-  const [cooperationSectionData, setCooperationSectionData] = useState<CooperationSectionData | null>(null);
-  const [competitors, setCompetitors] = useState<Competitor[] | null>(null);
+  // Apply fallbacks
+  const hero = heroData || {
+    ...initialData.heroSectionData[lang],
+    id: 0,
+    imageId: null,
+    features: initialData.heroFeaturesData[lang].map((f, i) => ({ ...f, id: i }))
+  };
 
-  const fetchData = useCallback(async () => {
-    setIsLoading(true);
-    const lang = language;
+  const product = productData && productData.components.length > 0 ? productData : {
+    ...initialData.productSectionData[lang],
+    components: initialData.productSectionData[lang].components.map(c => ({ ...c, imageId: null })),
+  };
 
-    let [
-      heroData,
-      productData,
-      advantagesData,
-      actionSectionData,
-      roadmapEvents,
-      faqs,
-      scenarios,
-      comparisonSectionData,
-      competitorFeatures,
-      newsletterSectionData,
-      cooperationSectionData,
-      competitors,
-    ] = await Promise.all([
-      getHeroData(lang),
-      getProductData(lang),
-      getAdvantagesData(lang),
-      getActionSectionData(lang),
-      getRoadmapEvents(lang),
-      getFaqs(lang),
-      getScenarios(lang),
-      getComparisonSectionData(lang),
-      getCompetitorFeatures(lang),
-      getNewsletterSectionData(lang),
-      getCooperationSectionData(lang),
-      getCompetitors(),
-    ]);
-    
-    setHeroData(heroData || {
-      ...initialData.heroSectionData[lang],
-      id: 0,
-      imageId: null,
-      features: initialData.heroFeaturesData[lang].map((f, i) => ({...f, id: i}))
-    });
-
-    setProductData(productData && productData.components.length > 0 ? productData : {
-        ...initialData.productSectionData[lang],
-        components: initialData.productSectionData[lang].components.map(c => ({...c, imageId: null})),
-    });
-
-    setAdvantagesData(advantagesData && advantagesData.length > 0 ? advantagesData : initialData.advantagesData[lang]);
-    setActionSectionData(actionSectionData || initialData.actionSectionData[lang]);
-    setRoadmapEvents(roadmapEvents && roadmapEvents.length > 0 ? roadmapEvents : initialData.roadmapEvents[lang]);
-    setFaqs(faqs && faqs.length > 0 ? faqs : initialData.faqData[lang].map((faq, index) => ({ ...faq, id: index + 1 })));
-    setScenarios(scenarios && scenarios.length > 0 ? scenarios : initialData.scenariosData[lang]);
-    setComparisonSectionData(comparisonSectionData || initialData.comparisonSectionData[lang]);
-    setCompetitorFeatures(competitorFeatures && competitorFeatures.length > 0 ? competitorFeatures : initialData.competitorFeaturesData[lang]);
-    setCompetitors(competitors && competitors.length > 0 ? competitors : initialData.competitorsData);
-    setNewsletterSectionData(newsletterSectionData || initialData.newsletterSectionData[lang]);
-    setCooperationSectionData(cooperationSectionData || initialData.cooperationSectionData[lang]);
-
-    setIsLoading(false);
-  }, [language]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  if (isLoading) {
-    return <LoadingSkeleton />;
-  }
+  const advantages = advantagesData && advantagesData.length > 0 ? advantagesData : initialData.advantagesData[lang];
+  const action = actionSectionData || initialData.actionSectionData[lang];
+  const roadmap = roadmapEvents && roadmapEvents.length > 0 ? roadmapEvents : initialData.roadmapEvents[lang];
+  const faqItems = faqs && faqs.length > 0 ? faqs : initialData.faqData[lang].map((faq, index) => ({ ...faq, id: index + 1 }));
+  const scenarioItems = scenarios && scenarios.length > 0 ? scenarios : initialData.scenariosData[lang];
+  const comparison = comparisonSectionData || initialData.comparisonSectionData[lang];
+  const features = competitorFeatures && competitorFeatures.length > 0 ? competitorFeatures : initialData.competitorFeaturesData[lang];
+  const competitorList = competitors && competitors.length > 0 ? competitors : initialData.competitorsData;
+  const newsletter = newsletterSectionData || initialData.newsletterSectionData[lang];
+  const cooperation = cooperationSectionData || initialData.cooperationSectionData[lang];
 
   return (
     <>
-      <HeroSection data={heroData} lang={language} />
-      {productData && <ProductSection data={productData} lang={language} />}
-      {advantagesData && <AdvantagesSection data={advantagesData} lang={language} />}
-      <ActionSection data={actionSectionData} />
-      {scenarios && <WhySpekulusSection data={scenarios} lang={language} />}
-      {comparisonSectionData && competitorFeatures && competitors && (
-        <ComparisonSection sectionData={comparisonSectionData} featuresData={competitorFeatures} competitors={competitors} lang={language} />
-      )}
-      {cooperationSectionData && <CooperationSection data={cooperationSectionData} />}
-      {roadmapEvents && <RoadmapSection data={roadmapEvents} lang={language} />}
-      {newsletterSectionData && <NewsletterSection data={newsletterSectionData} />}
-      <FaqSection faqs={faqs} />
+      {/* Critical above-the-fold sections - rendered immediately with SSR */}
+      <HeroSection data={hero} lang={lang} />
+      <ProductSection data={product} lang={lang} />
+
+      {/* Rest of the page */}
+      <AdvantagesSection data={advantages} lang={lang} />
+      <ActionSection data={action} />
+      <WhySpekulusSection data={scenarioItems} lang={lang} />
+      <ComparisonSection sectionData={comparison} featuresData={features} competitors={competitorList} lang={lang} />
+      <CooperationSection data={cooperation} />
+      <RoadmapSection data={roadmap} lang={lang} />
+      <NewsletterSection data={newsletter} />
+      <FaqSection faqs={faqItems} />
       <DevNotesSection />
       <CreatorsSection />
       <ContactSection />

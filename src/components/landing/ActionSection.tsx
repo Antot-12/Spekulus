@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button'
 import { ArrowRight } from 'lucide-react'
 import NextImage from 'next/image'
 import type { ActionSectionData } from '@/lib/data'
+import { getImageUrl } from '@/lib/cloudinary'
 
 export function ActionSection({ data }: { data: ActionSectionData | null }) {
   if (!data || !data.visible) return null
@@ -22,9 +23,11 @@ export function ActionSection({ data }: { data: ActionSectionData | null }) {
           <div className="relative w-full max-w-5xl aspect-video rounded-lg overflow-hidden shadow-2xl group">
             {data.imageId ? (
               <NextImage
-                src={`/api/images/${data.imageId}`}
+                src={getImageUrl(data.imageId)}
                 alt={data.title}
                 fill
+                sizes="(max-width: 1280px) 100vw, 1280px"
+                priority
                 className="object-cover group-hover:scale-105 transition-transform duration-500"
               />
             ) : (

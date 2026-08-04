@@ -6,25 +6,6 @@ html {
   scroll-behavior: smooth;
 }
 
-/* Image loading placeholder - matches site background */
-img[data-nimg] {
-  background-color: hsl(222 83% 9%);
-}
-
-/* Animate fade-in for images */
-@keyframes image-fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-img[data-nimg][data-loaded="true"] {
-  animation: image-fade-in 0.3s ease-out;
-}
-
 @keyframes fade-in-up {
   from {
     opacity: 0;

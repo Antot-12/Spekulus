@@ -9,6 +9,7 @@ import { translations } from '@/lib/translations';
 import { AdvantageIcon } from '../AdvantageIcon';
 
 import { getBlurDataURL } from '@/lib/blurPlaceholder';
+import { getImageUrl } from '@/lib/cloudinary';
 
 export function HeroSection({ data, lang }: { data: HeroSectionData | null, lang: Language }) {
   const t = translations[lang];
@@ -26,7 +27,7 @@ export function HeroSection({ data, lang }: { data: HeroSectionData | null, lang
       <div className="absolute inset-0 z-0">
         {data.imageId ? (
           <Image
-            src={`/api/images/${data.imageId}`}
+            src={getImageUrl(data.imageId)}
             alt={data.title}
             fill
             priority

@@ -4,6 +4,7 @@ import type { ProductSectionData, ProductComponent, Language } from '@/lib/data'
 import { ProductIcon } from '@/components/ProductIcon';
 import { translations } from '@/lib/translations';
 import { getBlurDataURL } from '@/lib/blurPlaceholder';
+import { getImageUrl } from '@/lib/cloudinary';
 
 export function ProductSection({ data, lang }: { data: ProductSectionData; lang: Language }) {
   const t = translations[lang];
@@ -30,7 +31,7 @@ export function ProductSection({ data, lang }: { data: ProductSectionData; lang:
                 <div className="relative h-48 w-full">
                   {component.imageId ? (
                     <Image
-                      src={`/api/images/${component.imageId}`}
+                      src={getImageUrl(component.imageId)}
                       alt={component.title}
                       fill
                       sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
