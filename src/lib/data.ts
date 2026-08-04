@@ -15,6 +15,7 @@ export type DevNote = {
   summary: string;
   content: string;
   imageId?: number | null;
+  cloudinaryId?: string | null;
   author?: string;
   tags?: string[];
   isVisible?: boolean;

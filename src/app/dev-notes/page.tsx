@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { getDevNotes } from '@/lib/db/actions';
+import { cloudinaryUrl } from '@/lib/cloudinary';
 
 type SortOrder = 'newest' | 'oldest';
 
@@ -150,6 +151,11 @@ export default function DevNotesPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredAndSortedNotes.map((note, index) => {
             const readingTime = calculateReadingTime(note.content);
+            const imageSrc = note.cloudinaryId
+              ? cloudinaryUrl(note.cloudinaryId)
+              : note.imageId
+                ? `/api/images/${note.imageId}`
+                : null;
             return (
                 <Card
                   key={note.id}
@@ -158,8 +164,8 @@ export default function DevNotesPage() {
                 >
                   <Link href={`/dev-notes/${note.slug}`} className="block overflow-hidden">
                     <div className="relative h-56 w-full bg-muted">
-                      {note.imageId ? (
-                        <Image src={`/api/images/${note.imageId}`} alt={note.title} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover group-hover:scale-105 transition-transform duration-500" />
+                      {imageSrc ? (
+                        <Image src={imageSrc} alt={note.title} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover group-hover:scale-105 transition-transform duration-500" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
                           <Icon.ImageIcon className="w-16 h-16 text-muted-foreground" />

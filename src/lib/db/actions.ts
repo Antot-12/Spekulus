@@ -690,10 +690,24 @@ export async function updateCreators(lang: Language, creatorsData: Creator[], ac
 
 
 export async function getDevNotes(lang: Language) {
-  return await db.query.devNotes.findMany({
+  const notes = await db.query.devNotes.findMany({
     where: eq(schema.devNotes.lang, lang),
     orderBy: (n, { desc }) => [desc(n.date)],
   });
+
+  // Get cloudinaryIds for all notes with images
+  const notesWithCloudinary = await Promise.all(
+    notes.map(async (note) => {
+      if (!note.imageId) return { ...note, cloudinaryId: null }
+      const file = await db.query.files.findFirst({
+        where: eq(schema.files.id, note.imageId),
+        columns: { cloudinaryId: true }
+      })
+      return { ...note, cloudinaryId: file?.cloudinaryId || null }
+    })
+  )
+
+  return notesWithCloudinary
 }
 
 export async function getDevNoteBySlug(slug: string, lang?: Language): Promise<DevNote[] | null> {
