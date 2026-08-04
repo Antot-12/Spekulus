@@ -9,7 +9,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
   // Get optimization parameters from query string
   const width = searchParams.get('w') ? parseInt(searchParams.get('w')!) : undefined;
   const quality = searchParams.get('q') ? parseInt(searchParams.get('q')!) : 80;
-  const format = searchParams.get('f') || 'webp'; // Default to WebP
+  const format = searchParams.get('f') || 'webp';
 
   const fileId = Number(id);
   if (!fileId || isNaN(fileId)) {
@@ -19,7 +19,37 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
   try {
     const file = await getFileData(fileId);
 
-    if (!file || !file.data) {
+    if (!file) {
+      return new NextResponse('File not found', { status: 404 });
+    }
+
+    // If file has Cloudinary URL, redirect to it with transformations
+    if (file.cloudinaryUrl) {
+      // Build Cloudinary transformation URL
+      // Format: https://res.cloudinary.com/{cloud}/image/upload/{transformations}/{public_id}
+      const cloudName = process.env.CLOUDINARY_CLOUD_NAME || 'dmeg16fm5';
+      const publicId = file.cloudinaryId;
+
+      // Build transformation string
+      const transforms: string[] = [];
+      if (width) transforms.push(`w_${width}`);
+      transforms.push(`q_${quality}`);
+      transforms.push(`f_${format === 'webp' ? 'webp' : format === 'avif' ? 'avif' : 'auto'}`);
+
+      const transformString = transforms.join(',');
+      const cloudinaryUrl = `https://res.cloudinary.com/${cloudName}/image/upload/${transformString}/${publicId}`;
+
+      // Redirect to Cloudinary CDN
+      return NextResponse.redirect(cloudinaryUrl, {
+        status: 302,
+        headers: {
+          'Cache-Control': 'public, max-age=31536000, immutable',
+        }
+      });
+    }
+
+    // Fallback: serve from database if no Cloudinary URL (legacy support)
+    if (!file.data) {
       return new NextResponse('File not found', { status: 404 });
     }
 
@@ -40,10 +70,9 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
       });
     }
 
-    // Optimize image with Sharp
+    // Optimize image with Sharp (fallback for non-Cloudinary images)
     let sharpInstance = sharp(file.data);
 
-    // Resize if width is specified
     if (width) {
       sharpInstance = sharpInstance.resize(width, undefined, {
         fit: 'inside',
@@ -51,30 +80,20 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
       });
     }
 
-    // Convert to optimized format
     let optimizedBuffer: Buffer;
     let contentType: string;
 
     if (format === 'webp') {
-      optimizedBuffer = await sharpInstance
-        .webp({ quality, effort: 4 })
-        .toBuffer();
+      optimizedBuffer = await sharpInstance.webp({ quality, effort: 4 }).toBuffer();
       contentType = 'image/webp';
     } else if (format === 'avif') {
-      optimizedBuffer = await sharpInstance
-        .avif({ quality, effort: 4 })
-        .toBuffer();
+      optimizedBuffer = await sharpInstance.avif({ quality, effort: 4 }).toBuffer();
       contentType = 'image/avif';
     } else if (format === 'jpeg' || format === 'jpg') {
-      optimizedBuffer = await sharpInstance
-        .jpeg({ quality, progressive: true })
-        .toBuffer();
+      optimizedBuffer = await sharpInstance.jpeg({ quality, progressive: true }).toBuffer();
       contentType = 'image/jpeg';
     } else {
-      // Default to WebP
-      optimizedBuffer = await sharpInstance
-        .webp({ quality, effort: 4 })
-        .toBuffer();
+      optimizedBuffer = await sharpInstance.webp({ quality, effort: 4 }).toBuffer();
       contentType = 'image/webp';
     }
 

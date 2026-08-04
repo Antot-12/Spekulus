@@ -37,7 +37,9 @@ export const files = pgTable('files', {
   id: serial('id').primaryKey(),
   filename: text('filename'),
   mimeType: text('mime_type'),
-  data: bytea('data').notNull(),
+  data: bytea('data'),
+  cloudinaryId: text('cloudinary_id'),
+  cloudinaryUrl: text('cloudinary_url'),
   createdAt: timestamp('created_at').defaultNow().notNull()
 })
 
