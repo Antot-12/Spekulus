@@ -20,6 +20,7 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   images: {
+    // Use custom loader for API routes that redirect to Cloudinary
     loader: 'custom',
     loaderFile: './src/lib/imageLoader.ts',
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
@@ -28,27 +29,12 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
+        hostname: 'res.cloudinary.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
         hostname: 'placehold.co',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'res.cloudinary.com',
-        pathname: '/**',
-      },
-      {
-        protocol: 'http',
-        hostname: 'res.cloudinary.com',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: '6000-firebase-studio-1751707908116.cluster-c23mj7ubf5fxwq6nrbev4ugaxa.cloudworkstations.dev',
-        pathname: '/**',
-      },
-      {
-        protocol: 'http',
-        hostname: '6000-firebase-studio-1751707908116.cluster-c23mj7ubf5fxwq6nrbev4ugaxa.cloudworkstations.dev',
         pathname: '/**',
       },
       {

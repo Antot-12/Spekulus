@@ -1195,6 +1195,15 @@ export async function getFileData(id: number) {
   return await db.query.files.findFirst({ where: eq(schema.files.id, id) })
 }
 
+export async function getFileCloudinaryUrl(id: number): Promise<string | null> {
+  if (isNaN(id)) return null
+  const file = await db.query.files.findFirst({
+    where: eq(schema.files.id, id),
+    columns: { cloudinaryUrl: true }
+  })
+  return file?.cloudinaryUrl || null
+}
+
 export async function getFiles() {
   return db.select({
       id: schema.files.id,
