@@ -2,10 +2,17 @@ import { Button } from '@/components/ui/button'
 import { ArrowRight } from 'lucide-react'
 import NextImage from 'next/image'
 import type { ActionSectionData } from '@/lib/data'
-import { getImageUrl } from '@/lib/cloudinary'
+import { cloudinaryUrl } from '@/lib/cloudinary'
 
 export function ActionSection({ data }: { data: ActionSectionData | null }) {
   if (!data || !data.visible) return null
+
+  // Use cloudinaryId from database, fallback to API route
+  const imageSrc = data.cloudinaryId
+    ? cloudinaryUrl(data.cloudinaryId)
+    : data.imageId
+      ? `/api/images/${data.imageId}`
+      : null;
 
   return (
     <section id="action-section" className="py-16 md:py-24 bg-background">
@@ -21,9 +28,9 @@ export function ActionSection({ data }: { data: ActionSectionData | null }) {
 
         <div className="flex flex-col items-center opacity-0 animate-fade-in-up" style={{ animationDelay: '450ms' }}>
           <div className="relative w-full max-w-5xl aspect-video rounded-lg overflow-hidden shadow-2xl group">
-            {data.imageId ? (
+            {imageSrc ? (
               <NextImage
-                src={getImageUrl(data.imageId)}
+                src={imageSrc}
                 alt={data.title}
                 fill
                 sizes="(max-width: 1280px) 100vw, 1280px"

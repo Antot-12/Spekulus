@@ -10,7 +10,7 @@ type ImageTransformOptions = {
 };
 
 /**
- * Build a Cloudinary URL with transformations
+ * Build a Cloudinary URL with transformations from a public ID
  */
 export function cloudinaryUrl(
   publicId: string,
@@ -40,35 +40,15 @@ export function cloudinaryUrl(
 }
 
 /**
- * Get Cloudinary URL for a file ID (maps to spekulus folder structure)
+ * Build a Cloudinary URL from cloudinaryId (stored in database)
+ * Use this when you have the cloudinaryId from the file record
  */
-export function getImageUrl(fileId: number, options: ImageTransformOptions = {}): string {
-  // Map file IDs to their Cloudinary public IDs based on the migration
-  const folderMap: Record<number, string> = {
-    5: 'spekulus/backgrounds/file_5',
-    6: 'spekulus/branding/file_6',
-    7: 'spekulus/creators/file_7',
-    8: 'spekulus/creators/file_8',
-    9: 'spekulus/gallery/file_9',
-    10: 'spekulus/gallery/file_10',
-    11: 'spekulus/gallery/file_11',
-    12: 'spekulus/gallery/file_12',
-    13: 'spekulus/creators/file_13',
-    23: 'spekulus/branding/file_23',
-    24: 'spekulus/products/file_24',
-    25: 'spekulus/products/file_25',
-    27: 'spekulus/products/file_27',
-    28: 'spekulus/creators/file_28',
-  };
-
-  const publicId = folderMap[fileId];
-
-  if (publicId) {
-    return cloudinaryUrl(publicId, options);
-  }
-
-  // Fallback to API route for unmapped images
-  return `/api/images/${fileId}`;
+export function getCloudinaryUrlFromId(
+  cloudinaryId: string | null | undefined,
+  options: ImageTransformOptions = {}
+): string | null {
+  if (!cloudinaryId) return null;
+  return cloudinaryUrl(cloudinaryId, options);
 }
 
 /**

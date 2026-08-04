@@ -12,7 +12,7 @@ import { ArrowRight, Github, Twitter, Linkedin } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
 import { getCreators } from '@/lib/db/actions';
 import { getBlurDataURL } from '@/lib/blurPlaceholder';
-import { getImageUrl } from '@/lib/cloudinary';
+import { cloudinaryUrl } from '@/lib/cloudinary';
 
 export function CreatorsSection() {
   const { language, translations } = useLanguage();
@@ -46,7 +46,7 @@ export function CreatorsSection() {
           <h2 className="text-3xl md:text-4xl font-bold font-headline">{translations.creators.title}</h2>
           <p className="text-lg text-foreground/70 mt-2">{translations.creators.subtitle}</p>
         </div>
-        
+
         {!isLoaded ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-8">
             {[...Array(5)].map((_, i) => (
@@ -60,60 +60,69 @@ export function CreatorsSection() {
         ) : creators.length > 0 ? (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-y-10 gap-x-6 justify-items-center">
-              {creators.map((creator, index) => (
-                <div 
-                  key={creator.id}
-                  className="group relative flex flex-col items-center text-center opacity-0 animate-fade-in-up w-full max-w-xs"
-                  style={{ animationDelay: `${index * 150}ms` }}
-                >
-                  <Link href={`/creators/${creator.slug}`} className="block mb-4">
-                    <div className="relative h-40 w-40 overflow-hidden rounded-full">
-                      {creator.imageId && (
-                        <div
-                          className="absolute inset-0 group-hover:scale-105 transition-transform duration-300"
-                          style={{
-                            transform: `scale(${(creator.profileImageZoom ?? 100) / 100})`
-                          }}
-                        >
-                          <Image
-                              src={getImageUrl(creator.imageId)}
-                              alt={creator.name}
-                              fill
-                              sizes="(max-width: 640px) 160px, 160px"
-                              quality={85}
-                              placeholder="blur"
-                              blurDataURL={getBlurDataURL(160, 160)}
-                              className="object-cover shadow-lg group-hover:shadow-primary/20"
-                              style={{
-                                objectPosition: `${creator.profileImagePosX ?? 50}% ${creator.profileImagePosY ?? 30}%`
-                              }}
-                              data-ai-hint="portrait man"
-                          />
-                        </div>
+              {creators.map((creator, index) => {
+                // Use cloudinaryId from database, fallback to API route
+                const imageSrc = creator.cloudinaryId
+                  ? cloudinaryUrl(creator.cloudinaryId)
+                  : creator.imageId
+                    ? `/api/images/${creator.imageId}`
+                    : null;
+
+                return (
+                  <div
+                    key={creator.id}
+                    className="group relative flex flex-col items-center text-center opacity-0 animate-fade-in-up w-full max-w-xs"
+                    style={{ animationDelay: `${index * 150}ms` }}
+                  >
+                    <Link href={`/creators/${creator.slug}`} className="block mb-4">
+                      <div className="relative h-40 w-40 overflow-hidden rounded-full">
+                        {imageSrc && (
+                          <div
+                            className="absolute inset-0 group-hover:scale-105 transition-transform duration-300"
+                            style={{
+                              transform: `scale(${(creator.profileImageZoom ?? 100) / 100})`
+                            }}
+                          >
+                            <Image
+                                src={imageSrc}
+                                alt={creator.name}
+                                fill
+                                sizes="(max-width: 640px) 160px, 160px"
+                                quality={85}
+                                placeholder="blur"
+                                blurDataURL={getBlurDataURL(160, 160)}
+                                className="object-cover shadow-lg group-hover:shadow-primary/20"
+                                style={{
+                                  objectPosition: `${creator.profileImagePosX ?? 50}% ${creator.profileImagePosY ?? 30}%`
+                                }}
+                                data-ai-hint="portrait man"
+                            />
+                          </div>
+                        )}
+                      </div>
+                      <h3 className="font-headline text-xl mt-4 group-hover:text-primary transition-colors">{creator.name}</h3>
+                      <p className="text-muted-foreground">{creator.role}</p>
+                    </Link>
+                    <div className="flex gap-4 text-muted-foreground z-10">
+                      {creator.socials.github && (
+                        <a href={`https://github.com/${creator.socials.github}`} target="_blank" rel="noopener noreferrer" aria-label="GitHub Profile" className="hover:text-primary transition-colors">
+                          <Github className="h-5 w-5"/>
+                        </a>
+                      )}
+                      {creator.socials.twitter && (
+                        <a href={creator.socials.twitter} target="_blank" rel="noopener noreferrer" aria-label="Twitter Profile" className="hover:text-primary transition-colors">
+                          <Twitter className="h-5 w-5"/>
+                        </a>
+                      )}
+                      {creator.socials.linkedin && (
+                        <a href={creator.socials.linkedin} target="_blank" rel="noopener noreferrer" aria-label="LinkedIn Profile" className="hover:text-primary transition-colors">
+                           <Linkedin className="h-5 w-5"/>
+                        </a>
                       )}
                     </div>
-                    <h3 className="font-headline text-xl mt-4 group-hover:text-primary transition-colors">{creator.name}</h3>
-                    <p className="text-muted-foreground">{creator.role}</p>
-                  </Link>
-                  <div className="flex gap-4 text-muted-foreground z-10">
-                    {creator.socials.github && (
-                      <a href={`https://github.com/${creator.socials.github}`} target="_blank" rel="noopener noreferrer" aria-label="GitHub Profile" className="hover:text-primary transition-colors">
-                        <Github className="h-5 w-5"/>
-                      </a>
-                    )}
-                    {creator.socials.twitter && (
-                      <a href={creator.socials.twitter} target="_blank" rel="noopener noreferrer" aria-label="Twitter Profile" className="hover:text-primary transition-colors">
-                        <Twitter className="h-5 w-5"/>
-                      </a>
-                    )}
-                    {creator.socials.linkedin && (
-                      <a href={creator.socials.linkedin} target="_blank" rel="noopener noreferrer" aria-label="LinkedIn Profile" className="hover:text-primary transition-colors">
-                         <Linkedin className="h-5 w-5"/>
-                      </a>
-                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
             <div className="text-center mt-12">
                 <Link href="/creators" passHref>

@@ -183,7 +183,18 @@ export async function getHeroData(lang: Language): Promise<HeroSectionData | nul
   const hero = await db.query.heroSections.findFirst({ where: eq(schema.heroSections.lang, lang) })
   if (!hero) return null
   const features = await db.query.heroFeatures.findMany({ where: eq(schema.heroFeatures.lang, lang) })
-  return { ...hero, features }
+
+  // Get cloudinaryId from files table if imageId exists
+  let cloudinaryId: string | null = null
+  if (hero.imageId) {
+    const file = await db.query.files.findFirst({
+      where: eq(schema.files.id, hero.imageId),
+      columns: { cloudinaryId: true }
+    })
+    cloudinaryId = file?.cloudinaryId || null
+  }
+
+  return { ...hero, cloudinaryId, features }
 }
 
 export async function updateHeroData(lang: Language, data: Omit<HeroSectionData, 'id'>, actor: string) {
@@ -228,8 +239,20 @@ export async function getProductData(lang: Language) {
     where: eq(schema.productComponents.lang, lang),
     orderBy: (p, { asc }) => [asc(p.id)]
   })
-  // This structure is intentionally kept for compatibility with the component
-  return { components }
+
+  // Get cloudinaryIds for all components with images
+  const componentsWithCloudinary = await Promise.all(
+    components.map(async (component) => {
+      if (!component.imageId) return { ...component, cloudinaryId: null }
+      const file = await db.query.files.findFirst({
+        where: eq(schema.files.id, component.imageId),
+        columns: { cloudinaryId: true }
+      })
+      return { ...component, cloudinaryId: file?.cloudinaryId || null }
+    })
+  )
+
+  return { components: componentsWithCloudinary }
 }
 
 export async function updateProductComponents(lang: Language, components: ProductComponent[], actor: string) {
@@ -329,7 +352,20 @@ export async function updateAdvantagesData(lang: Language, advantages: Advantage
 }
 
 export async function getActionSectionData(lang: Language) {
-  return await db.query.actionSections.findFirst({ where: eq(schema.actionSections.lang, lang) })
+  const action = await db.query.actionSections.findFirst({ where: eq(schema.actionSections.lang, lang) })
+  if (!action) return null
+
+  // Get cloudinaryId from files table if imageId exists
+  let cloudinaryId: string | null = null
+  if (action.imageId) {
+    const file = await db.query.files.findFirst({
+      where: eq(schema.files.id, action.imageId),
+      columns: { cloudinaryId: true }
+    })
+    cloudinaryId = file?.cloudinaryId || null
+  }
+
+  return { ...action, cloudinaryId }
 }
 
 export async function updateActionSectionData(
@@ -506,7 +542,21 @@ export async function updateFaqs(lang: Language, faqs: FaqItem[], actor: string)
 }
 
 export async function getCreators(lang: Language) {
-  return await db.query.creators.findMany({ where: eq(schema.creators.lang, lang) })
+  const creators = await db.query.creators.findMany({ where: eq(schema.creators.lang, lang) })
+
+  // Get cloudinaryIds for all creators with images
+  const creatorsWithCloudinary = await Promise.all(
+    creators.map(async (creator) => {
+      if (!creator.imageId) return { ...creator, cloudinaryId: null }
+      const file = await db.query.files.findFirst({
+        where: eq(schema.files.id, creator.imageId),
+        columns: { cloudinaryId: true }
+      })
+      return { ...creator, cloudinaryId: file?.cloudinaryId || null }
+    })
+  )
+
+  return creatorsWithCloudinary
 }
 
 export async function getCreatorBySlug(lang: Language, slug: string) {

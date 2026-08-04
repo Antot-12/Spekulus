@@ -108,6 +108,7 @@ export type Creator = {
   role: string;
   bio: string;
   imageId?: number | null;
+  cloudinaryId?: string | null;
   // Card view positioning (creators list page)
   cardImagePosX?: number; // Horizontal position percentage (0-100)
   cardImagePosY?: number; // Vertical position percentage (0-100)
@@ -170,6 +171,7 @@ export type ActionSectionData = {
   subtitle: string;
   description: string;
   imageId?: number | null;
+  cloudinaryId?: string | null;
   visible: boolean;
   buttonText: string;
   buttonUrl: string;
@@ -190,6 +192,7 @@ export type HeroSectionData = {
   title: string;
   subtitle: string;
   imageId?: number | null;
+  cloudinaryId?: string | null;
   features: HeroFeature[];
 };
 
@@ -202,6 +205,7 @@ export type ProductComponent = {
   title: string;
   description: string;
   imageId?: number | null;
+  cloudinaryId?: string | null;
 };
 
 export type ProductSectionData = {

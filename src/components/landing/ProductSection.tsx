@@ -4,7 +4,7 @@ import type { ProductSectionData, ProductComponent, Language } from '@/lib/data'
 import { ProductIcon } from '@/components/ProductIcon';
 import { translations } from '@/lib/translations';
 import { getBlurDataURL } from '@/lib/blurPlaceholder';
-import { getImageUrl } from '@/lib/cloudinary';
+import { cloudinaryUrl } from '@/lib/cloudinary';
 
 export function ProductSection({ data, lang }: { data: ProductSectionData; lang: Language }) {
   const t = translations[lang];
@@ -17,37 +17,46 @@ export function ProductSection({ data, lang }: { data: ProductSectionData; lang:
           <p className="text-lg text-foreground/70 mt-2">{data.subtitle}</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {data.components.map((component: ProductComponent, index: number) => (
-            <Card
-              key={component.id}
-              className="bg-card border-border/50 overflow-hidden transform hover:-translate-y-2 transition-transform duration-300 shadow-lg hover:shadow-primary/20 opacity-0 animate-fade-in-up"
-              style={{ animationDelay: `${index * 150}ms` }}
-            >
-              <CardHeader className="flex flex-row items-center gap-4 p-4">
-                <ProductIcon name={component.icon} className="w-10 h-10 text-primary" />
-                <CardTitle className="font-headline text-xl">{component.title}</CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="relative h-48 w-full">
-                  {component.imageId ? (
-                    <Image
-                      src={getImageUrl(component.imageId)}
-                      alt={component.title}
-                      fill
-                      sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                      quality={80}
-                      placeholder="blur"
-                      blurDataURL={getBlurDataURL(400, 192)}
-                      className="object-cover"
-                    />
-                  ): (
-                    <div className="w-full h-full bg-muted" />
-                  )}
-                </div>
-                <p className="p-4 text-foreground/80">{component.description}</p>
-              </CardContent>
-            </Card>
-          ))}
+          {data.components.map((component: ProductComponent, index: number) => {
+            // Use cloudinaryId from database, fallback to API route
+            const imageSrc = component.cloudinaryId
+              ? cloudinaryUrl(component.cloudinaryId)
+              : component.imageId
+                ? `/api/images/${component.imageId}`
+                : null;
+
+            return (
+              <Card
+                key={component.id}
+                className="bg-card border-border/50 overflow-hidden transform hover:-translate-y-2 transition-transform duration-300 shadow-lg hover:shadow-primary/20 opacity-0 animate-fade-in-up"
+                style={{ animationDelay: `${index * 150}ms` }}
+              >
+                <CardHeader className="flex flex-row items-center gap-4 p-4">
+                  <ProductIcon name={component.icon} className="w-10 h-10 text-primary" />
+                  <CardTitle className="font-headline text-xl">{component.title}</CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="relative h-48 w-full">
+                    {imageSrc ? (
+                      <Image
+                        src={imageSrc}
+                        alt={component.title}
+                        fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                        quality={80}
+                        placeholder="blur"
+                        blurDataURL={getBlurDataURL(400, 192)}
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-muted" />
+                    )}
+                  </div>
+                  <p className="p-4 text-foreground/80">{component.description}</p>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       </div>
     </section>
