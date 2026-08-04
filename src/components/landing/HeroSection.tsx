@@ -2,10 +2,13 @@
 
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import Image from 'next/image';
 import { CheckCircle } from 'lucide-react';
 import type { HeroSectionData, Language } from '@/lib/data';
 import { translations } from '@/lib/translations';
 import { AdvantageIcon } from '../AdvantageIcon';
+
+import { getBlurDataURL } from '@/lib/blurPlaceholder';
 
 export function HeroSection({ data, lang }: { data: HeroSectionData | null, lang: Language }) {
   const t = translations[lang];
@@ -22,10 +25,16 @@ export function HeroSection({ data, lang }: { data: HeroSectionData | null, lang
     <section className="relative w-full min-h-[80vh] flex items-center justify-center text-center overflow-hidden">
       <div className="absolute inset-0 z-0">
         {data.imageId ? (
-          <img
+          <Image
             src={`/api/images/${data.imageId}`}
             alt={data.title}
-            className="object-cover w-full h-full"
+            fill
+            priority
+            sizes="100vw"
+            quality={85}
+            placeholder="blur"
+            blurDataURL={getBlurDataURL(1920, 1080)}
+            className="object-cover"
           />
         ) : (
           <div className="w-full h-full bg-muted" />

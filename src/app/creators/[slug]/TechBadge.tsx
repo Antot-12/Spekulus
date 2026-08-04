@@ -1,8 +1,16 @@
 "use client";
 
-type TechBadgeProps = { skill: string };
+type TechBadgeProps = { skill?: string; tech?: string };
 
-export const TechBadge = ({ skill }: TechBadgeProps) => {
+export const TechBadge = ({ skill, tech }: TechBadgeProps) => {
+  // Support both 'skill' and 'tech' props
+  const value = skill || tech;
+
+  // Guard against undefined/null/empty strings
+  if (!value || typeof value !== 'string' || value.trim() === '') {
+    return null;
+  }
+
   const slugMap: Record<string, string> = {
     javascript: 'javascript', js: 'javascript',
     typescript: 'typescript', ts: 'typescript',
@@ -19,12 +27,15 @@ export const TechBadge = ({ skill }: TechBadgeProps) => {
     sql: 'postgresql', postgres: 'postgresql', postgresql: 'postgresql',
     mysql: 'mysql', mariadb: 'mariadb',
     html: 'html5', html5: 'html5',
+    // CSS3 doesn't exist on simpleicons, will fallback to devicon
     css: 'css3', css3: 'css3', sass: 'sass', scss: 'sass',
     less: 'less', stylus: 'stylus',
     tailwind: 'tailwindcss', bootstrap: 'bootstrap', materialui: 'materialui',
     bash: 'gnubash', shell: 'gnubash',
+    // Windows doesn't exist on simpleicons, will fallback to devicon
     linux: 'linux', ubuntu: 'ubuntu', windows: 'windows',
     macos: 'macos', android: 'android', ios: 'apple',
+    node: 'nodedotjs', nodejs: 'nodedotjs', 'node.js': 'nodedotjs',
     react: 'react', 'react native': 'react',
     next: 'nextdotjs', 'next.js': 'nextdotjs', nextjs: 'nextdotjs',
     vue: 'vuedotjs', angular: 'angular', svelte: 'svelte',
@@ -43,12 +54,14 @@ export const TechBadge = ({ skill }: TechBadgeProps) => {
     gcp: 'googlecloud', firebase: 'firebase',
     heroku: 'heroku', netlify: 'netlify', vercel: 'vercel',
     vscode: 'visualstudiocode', 'visual studio code': 'visualstudiocode',
+    // Visual Studio doesn't exist on simpleicons, will fallback to devicon
     'visual studio': 'visualstudio',
     intellij: 'intellijidea', pycharm: 'pycharm',
     phpstorm: 'phpstorm', clion: 'clion',
     eclipse: 'eclipseide', atom: 'atom',
     sublime: 'sublimetext', jetbrains: 'jetbrains',
     figma: 'figma', sketch: 'sketch',
+    // Adobe Creative Cloud doesn't exist on simpleicons, will fallback to worldvectorlogo
     adobe: 'adobecreativecloud', photoshop: 'adobephotoshop',
     illustrator: 'adobeillustrator', xd: 'adobexd',
     postman: 'postman', swagger: 'swagger', 'rest api': 'swagger',
@@ -86,6 +99,9 @@ export const TechBadge = ({ skill }: TechBadgeProps) => {
     css: [
       'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/css3/css3-original.svg'
     ],
+    css3: [
+      'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/css3/css3-original.svg'
+    ],
     csharp: [
       'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/csharp/csharp-original.svg'
     ],
@@ -96,6 +112,9 @@ export const TechBadge = ({ skill }: TechBadgeProps) => {
       'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/windows8/windows8-original.svg'
     ],
     'visual studio': [
+      'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/visualstudio/visualstudio-plain.svg'
+    ],
+    visualstudio: [
       'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/visualstudio/visualstudio-plain.svg'
     ],
     adobe: [
@@ -121,11 +140,16 @@ export const TechBadge = ({ skill }: TechBadgeProps) => {
   const normalize = (s: string) =>
     s.toLowerCase().trim().replace(/\s+/g, ' ').replace(/[.\-]/g, '');
 
-  const key = normalize(skill);
+  const key = normalize(value);
   const slug = slugMap[key] || key.replace(/\s+/g, '').replace(/\./g, 'dot');
 
-  const urls: string[] = [`https://cdn.simpleicons.org/${slug}`];
-  if (altSrc[key]) urls.push(...altSrc[key]);
+  // For icons that don't exist on simpleicons, use fallback directly
+  const urls: string[] = [];
+  if (altSrc[key]) {
+    urls.push(...altSrc[key]);
+  } else {
+    urls.push(`https://cdn.simpleicons.org/${slug}`);
+  }
   urls.push('https://cdn.simpleicons.org/code/00F0FF');
 
   let i = 0;
@@ -140,8 +164,8 @@ export const TechBadge = ({ skill }: TechBadgeProps) => {
 
   return (
     <div className="flex items-center gap-2 rounded-lg bg-muted px-3 py-1.5 text-sm font-medium transition-colors hover:bg-primary/10 hover:text-primary">
-      <img src={urls[0]} alt={`${skill} logo`} className="h-5 w-5" onError={err} />
-      <span className="truncate">{skill}</span>
+      <img src={urls[0]} alt={`${value} logo`} className="h-5 w-5" onError={err} />
+      <span className="truncate">{value}</span>
     </div>
   );
 };

@@ -3,7 +3,7 @@ import type { NextConfig } from 'next';
 const ContentSecurityPolicy = `
     default-src 'self';
     script-src 'self' 'unsafe-eval' 'unsafe-inline' *.youtube.com *.twitter.com;
-    child-src *.youtube.com *.google.com *.twitter.com;
+    child-src *.youtube.com *.google.com *.twitter.com *.spotify.com open.spotify.com;
     style-src 'self' 'unsafe-inline' *.googleapis.com;
     img-src * blob: data:;
     media-src 'none';
@@ -19,6 +19,8 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   images: {
+    loader: 'custom',
+    loaderFile: './src/lib/imageLoader.ts',
     remotePatterns: [
       {
         protocol: 'https',
@@ -46,9 +48,6 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       }
     ],
-  },
-  devIndicators: {
-    buildActivity: true,
   },
   async headers() {
     return [

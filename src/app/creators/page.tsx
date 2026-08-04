@@ -74,8 +74,21 @@ export default function CreatorsPage() {
                 className="bg-card border-border/50 overflow-hidden transform hover:-translate-y-2 transition-transform duration-300 shadow-lg hover:shadow-primary/20 opacity-0 animate-fade-in-up flex flex-col h-full"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
-                <div className="relative h-64 w-full">
-                  {creator.imageId && <Image src={`/api/images/${creator.imageId}`} alt={creator.name} layout="fill" objectFit="cover" data-ai-hint="portrait man" />}
+                <div className="relative h-64 w-full bg-muted overflow-hidden">
+                  {creator.imageId && (
+                    <Image
+                      src={`/api/images/${creator.imageId}`}
+                      alt={creator.name}
+                      fill
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
+                      className="object-cover"
+                      style={{
+                        objectPosition: `${creator.cardImagePosX ?? 50}% ${creator.cardImagePosY ?? 20}%`,
+                        transform: `scale(${(creator.cardImageZoom ?? 100) / 100})`
+                      }}
+                      data-ai-hint="portrait man"
+                    />
+                  )}
                 </div>
                 <CardHeader>
                   <CardTitle className="font-headline text-xl group-hover:text-primary transition-colors">{creator.name}</CardTitle>

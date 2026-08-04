@@ -49,6 +49,35 @@ export type FeaturedProject = {
   url: string;
 };
 
+export type Project = {
+  id: number;
+  title: string;
+  description: string;
+  imageId?: number | null;
+  demoUrl?: string;
+  githubUrl?: string;
+  technologies: string[];
+  category?: string;
+  startDate?: string;
+  endDate?: string;
+  featured?: boolean;
+  isVisible?: boolean;
+  order?: number;
+};
+
+export type Experience = {
+  id: number;
+  company: string;
+  position: string;
+  startDate: string;
+  endDate?: string;
+  description: string;
+  technologies?: string[];
+  location?: string;
+  isVisible?: boolean;
+  order?: number;
+};
+
 export type Education = {
   institution: string;
   degree: string;
@@ -79,6 +108,14 @@ export type Creator = {
   role: string;
   bio: string;
   imageId?: number | null;
+  // Card view positioning (creators list page)
+  cardImagePosX?: number; // Horizontal position percentage (0-100)
+  cardImagePosY?: number; // Vertical position percentage (0-100)
+  cardImageZoom?: number; // Zoom scale (0.5-2.0)
+  // Profile view positioning (detail page)
+  profileImagePosX?: number; // Horizontal position percentage (0-100)
+  profileImagePosY?: number; // Vertical position percentage (0-100)
+  profileImageZoom?: number; // Zoom scale (0.5-2.0)
   location?: string;
   languages?: string[];
   contributions?: string[];
@@ -88,6 +125,8 @@ export type Creator = {
   hobbies?: string[];
   gallery?: GalleryImage[];
   achievements?: Achievement[];
+  projects?: Project[];
+  experience?: Experience[];
   cvUrl?: string;
   quote?: string;
   quoteAuthor?: string;
@@ -108,6 +147,7 @@ export type Creator = {
   };
   featuredProject?: FeaturedProject;
   featuredProjectImageId?: number | null;
+  sectionsOrder?: string[];
   isVisible?: boolean;
 };
 

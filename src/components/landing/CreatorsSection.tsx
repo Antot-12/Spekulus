@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight, Github, Twitter, Linkedin } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
 import { getCreators } from '@/lib/db/actions';
+import { getBlurDataURL } from '@/lib/blurPlaceholder';
 
 export function CreatorsSection() {
   const { language, translations } = useLanguage();
@@ -65,16 +66,29 @@ export function CreatorsSection() {
                   style={{ animationDelay: `${index * 150}ms` }}
                 >
                   <Link href={`/creators/${creator.slug}`} className="block mb-4">
-                    <div className="relative h-40 w-40">
+                    <div className="relative h-40 w-40 overflow-hidden rounded-full">
                       {creator.imageId && (
-                        <Image 
-                            src={`/api/images/${creator.imageId}`} 
-                            alt={creator.name} 
-                            layout="fill" 
-                            objectFit="cover" 
-                            className="rounded-full group-hover:scale-105 transition-transform duration-300 shadow-lg group-hover:shadow-primary/20"
-                            data-ai-hint="portrait man"
-                        />
+                        <div
+                          className="absolute inset-0 group-hover:scale-105 transition-transform duration-300"
+                          style={{
+                            transform: `scale(${(creator.profileImageZoom ?? 100) / 100})`
+                          }}
+                        >
+                          <Image
+                              src={`/api/images/${creator.imageId}`}
+                              alt={creator.name}
+                              fill
+                              sizes="(max-width: 640px) 160px, 160px"
+                              quality={85}
+                              placeholder="blur"
+                              blurDataURL={getBlurDataURL(160, 160)}
+                              className="object-cover shadow-lg group-hover:shadow-primary/20"
+                              style={{
+                                objectPosition: `${creator.profileImagePosX ?? 50}% ${creator.profileImagePosY ?? 30}%`
+                              }}
+                              data-ai-hint="portrait man"
+                          />
+                        </div>
                       )}
                     </div>
                     <h3 className="font-headline text-xl mt-4 group-hover:text-primary transition-colors">{creator.name}</h3>

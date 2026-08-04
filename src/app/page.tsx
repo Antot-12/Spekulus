@@ -15,6 +15,7 @@ import { WhySpekulusSection } from '@/components/landing/WhySpekulusSection';
 import { ComparisonSection } from '@/components/landing/ComparisonSection';
 import { NewsletterSection } from '@/components/landing/NewsletterSection';
 import { CooperationSection } from '@/components/landing/CooperationSection';
+import { ImagePreloader } from '@/components/ImagePreloader';
 import { useLanguage } from '@/contexts/LanguageContext';
 import {
   getHeroData,
@@ -132,7 +133,7 @@ export default function Home() {
 
     setIsLoading(false);
   }, [language]);
-  
+
   useEffect(() => {
     fetchData();
   }, [fetchData]);

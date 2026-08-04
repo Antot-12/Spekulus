@@ -243,6 +243,14 @@ export const creators = pgTable(
     gallery: jsonb('gallery').$type<{ imageId: number; description: string }[]>(),
     achievements: jsonb('achievements').$type<{ icon: string; name: string; description: string }[]>(),
     imageId: integer('image_id').references(() => files.id, { onDelete: 'set null' }),
+    // Card view positioning (creators list page)
+    cardImagePosX: integer('card_image_pos_x').default(50),
+    cardImagePosY: integer('card_image_pos_y').default(20),
+    cardImageZoom: integer('card_image_zoom').default(100), // Stored as percentage (100 = 1.0x)
+    // Profile view positioning (detail page)
+    profileImagePosX: integer('profile_image_pos_x').default(50),
+    profileImagePosY: integer('profile_image_pos_y').default(30),
+    profileImageZoom: integer('profile_image_zoom').default(100), // Stored as percentage (100 = 1.0x)
     featuredProjectImageId: integer('featured_project_image_id').references(() => files.id, {
       onDelete: 'set null'
     }),
@@ -250,10 +258,56 @@ export const creators = pgTable(
       title: string
       description: string
       url: string
-    }>()
+    }>(),
+    sectionsOrder: jsonb('sections_order').$type<string[]>().default([
+      'about',
+      'projects',
+      'experience',
+      'featuredProject',
+      'contributions',
+      'skills',
+      'achievements',
+      'education',
+      'music',
+      'personal',
+      'gallery'
+    ]).notNull()
   },
   t => ({ slugLangUnique: unique().on(t.slug, t.lang) })
 )
+
+export const creatorProjects = pgTable('creator_projects', {
+  id: serial('id').primaryKey(),
+  creatorId: integer('creator_id').notNull().references(() => creators.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(),
+  description: text('description').notNull(),
+  imageId: integer('image_id').references(() => files.id, { onDelete: 'set null' }),
+  demoUrl: text('demo_url'),
+  githubUrl: text('github_url'),
+  technologies: jsonb('technologies').$type<string[]>().default([]).notNull(),
+  category: text('category'),
+  startDate: text('start_date'),
+  endDate: text('end_date'),
+  featured: boolean('featured').default(false).notNull(),
+  isVisible: boolean('is_visible').default(true).notNull(),
+  order: integer('order').default(0).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const creatorExperience = pgTable('creator_experience', {
+  id: serial('id').primaryKey(),
+  creatorId: integer('creator_id').notNull().references(() => creators.id, { onDelete: 'cascade' }),
+  company: text('company').notNull(),
+  position: text('position').notNull(),
+  startDate: text('start_date').notNull(),
+  endDate: text('end_date'),
+  description: text('description').notNull(),
+  technologies: jsonb('technologies').$type<string[]>().default([]).notNull(),
+  location: text('location'),
+  isVisible: boolean('is_visible').default(true).notNull(),
+  order: integer('order').default(0).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
 
 // Audit Log Schema
 export const changeTypeEnum = pgEnum('change_type', ['CONTENT', 'SEO', 'SETTINGS', 'UI_VISIBILITY']);

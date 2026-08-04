@@ -3,6 +3,7 @@ import Image from 'next/image';
 import type { ProductSectionData, ProductComponent, Language } from '@/lib/data';
 import { ProductIcon } from '@/components/ProductIcon';
 import { translations } from '@/lib/translations';
+import { getBlurDataURL } from '@/lib/blurPlaceholder';
 
 export function ProductSection({ data, lang }: { data: ProductSectionData; lang: Language }) {
   const t = translations[lang];
@@ -31,8 +32,12 @@ export function ProductSection({ data, lang }: { data: ProductSectionData; lang:
                     <Image
                       src={`/api/images/${component.imageId}`}
                       alt={component.title}
-                      layout="fill"
-                      objectFit="cover"
+                      fill
+                      sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                      quality={80}
+                      placeholder="blur"
+                      blurDataURL={getBlurDataURL(400, 192)}
+                      className="object-cover"
                     />
                   ): (
                     <div className="w-full h-full bg-muted" />

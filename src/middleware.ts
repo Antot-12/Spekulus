@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { getPageStatus } from '@/lib/db/actions';
+import { getPageStatus } from '@/lib/db/middleware-actions';
 
 // Add any paths that should be excluded from maintenance checks
 const EXCLUDED_PATHS = ['/api/', '/admin', '/login'];

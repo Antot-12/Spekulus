@@ -159,7 +159,7 @@ export default function DevNotesPage() {
                   <Link href={`/dev-notes/${note.slug}`} className="block overflow-hidden">
                     <div className="relative h-56 w-full bg-muted">
                       {note.imageId ? (
-                        <Image src={`/api/images/${note.imageId}`} alt={note.title} layout="fill" objectFit="cover" className="group-hover:scale-105 transition-transform duration-500" />
+                        <Image src={`/api/images/${note.imageId}`} alt={note.title} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover group-hover:scale-105 transition-transform duration-500" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
                           <Icon.ImageIcon className="w-16 h-16 text-muted-foreground" />

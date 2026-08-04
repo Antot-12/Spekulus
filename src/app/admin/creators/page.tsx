@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import type { Creator, FeaturedProject, Language, GalleryImage, Education, Certification, Achievement } from '@/lib/data';
+import type { Creator, FeaturedProject, Language, GalleryImage, Education, Certification, Achievement, Project, Experience } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,6 +21,10 @@ import { getCreators, updateCreators, createCreator } from '@/lib/db/actions';
 import { initialData } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { FilePickerDialog } from './FilePickerDialog';
+import { ImagePositionEditor } from '@/components/ui/image-position-editor';
+import { ProjectsManager } from '@/components/admin/ProjectsManager';
+import { ExperienceManager } from '@/components/admin/ExperienceManager';
+import { SectionsOrderManager } from '@/components/admin/SectionsOrderManager';
 
 const newCreatorBioExample = `### About Me
 
@@ -173,7 +177,7 @@ export default function CreatorsAdminPage() {
     if (creator) handleFieldChange(id, 'music', { ...(creator.music ?? {}), [platform]: value });
   };
 
-  const handleProjectChange = (id: number, field: keyof FeaturedProject, value: string) => {
+  const handleFeaturedProjectChange = (id: number, field: keyof FeaturedProject, value: string) => {
     const creator = creators.find(c => c.id === id);
     const updated = { ...(creator?.featuredProject || { title: '', url: '', description: '' }), [field]: value };
     handleFieldChange(id, 'featuredProject', updated);
@@ -418,6 +422,27 @@ export default function CreatorsAdminPage() {
                             <Button variant="outline" size="icon" onClick={() => fileInputRefs.current[`creator-${creator.id}`]?.click()}><Upload className="h-4 w-4"/></Button>
                             <input type="file" ref={el => (fileInputRefs.current[`creator-${creator.id}`] = el)} accept="image/*" onChange={e => handleImageUpload(creator.id, 'imageId', e)} className="hidden" />
                         </div>
+                        {creator.imageId && (
+                          <div className="mt-4">
+                            <ImagePositionEditor
+                              imageId={creator.imageId}
+                              initialCardX={creator.cardImagePosX ?? 50}
+                              initialCardY={creator.cardImagePosY ?? 20}
+                              initialCardZoom={(creator.cardImageZoom ?? 100) / 100}
+                              initialProfileX={creator.profileImagePosX ?? 50}
+                              initialProfileY={creator.profileImagePosY ?? 30}
+                              initialProfileZoom={(creator.profileImageZoom ?? 100) / 100}
+                              onPositionChange={(settings) => {
+                                handleFieldChange(creator.id, 'cardImagePosX', settings.cardX);
+                                handleFieldChange(creator.id, 'cardImagePosY', settings.cardY);
+                                handleFieldChange(creator.id, 'cardImageZoom', Math.round(settings.cardZoom * 100));
+                                handleFieldChange(creator.id, 'profileImagePosX', settings.profileX);
+                                handleFieldChange(creator.id, 'profileImagePosY', settings.profileY);
+                                handleFieldChange(creator.id, 'profileImageZoom', Math.round(settings.profileZoom * 100));
+                              }}
+                            />
+                          </div>
+                        )}
                     </div>
                     <div className="md:col-span-2">
                         <Label>CV File</Label>
@@ -491,9 +516,9 @@ export default function CreatorsAdminPage() {
                 <Card>
                   <CardHeader><CardTitle className="font-headline flex items-center gap-2 text-xl"><Briefcase className="w-5 h-5" />Featured Project</CardTitle></CardHeader>
                   <CardContent className="space-y-4">
-                    <div><Label>Project Title</Label><Input value={creator.featuredProject?.title ?? ''} onChange={e => handleProjectChange(creator.id, 'title', e.target.value)} /></div>
-                    <div><Label>Project URL</Label><Input value={creator.featuredProject?.url ?? ''} onChange={e => handleProjectChange(creator.id, 'url', e.target.value)} /></div>
-                    <div><Label>Project Description</Label><Textarea value={creator.featuredProject?.description ?? ''} onChange={e => handleProjectChange(creator.id, 'description', e.target.value)} rows={3}/></div>
+                    <div><Label>Project Title</Label><Input value={creator.featuredProject?.title ?? ''} onChange={e => handleFeaturedProjectChange(creator.id, 'title', e.target.value)} /></div>
+                    <div><Label>Project URL</Label><Input value={creator.featuredProject?.url ?? ''} onChange={e => handleFeaturedProjectChange(creator.id, 'url', e.target.value)} /></div>
+                    <div><Label>Project Description</Label><Textarea value={creator.featuredProject?.description ?? ''} onChange={e => handleFeaturedProjectChange(creator.id, 'description', e.target.value)} rows={3}/></div>
                     <div>
                         <Label>Project Image</Label>
                         <div className="flex gap-2">
@@ -606,6 +631,36 @@ export default function CreatorsAdminPage() {
                         {(!creator.gallery || creator.gallery.length === 0) && <p className="text-sm text-muted-foreground text-center py-4">No gallery images yet.</p>}
                     </CardContent>
                 </Card>
+
+                <ProjectsManager
+                  creatorId={creator.id}
+                  initialProjects={[]}
+                  onUpdate={() => {}}
+                />
+
+                <ExperienceManager
+                  creatorId={creator.id}
+                  initialExperience={[]}
+                  onUpdate={() => {}}
+                />
+
+                <SectionsOrderManager
+                  creatorId={creator.id}
+                  initialOrder={creator.sectionsOrder || [
+                    'about',
+                    'projects',
+                    'experience',
+                    'featuredProject',
+                    'contributions',
+                    'skills',
+                    'achievements',
+                    'education',
+                    'music',
+                    'personal',
+                    'gallery'
+                  ]}
+                  onUpdate={() => {}}
+                />
 
               </AccordionContent>
             </AccordionItem>

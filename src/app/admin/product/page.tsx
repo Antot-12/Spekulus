@@ -233,7 +233,7 @@ export default function ProductSectionAdminPage() {
                                         <CardContent className="p-4 flex flex-col items-center gap-4">
                                             {component.imageId ? (
                                                 <div className="relative w-full aspect-video rounded-md overflow-hidden">
-                                                    <NextImage src={`/api/images/${component.imageId}`} alt={component.title} layout="fill" objectFit='cover' />
+                                                    <NextImage src={`/api/images/${component.imageId}`} alt={component.title} fill sizes="400px" className="object-cover" />
                                                 </div>
                                             ) : (
                                                 <div className="w-full aspect-video rounded-md bg-muted flex items-center justify-center">

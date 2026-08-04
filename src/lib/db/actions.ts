@@ -513,8 +513,23 @@ export async function getCreatorBySlug(lang: Language, slug: string) {
   const creator = await db.query.creators.findFirst({
     where: and(eq(schema.creators.slug, slug), eq(schema.creators.lang, lang))
   })
-  if (!creator) return null
-  return creator
+  if (!creator) return null;
+
+  // Fetch projects
+  const projects = await db.select().from(schema.creatorProjects)
+    .where(eq(schema.creatorProjects.creatorId, creator.id))
+    .orderBy((table) => table.order);
+
+  // Fetch experience
+  const experience = await db.select().from(schema.creatorExperience)
+    .where(eq(schema.creatorExperience.creatorId, creator.id))
+    .orderBy((table) => table.order);
+
+  return {
+    ...creator,
+    projects: projects.filter(p => p.isVisible !== false),
+    experience: experience.filter(e => e.isVisible !== false),
+  };
 }
 
 export async function createCreator(lang: Language, data: Omit<Creator, 'id'>, actor: string) {
@@ -570,7 +585,15 @@ export async function updateCreators(lang: Language, creatorsData: Creator[], ac
             cvUrl: c.cvUrl ?? '',
             quote: c.quote ?? '',
             quoteAuthor: c.quoteAuthor ?? '',
-            isVisible: c.isVisible ?? true
+            isVisible: c.isVisible ?? true,
+            // Card view positioning
+            cardImagePosX: c.cardImagePosX ?? 50,
+            cardImagePosY: c.cardImagePosY ?? 20,
+            cardImageZoom: c.cardImageZoom ?? 100,
+            // Profile view positioning
+            profileImagePosX: c.profileImagePosX ?? 50,
+            profileImagePosY: c.profileImagePosY ?? 30,
+            profileImageZoom: c.profileImageZoom ?? 100
         }));
 
         for (const r of rows) {

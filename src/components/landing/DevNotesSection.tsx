@@ -12,6 +12,7 @@ import { ArrowRight, ImageIcon, Calendar, User } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
 import { Badge } from '../ui/badge';
 import { getDevNotes } from '@/lib/db/actions';
+import { getBlurDataURL } from '@/lib/blurPlaceholder';
 
 export function DevNotesSection() {
   const { language, translations } = useLanguage();
@@ -71,7 +72,16 @@ export function DevNotesSection() {
                   <Link href={`/dev-notes/${note.slug}`} className="block overflow-hidden">
                     <div className="relative h-56 w-full bg-muted">
                       {note.imageId ? (
-                        <Image src={`/api/images/${note.imageId}`} alt={note.title} layout="fill" objectFit="cover" className="group-hover:scale-105 transition-transform duration-500" />
+                        <Image
+                          src={`/api/images/${note.imageId}`}
+                          alt={note.title}
+                          fill
+                          sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 400px"
+                          quality={80}
+                          placeholder="blur"
+                          blurDataURL={getBlurDataURL(400, 224)}
+                          className="object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
                           <ImageIcon className="w-16 h-16 text-muted-foreground" />

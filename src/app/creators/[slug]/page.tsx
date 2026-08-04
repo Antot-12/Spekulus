@@ -25,6 +25,8 @@ import { MusicIcon } from './MusicIcon';
 import { cn } from '@/lib/utils';
 import { getCreatorBySlug } from '@/lib/db/actions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { ProjectsSection } from '@/components/creators/ProjectsSection';
+import { ExperienceSection } from '@/components/creators/ExperienceSection';
 
 // Helper component for consistent section styling
 const ProfileSection = ({ icon, title, children, className, style }: { icon: ReactNode, title: string, children: ReactNode, className?: string, style?: CSSProperties }) => (
@@ -136,7 +138,7 @@ const FeaturedProjectSection = ({ project, imageId, style }: { project?: Feature
              <Card className="bg-muted/30 overflow-hidden border-border/20">
                 {imageId && (
                     <div className="relative aspect-video">
-                        <Image src={`/api/images/${imageId}`} alt={project.title} layout="fill" objectFit="cover" data-ai-hint="office laptop" />
+                        <Image src={`/api/images/${imageId}`} alt={project.title} fill sizes="(max-width: 1024px) 100vw, 900px" className="object-cover" data-ai-hint="office laptop" />
                     </div>
                 )}
                 <CardContent className="p-6">
@@ -398,7 +400,7 @@ const GallerySection = ({ gallery, style }: { gallery?: GalleryImage[], style?: 
                     <Dialog key={index}>
                         <DialogTrigger asChild>
                             <div className="group relative aspect-square overflow-hidden rounded-lg cursor-zoom-in">
-                                <Image src={`/api/images/${image.imageId}`} alt={image.description} layout="fill" objectFit="cover" className="group-hover:scale-105 transition-transform duration-300" />
+                                <Image src={`/api/images/${image.imageId}`} alt={image.description} fill sizes="(max-width: 768px) 50vw, 33vw" className="object-cover group-hover:scale-105 transition-transform duration-300" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                                 <p className="absolute bottom-2 left-2 text-white text-xs drop-shadow-md">{image.description}</p>
                             </div>
@@ -481,7 +483,19 @@ export default function CreatorDetailPage() {
              <Card className="p-6 text-center shadow-lg border-border/50 opacity-0 animate-fade-in-up" style={{ animationDelay: '150ms' }}>
                 <div className="relative h-40 w-40 mx-auto group">
                     {creator.imageId && (
-                        <Image src={`/api/images/${creator.imageId}`} alt={creator.name} layout="fill" objectFit="cover" className="rounded-full shadow-lg transition-transform duration-300 group-hover:scale-105 group-hover:shadow-[0_0_25px_hsl(var(--primary))]" priority data-ai-hint="portrait man" />
+                        <Image
+                          src={`/api/images/${creator.imageId}`}
+                          alt={creator.name}
+                          fill
+                          sizes="160px"
+                          className="rounded-full object-cover shadow-lg transition-transform duration-300 group-hover:scale-105 group-hover:shadow-[0_0_25px_hsl(var(--primary))]"
+                          style={{
+                            objectPosition: `${creator.profileImagePosX ?? 50}% ${creator.profileImagePosY ?? 30}%`,
+                            transform: `scale(${(creator.profileImageZoom ?? 100) / 100})`
+                          }}
+                          priority
+                          data-ai-hint="portrait man"
+                        />
                     )}
                 </div>
                 <h1 className="text-3xl font-bold font-headline mt-4">{creator.name}</h1>
@@ -513,21 +527,56 @@ export default function CreatorDetailPage() {
 
           {/* Right Column */}
           <main className="lg:col-span-2 space-y-8">
-            <ProfileSection icon={<Icon.Users className="w-6 h-6"/>} title="About Me" style={{ animationDelay: '400ms' }}>
-                <div className="prose prose-lg dark:prose-invert max-w-none text-foreground/90 text-base leading-relaxed">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
-                        {creator.bio}
-                    </ReactMarkdown>
-                </div>
-            </ProfileSection>
-            <FeaturedProjectSection project={creator.featuredProject} imageId={creator.featuredProjectImageId} style={{ animationDelay: '500ms' }} />
-            <ContributionsSection contributions={creator.contributions} style={{ animationDelay: '600ms' }} />
-            <SkillsSection skills={creator.skills} style={{ animationDelay: '700ms' }} />
-            <AchievementsSection achievements={creator.achievements} style={{ animationDelay: '800ms' }} />
-            <EducationSection education={creator.education} certifications={creator.certifications} style={{ animationDelay: '900ms' }} />
-            <MusicSection music={creator.music} style={{ animationDelay: '1000ms' }} />
-            <PersonalSection hobbies={creator.hobbies} quote={creator.quote} quoteAuthor={creator.quoteAuthor} style={{ animationDelay: '1100ms' }} />
-            <GallerySection gallery={creator.gallery} style={{ animationDelay: '1200ms' }} />
+            {(creator.sectionsOrder || [
+              'about',
+              'projects',
+              'experience',
+              'featuredProject',
+              'contributions',
+              'skills',
+              'achievements',
+              'education',
+              'music',
+              'personal',
+              'gallery'
+            ]).map((sectionKey, index) => {
+              const delay = `${(index + 4) * 100}ms`;
+
+              switch (sectionKey) {
+                case 'about':
+                  return (
+                    <ProfileSection key="about" icon={<Icon.Users className="w-6 h-6"/>} title="About Me" style={{ animationDelay: delay }}>
+                      <div className="prose prose-lg dark:prose-invert max-w-none text-foreground/90 text-base leading-relaxed">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+                          {creator.bio}
+                        </ReactMarkdown>
+                      </div>
+                    </ProfileSection>
+                  );
+                case 'projects':
+                  return <ProjectsSection key="projects" projects={creator.projects} style={{ animationDelay: delay }} />;
+                case 'experience':
+                  return <ExperienceSection key="experience" experience={creator.experience} style={{ animationDelay: delay }} />;
+                case 'featuredProject':
+                  return <FeaturedProjectSection key="featuredProject" project={creator.featuredProject} imageId={creator.featuredProjectImageId} style={{ animationDelay: delay }} />;
+                case 'contributions':
+                  return <ContributionsSection key="contributions" contributions={creator.contributions} style={{ animationDelay: delay }} />;
+                case 'skills':
+                  return <SkillsSection key="skills" skills={creator.skills} style={{ animationDelay: delay }} />;
+                case 'achievements':
+                  return <AchievementsSection key="achievements" achievements={creator.achievements} style={{ animationDelay: delay }} />;
+                case 'education':
+                  return <EducationSection key="education" education={creator.education} certifications={creator.certifications} style={{ animationDelay: delay }} />;
+                case 'music':
+                  return <MusicSection key="music" music={creator.music} style={{ animationDelay: delay }} />;
+                case 'personal':
+                  return <PersonalSection key="personal" hobbies={creator.hobbies} quote={creator.quote} quoteAuthor={creator.quoteAuthor} style={{ animationDelay: delay }} />;
+                case 'gallery':
+                  return <GallerySection key="gallery" gallery={creator.gallery} style={{ animationDelay: delay }} />;
+                default:
+                  return null;
+              }
+            })}
           </main>
         </div>
       </div>
