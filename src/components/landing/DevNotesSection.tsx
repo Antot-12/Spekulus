@@ -13,6 +13,7 @@ import { Skeleton } from '../ui/skeleton';
 import { Badge } from '../ui/badge';
 import { getDevNotes } from '@/lib/db/actions';
 import { getBlurDataURL } from '@/lib/blurPlaceholder';
+import { cloudinaryUrl } from '@/lib/cloudinary';
 
 export function DevNotesSection() {
   const { language, translations } = useLanguage();
@@ -63,17 +64,24 @@ export function DevNotesSection() {
         ) : notes.length > 0 ? (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {notes.map((note, index) => (
-                <Card 
-                  key={note.id} 
+              {notes.map((note, index) => {
+                const imageSrc = note.cloudinaryId
+                  ? cloudinaryUrl(note.cloudinaryId)
+                  : note.imageId
+                    ? `/api/images/${note.imageId}`
+                    : null;
+
+                return (
+                <Card
+                  key={note.id}
                   className="bg-card border-border/50 overflow-hidden transform hover:-translate-y-2 transition-transform duration-300 shadow-lg hover:shadow-primary/20 opacity-0 animate-fade-in-up flex flex-col group"
                   style={{ animationDelay: `${index * 150}ms` }}
                 >
                   <Link href={`/dev-notes/${note.slug}`} className="block overflow-hidden">
                     <div className="relative h-56 w-full bg-muted">
-                      {note.imageId ? (
+                      {imageSrc ? (
                         <Image
-                          src={`/api/images/${note.imageId}`}
+                          src={imageSrc}
                           alt={note.title}
                           fill
                           sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 400px"
@@ -122,7 +130,7 @@ export function DevNotesSection() {
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+              )})}
             </div>
             <div className="text-center mt-12">
                 <Link href="/dev-notes" passHref>

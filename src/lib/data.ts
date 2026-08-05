@@ -20,6 +20,11 @@ export type DevNote = {
   tags?: string[];
   isVisible?: boolean;
   reactionCounts?: Record<string, number>;
+  // Series support
+  series?: string | null;
+  seriesOrder?: number | null;
+  // View counter
+  viewCount?: number;
 };
 
 // ==================================

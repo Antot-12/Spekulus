@@ -18,13 +18,46 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { chatWithCreator } from '@/ai/flows/creator-chat-flow';
+
+// Suggested questions for each language (defined locally since AI flow is server-only)
+const aiSuggestedQuestions: Record<string, string[]> = {
+  en: [
+    "What's your background?",
+    "What technologies do you specialize in?",
+    "Tell me about your projects",
+    "What are you currently working on?",
+    "How can I contact you?",
+  ],
+  uk: [
+    "Розкажи про свій досвід",
+    "Які технології ти використовуєш?",
+    "Розкажи про свої проєкти",
+    "Над чим зараз працюєш?",
+    "Як з тобою зв'язатися?",
+  ],
+  sk: [
+    "Povedz mi o svojom pozadí",
+    "Aké technológie používaš?",
+    "Povedz mi o svojich projektoch",
+    "Na čom teraz pracuješ?",
+    "Ako ťa môžem kontaktovať?",
+  ],
+};
 import { Badge } from '@/components/ui/badge';
 import { TechBadge } from './TechBadge';
 import { AchievementIcon } from '@/components/AchievementIcon';
 import { MusicIcon } from './MusicIcon';
 import { cn } from '@/lib/utils';
 import { getCreatorBySlug } from '@/lib/db/actions';
+import { cloudinaryUrl } from '@/lib/cloudinary';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+
+// Helper to get optimized image URL - prefers Cloudinary direct URL over API route
+const getImageSrc = (cloudinaryId?: string | null, imageId?: number | null): string | null => {
+  if (cloudinaryId) return cloudinaryUrl(cloudinaryId);
+  if (imageId) return `/api/images/${imageId}`;
+  return null;
+};
 import { ProjectsSection } from '@/components/creators/ProjectsSection';
 import { ExperienceSection } from '@/components/creators/ExperienceSection';
 
@@ -43,36 +76,107 @@ const ProfileSection = ({ icon, title, children, className, style }: { icon: Rea
     </Card>
 );
 
-const CreatorAIWidget = ({ creator, style }: { creator: Creator, style?: CSSProperties }) => {
+const CreatorAIWidget = ({ creator, experience, projects, style }: {
+  creator: Creator,
+  experience?: Array<{ title: string; company: string; period: string; description?: string }>,
+  projects?: Array<{ title: string; description: string; technologies?: string[]; url?: string }>,
+  style?: CSSProperties
+}) => {
   const { toast } = useToast();
+  const { language, translations } = useLanguage();
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
   const [isAsking, setIsAsking] = useState(false);
+  const [chatHistory, setChatHistory] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
+  const [questionCount, setQuestionCount] = useState(0);
+  const [lastQuestionTime, setLastQuestionTime] = useState(0);
+
+  // Rate limiting: max 10 questions per minute
+  const RATE_LIMIT = 10;
+  const RATE_WINDOW = 60000; // 1 minute
+
+  const checkRateLimit = (): boolean => {
+    const now = Date.now();
+    if (now - lastQuestionTime > RATE_WINDOW) {
+      setQuestionCount(0);
+      setLastQuestionTime(now);
+      return true;
+    }
+    if (questionCount >= RATE_LIMIT) {
+      toast({
+        title: language === 'uk' ? 'Занадто багато запитів' : language === 'sk' ? 'Príliš veľa požiadaviek' : 'Too many requests',
+        description: language === 'uk' ? 'Зачекайте хвилину перед наступним питанням.' : language === 'sk' ? 'Počkajte minútu pred ďalšou otázkou.' : 'Please wait a minute before asking another question.',
+        variant: 'destructive',
+      });
+      return false;
+    }
+    return true;
+  };
 
   const handleAsk = async (q: string) => {
     if (!q.trim() || !creator?.bio) return;
-    
+    if (!checkRateLimit()) return;
+
     setQuestion(q);
     setIsAsking(true);
     setAnswer('');
-    
+    setQuestionCount(prev => prev + 1);
+
     try {
+        // Filter experience to only include complete entries with required fields
+        const validExperience = experience?.filter(exp => exp.title && exp.company && exp.period);
+        // Filter projects to only include complete entries
+        const validProjects = projects?.filter(proj => proj.title && proj.description);
+
         const response = await chatWithCreator({
+            name: creator.name,
             bio: creator.bio,
             question: q,
             skills: creator.skills,
+            experience: validExperience && validExperience.length > 0 ? validExperience : undefined,
+            projects: validProjects && validProjects.length > 0 ? validProjects : undefined,
             featuredProject: creator.featuredProject?.title ? {
                 title: creator.featuredProject.title,
                 description: creator.featuredProject.description || '',
                 url: creator.featuredProject.url || ''
             } : undefined,
+            chatHistory: chatHistory.length > 0 ? chatHistory.slice(-6) : undefined, // Keep last 6 messages for context
+            language: language as 'en' | 'uk' | 'sk',
         });
+
         setAnswer(response.answer);
-    } catch (e) {
+
+        // Update chat history
+        setChatHistory(prev => [
+          ...prev,
+          { role: 'user', content: q },
+          { role: 'assistant', content: response.answer }
+        ]);
+    } catch (e: any) {
         console.error("AI chat error:", e);
+
+        // Check if it's a rate limit error
+        const isRateLimited = e?.message?.includes('429') || e?.message?.includes('quota');
+
+        const errorMessages = {
+          rateLimited: {
+            en: { title: 'AI Busy', desc: 'Too many requests. Please try again in a moment.' },
+            uk: { title: 'AI зайнятий', desc: 'Забагато запитів. Спробуйте за мить.' },
+            sk: { title: 'AI zaneprázdnený', desc: 'Príliš veľa požiadaviek. Skúste o chvíľu.' },
+          },
+          general: {
+            en: { title: 'AI Error', desc: 'Sorry, the AI assistant is currently unavailable.' },
+            uk: { title: 'Помилка AI', desc: 'AI асистент тимчасово недоступний.' },
+            sk: { title: 'Chyba AI', desc: 'AI asistent je momentálne nedostupný.' },
+          }
+        };
+
+        const errorType = isRateLimited ? 'rateLimited' : 'general';
+        const msg = errorMessages[errorType][language as keyof typeof errorMessages.general] || errorMessages[errorType].en;
+
         toast({
-            title: "AI Error",
-            description: "Sorry, the AI assistant is currently unavailable.",
+            title: msg.title,
+            description: msg.desc,
             variant: "destructive",
         });
     } finally {
@@ -80,65 +184,135 @@ const CreatorAIWidget = ({ creator, style }: { creator: Creator, style?: CSSProp
     }
   };
 
-  const suggestedQuestions = [
-    `What is ${creator.name.split(' ')[0]}'s role?`,
-    "What are their main contributions?",
-    "What technologies are they skilled in?",
-  ];
+  const clearChat = () => {
+    setChatHistory([]);
+    setAnswer('');
+    setQuestion('');
+  };
+
+  // Get suggested questions for current language
+  const localizedSuggestions = aiSuggestedQuestions[language] || aiSuggestedQuestions.en;
+
+  // UI text translations
+  const uiText = {
+    en: {
+      title: 'Ask Me Anything (AI)',
+      subtitle: `Ask a question about ${creator.name}, and our AI will answer based on their profile.`,
+      placeholder: 'e.g., What are their hobbies?',
+      askButton: 'Ask AI',
+      thinking: 'Thinking...',
+      trySuggestions: 'Try asking:',
+      clearChat: 'Clear chat',
+      chatHistory: 'Chat history',
+    },
+    uk: {
+      title: 'Запитай мене (AI)',
+      subtitle: `Задайте питання про ${creator.name}, і наш AI відповість на основі профілю.`,
+      placeholder: 'напр., Які хобі?',
+      askButton: 'Запитати AI',
+      thinking: 'Думаю...',
+      trySuggestions: 'Спробуй запитати:',
+      clearChat: 'Очистити чат',
+      chatHistory: 'Історія чату',
+    },
+    sk: {
+      title: 'Opýtaj sa ma (AI)',
+      subtitle: `Opýtajte sa na ${creator.name} a náš AI odpovie na základe profilu.`,
+      placeholder: 'napr., Aké sú ich záľuby?',
+      askButton: 'Opýtať sa AI',
+      thinking: 'Premýšľam...',
+      trySuggestions: 'Skúste sa opýtať:',
+      clearChat: 'Vymazať chat',
+      chatHistory: 'História chatu',
+    },
+  };
+
+  const t = uiText[language as keyof typeof uiText] || uiText.en;
 
   return (
     <div className="lg:sticky top-24">
-    <ProfileSection icon={<Icon.Lightbulb className="w-6 h-6"/>} title="Ask Me Anything (AI)" style={style}>
+    <ProfileSection icon={<Icon.Lightbulb className="w-6 h-6"/>} title={t.title} style={style}>
       <p className="text-sm text-foreground/70 mb-4">
-        Ask a question about {creator.name}, and our AI will answer based on their profile.
+        {t.subtitle}
       </p>
+
+      {/* Chat history */}
+      {chatHistory.length > 0 && (
+        <div className="mb-4 max-h-60 overflow-y-auto space-y-2 p-2 bg-muted/30 rounded-lg border border-border/30">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-xs font-semibold text-foreground/60">{t.chatHistory}</span>
+            <button onClick={clearChat} className="text-xs text-primary hover:underline">
+              {t.clearChat}
+            </button>
+          </div>
+          {chatHistory.map((msg, i) => (
+            <div key={i} className={cn(
+              "text-xs p-2 rounded",
+              msg.role === 'user' ? "bg-primary/10 text-primary ml-4" : "bg-muted text-foreground/80 mr-4"
+            )}>
+              <span className="font-semibold">{msg.role === 'user' ? 'You' : creator.name.split(' ')[0]}:</span>{' '}
+              {msg.content.length > 100 ? msg.content.slice(0, 100) + '...' : msg.content}
+            </div>
+          ))}
+        </div>
+      )}
+
       <form onSubmit={(e) => { e.preventDefault(); handleAsk(question); }} className="space-y-2">
-          <Input 
+          <Input
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
-            placeholder="e.g., What are their hobbies?"
+            placeholder={t.placeholder}
             disabled={isAsking}
             className="text-sm"
           />
           <Button type="submit" disabled={isAsking || !question.trim()} size="sm" className="w-full">
-            {isAsking ? <Icon.Loader2 className="animate-spin" /> : 'Ask AI'}
+            {isAsking ? <Icon.Loader2 className="animate-spin" /> : t.askButton}
           </Button>
       </form>
+
       <div className="mt-4">
-        <p className="text-xs font-semibold text-foreground/60 mb-2">Try asking:</p>
+        <p className="text-xs font-semibold text-foreground/60 mb-2">{t.trySuggestions}</p>
         <div className="flex flex-wrap gap-1">
-          {suggestedQuestions.map(q => (
-            <button key={q} onClick={() => handleAsk(q)} className="text-left text-primary/80 hover:underline hover:text-primary transition-colors bg-primary/10 px-2 py-1 rounded-md text-xs disabled:opacity-50 disabled:no-underline" disabled={isAsking}>
+          {localizedSuggestions.map(q => (
+            <button
+              key={q}
+              onClick={() => handleAsk(q)}
+              className="text-left text-primary/80 hover:underline hover:text-primary transition-colors bg-primary/10 px-2 py-1 rounded-md text-xs disabled:opacity-50 disabled:no-underline"
+              disabled={isAsking}
+            >
               "{q}"
             </button>
           ))}
         </div>
       </div>
-        {isAsking && !answer && (
-            <div className="mt-4 flex items-center gap-2 text-muted-foreground animate-pulse text-sm">
-                <Icon.Loader2 className="w-4 h-4 animate-spin"/>
-                <span>Thinking...</span>
-            </div>
-        )}
-        {answer && (
-            <div className="mt-4 p-3 bg-muted/50 rounded-lg border text-sm text-foreground/90 prose prose-sm dark:prose-invert max-w-none">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{answer}</ReactMarkdown>
-            </div>
-        )}
+
+      {isAsking && !answer && (
+          <div className="mt-4 flex items-center gap-2 text-muted-foreground animate-pulse text-sm">
+              <Icon.Loader2 className="w-4 h-4 animate-spin"/>
+              <span>{t.thinking}</span>
+          </div>
+      )}
+
+      {answer && (
+          <div className="mt-4 p-3 bg-muted/50 rounded-lg border text-sm text-foreground/90 prose prose-sm dark:prose-invert max-w-none">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{answer}</ReactMarkdown>
+          </div>
+      )}
     </ProfileSection>
     </div>
   )
 }
 
-const FeaturedProjectSection = ({ project, imageId, style }: { project?: FeaturedProject, imageId?: number | null, style?: CSSProperties }) => {
+const FeaturedProjectSection = ({ project, imageId, cloudinaryId, style }: { project?: FeaturedProject, imageId?: number | null, cloudinaryId?: string | null, style?: CSSProperties }) => {
     if (!project || !project.title) return null;
+    const imageSrc = getImageSrc(cloudinaryId, imageId);
 
     return (
         <ProfileSection icon={<Icon.Briefcase className="w-6 h-6" />} title="Featured Project" style={style}>
              <Card className="bg-muted/30 overflow-hidden border-border/20">
-                {imageId && (
+                {imageSrc && (
                     <div className="relative aspect-video">
-                        <Image src={`/api/images/${imageId}`} alt={project.title} fill sizes="(max-width: 1024px) 100vw, 900px" className="object-cover" data-ai-hint="office laptop" />
+                        <Image src={imageSrc} alt={project.title} fill sizes="(max-width: 1024px) 100vw, 900px" className="object-cover" />
                     </div>
                 )}
                 <CardContent className="p-6">
@@ -396,23 +570,27 @@ const GallerySection = ({ gallery, style }: { gallery?: GalleryImage[], style?: 
     return (
         <ProfileSection icon={<Icon.Camera className="w-6 h-6"/>} title="Gallery" style={style}>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {gallery.map((image, index) => (
-                    <Dialog key={index}>
-                        <DialogTrigger asChild>
-                            <div className="group relative aspect-square overflow-hidden rounded-lg cursor-zoom-in">
-                                <Image src={`/api/images/${image.imageId}`} alt={image.description} fill sizes="(max-width: 768px) 50vw, 33vw" className="object-cover group-hover:scale-105 transition-transform duration-300" />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                                <p className="absolute bottom-2 left-2 text-white text-xs drop-shadow-md">{image.description}</p>
-                            </div>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-4xl p-2 bg-transparent border-none shadow-none">
-                            <DialogHeader>
-                                <DialogTitle className="sr-only">{image.description}</DialogTitle>
-                            </DialogHeader>
-                            <img src={`/api/images/${image.imageId}`} alt={image.description} className="max-h-[90vh] w-auto h-auto rounded-lg" />
-                        </DialogContent>
-                    </Dialog>
-                ))}
+                {gallery.map((image, index) => {
+                    const imageSrc = getImageSrc((image as any).cloudinaryId, image.imageId);
+                    if (!imageSrc) return null;
+                    return (
+                        <Dialog key={index}>
+                            <DialogTrigger asChild>
+                                <div className="group relative aspect-square overflow-hidden rounded-lg cursor-zoom-in">
+                                    <Image src={imageSrc} alt={image.description} fill sizes="(max-width: 768px) 50vw, 33vw" className="object-cover group-hover:scale-105 transition-transform duration-300" />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                                    <p className="absolute bottom-2 left-2 text-white text-xs drop-shadow-md">{image.description}</p>
+                                </div>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-4xl p-2 bg-transparent border-none shadow-none">
+                                <DialogHeader>
+                                    <DialogTitle className="sr-only">{image.description}</DialogTitle>
+                                </DialogHeader>
+                                <img src={imageSrc} alt={image.description} className="max-h-[90vh] w-auto h-auto rounded-lg" />
+                            </DialogContent>
+                        </Dialog>
+                    );
+                })}
             </div>
         </ProfileSection>
     )
@@ -481,20 +659,19 @@ export default function CreatorDetailPage() {
           {/* Left Column */}
           <aside className="lg:col-span-1 space-y-8 self-start">
              <Card className="p-6 text-center shadow-lg border-border/50 opacity-0 animate-fade-in-up" style={{ animationDelay: '150ms' }}>
-                <div className="relative h-40 w-40 mx-auto group">
-                    {creator.imageId && (
+                <div className="relative h-40 w-40 mx-auto group overflow-hidden rounded-full shadow-lg hover:shadow-[0_0_25px_hsl(var(--primary))] transition-shadow duration-300">
+                    {(creator.cloudinaryId || creator.imageId) && (
                         <Image
-                          src={`/api/images/${creator.imageId}`}
+                          src={getImageSrc(creator.cloudinaryId, creator.imageId)!}
                           alt={creator.name}
                           fill
                           sizes="160px"
-                          className="rounded-full object-cover shadow-lg transition-transform duration-300 group-hover:scale-105 group-hover:shadow-[0_0_25px_hsl(var(--primary))]"
+                          className="object-cover transition-transform duration-300 group-hover:scale-105"
                           style={{
                             objectPosition: `${creator.profileImagePosX ?? 50}% ${creator.profileImagePosY ?? 30}%`,
                             transform: `scale(${(creator.profileImageZoom ?? 100) / 100})`
                           }}
                           priority
-                          data-ai-hint="portrait man"
                         />
                     )}
                 </div>
@@ -522,7 +699,22 @@ export default function CreatorDetailPage() {
                     </Button>
                 )}
              </Card>
-             <CreatorAIWidget creator={creator} style={{ animationDelay: '300ms' }}/>
+             <CreatorAIWidget
+               creator={creator}
+               experience={creator.experience?.map(exp => ({
+                 title: exp.title,
+                 company: exp.company,
+                 period: exp.period,
+                 description: exp.description
+               }))}
+               projects={creator.projects?.map(proj => ({
+                 title: proj.title,
+                 description: proj.description,
+                 technologies: proj.technologies,
+                 url: proj.url
+               }))}
+               style={{ animationDelay: '300ms' }}
+             />
           </aside>
 
           {/* Right Column */}
@@ -560,7 +752,7 @@ export default function CreatorDetailPage() {
                 case 'experience':
                   return <ExperienceSection key="experience" experience={creator.experience} style={{ animationDelay: delay }} />;
                 case 'featuredProject':
-                  return <FeaturedProjectSection key="featuredProject" project={creator.featuredProject} imageId={creator.featuredProjectImageId} style={{ animationDelay: delay }} />;
+                  return <FeaturedProjectSection key="featuredProject" project={creator.featuredProject} imageId={creator.featuredProjectImageId} cloudinaryId={(creator as any).featuredProjectCloudinaryId} style={{ animationDelay: delay }} />;
                 case 'contributions':
                   return <ContributionsSection key="contributions" contributions={creator.contributions} style={{ animationDelay: delay }} />;
                 case 'skills':

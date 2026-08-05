@@ -48,6 +48,29 @@ export type Translation = {
     noResultsSubtitle: string;
     noNotesFound: string;
     noNotesFoundSubtitle: string;
+    // Reactions
+    reactionsTitle: string;
+    reactionsBeFirst: string;
+    reactionsThanks: string;
+    reactionsCount: string;
+    reactionsCountPlural: string;
+    reactionLike: string;
+    reactionDislike: string;
+    reactionLove: string;
+    reactionLaugh: string;
+    reactionWow: string;
+    reactionSad: string;
+    reactionAngry: string;
+    reactionIdea: string;
+    reactionConfused: string;
+    reactionRocket: string;
+    // Share
+    shareTitle: string;
+    shareEnjoy: string;
+    shareCopied: string;
+    shareCopyFailed: string;
+    // Views
+    views: string;
   };
   roadmap: {
     title: string;
@@ -132,6 +155,29 @@ export const translations: Record<'en' | 'uk' | 'sk', Translation> = {
       noResultsSubtitle: 'Try a different keyword or clear the search.',
       noNotesFound: 'No developer notes have been published yet.',
       noNotesFoundSubtitle: 'Check back soon for the latest updates from the team!',
+      // Reactions
+      reactionsTitle: 'Was this article helpful?',
+      reactionsBeFirst: 'Be the first to react!',
+      reactionsThanks: 'Thanks for your feedback!',
+      reactionsCount: 'reaction',
+      reactionsCountPlural: 'reactions',
+      reactionLike: 'Like',
+      reactionDislike: 'Dislike',
+      reactionLove: 'Love',
+      reactionLaugh: 'Laugh',
+      reactionWow: 'Wow',
+      reactionSad: 'Sad',
+      reactionAngry: 'Angry',
+      reactionIdea: 'Great idea',
+      reactionConfused: 'Confused',
+      reactionRocket: 'Mind blown',
+      // Share
+      shareTitle: 'Share',
+      shareEnjoy: 'Enjoyed this article? Share it with others!',
+      shareCopied: 'Link copied!',
+      shareCopyFailed: 'Failed to copy',
+      // Views
+      views: 'views',
     },
     roadmap: {
       title: 'Our Journey & Future',
@@ -214,6 +260,29 @@ export const translations: Record<'en' | 'uk' | 'sk', Translation> = {
         noResultsSubtitle: 'Спробуйте інше ключове слово або очистіть пошук.',
         noNotesFound: 'Нотатки розробників ще не опубліковані.',
         noNotesFoundSubtitle: 'Завітайте незабаром, щоб дізнатися про останні оновлення від команди!',
+        // Reactions
+        reactionsTitle: 'Чи була ця стаття корисною?',
+        reactionsBeFirst: 'Будьте першим, хто відреагує!',
+        reactionsThanks: 'Дякуємо за відгук!',
+        reactionsCount: 'реакція',
+        reactionsCountPlural: 'реакцій',
+        reactionLike: 'Подобається',
+        reactionDislike: 'Не подобається',
+        reactionLove: 'Люблю',
+        reactionLaugh: 'Смішно',
+        reactionWow: 'Вау',
+        reactionSad: 'Сумно',
+        reactionAngry: 'Злість',
+        reactionIdea: 'Чудова ідея',
+        reactionConfused: 'Не зрозуміло',
+        reactionRocket: 'Вражає',
+        // Share
+        shareTitle: 'Поділитися',
+        shareEnjoy: 'Сподобалась стаття? Поділіться з іншими!',
+        shareCopied: 'Посилання скопійовано!',
+        shareCopyFailed: 'Не вдалося скопіювати',
+        // Views
+        views: 'переглядів',
     },
     roadmap: {
         title: 'Наша подорож і майбутнє',
@@ -296,6 +365,29 @@ export const translations: Record<'en' | 'uk' | 'sk', Translation> = {
         noResultsSubtitle: 'Skúste iné kľúčové slovo alebo vymažte vyhľadávanie.',
         noNotesFound: 'Zatiaľ neboli zverejnené žiadne poznámky od vývojárov.',
         noNotesFoundSubtitle: 'Skontrolujte čoskoro pre najnovšie aktualizácie od tímu!',
+        // Reactions
+        reactionsTitle: 'Bol tento článok užitočný?',
+        reactionsBeFirst: 'Buďte prvý, kto zareaguje!',
+        reactionsThanks: 'Ďakujeme za spätnú väzbu!',
+        reactionsCount: 'reakcia',
+        reactionsCountPlural: 'reakcií',
+        reactionLike: 'Páči sa mi',
+        reactionDislike: 'Nepáči sa mi',
+        reactionLove: 'Milujem',
+        reactionLaugh: 'Smiešne',
+        reactionWow: 'Wow',
+        reactionSad: 'Smutné',
+        reactionAngry: 'Nahnevaný',
+        reactionIdea: 'Skvelý nápad',
+        reactionConfused: 'Zmätený',
+        reactionRocket: 'Úžasné',
+        // Share
+        shareTitle: 'Zdieľať',
+        shareEnjoy: 'Páčil sa vám tento článok? Zdieľajte ho s ostatnými!',
+        shareCopied: 'Odkaz skopírovaný!',
+        shareCopyFailed: 'Kopírovanie zlyhalo',
+        // Views
+        views: 'zobrazení',
     },
     roadmap: {
         title: 'Naša cesta a budúcnosť',

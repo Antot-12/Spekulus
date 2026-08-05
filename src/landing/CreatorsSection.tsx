@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
 import { getCreators } from '@/lib/db/actions';
+import { cloudinaryUrl } from '@/lib/cloudinary';
 
 export function CreatorsSection() {
   const { language, translations } = useLanguage();
@@ -56,20 +57,27 @@ export function CreatorsSection() {
         ) : creators.length > 0 ? (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-y-10 gap-x-6 justify-center">
-              {creators.map((creator, index) => (
+              {creators.map((creator, index) => {
+                const imageSrc = creator.cloudinaryId
+                  ? cloudinaryUrl(creator.cloudinaryId)
+                  : creator.imageId
+                    ? `/api/images/${creator.imageId}`
+                    : null;
+
+                return (
                 <Link href={`/creators/${creator.slug}`} key={creator.id} className="block group">
-                  <Card 
+                  <Card
                     className="bg-transparent border-none shadow-none text-center items-center flex flex-col opacity-0 animate-fade-in-up"
                     style={{ animationDelay: `${index * 150}ms` }}
                   >
-                    <div className="relative h-40 w-40">
-                      {creator.imageId && (
-                        <Image 
-                            src={`/api/images/${creator.imageId}`} 
-                            alt={creator.name} 
-                            layout="fill" 
-                            objectFit="cover" 
-                            className="rounded-full group-hover:scale-105 transition-transform duration-300 shadow-lg"
+                    <div className="relative h-40 w-40 overflow-hidden rounded-full">
+                      {imageSrc && (
+                        <Image
+                            src={imageSrc}
+                            alt={creator.name}
+                            fill
+                            sizes="160px"
+                            className="object-cover group-hover:scale-105 transition-transform duration-300 shadow-lg"
                         />
                       )}
                     </div>
@@ -79,7 +87,7 @@ export function CreatorsSection() {
                     </CardHeader>
                   </Card>
                 </Link>
-              ))}
+              )})}
             </div>
             <div className="text-center mt-12">
                 <Link href="/creators" passHref>

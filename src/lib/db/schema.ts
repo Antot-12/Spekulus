@@ -214,7 +214,12 @@ export const devNotes = pgTable('dev_notes', {
   tags: jsonb('tags').$type<string[]>(),
   isVisible: boolean('is_visible').default(true).notNull(),
   reactionCounts: jsonb('reaction_counts').$type<Record<string, number>>(),
-  imageId: integer('image_id').references(() => files.id, { onDelete: 'set null' })
+  imageId: integer('image_id').references(() => files.id, { onDelete: 'set null' }),
+  // Series support
+  series: text('series'),
+  seriesOrder: integer('series_order'),
+  // View counter
+  viewCount: integer('view_count').default(0).notNull(),
 },
 (t) => ({
     slugLangUnique: unique().on(t.slug, t.lang),

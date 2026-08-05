@@ -6,6 +6,14 @@ import type { Project } from '@/lib/data';
 import * as Icon from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TechBadge } from '@/app/creators/[slug]/TechBadge';
+import { cloudinaryUrl } from '@/lib/cloudinary';
+
+// Helper to get optimized image URL
+const getImageSrc = (cloudinaryId?: string | null, imageId?: number | null): string | null => {
+  if (cloudinaryId) return cloudinaryUrl(cloudinaryId);
+  if (imageId) return `/api/images/${imageId}`;
+  return null;
+};
 
 type ProjectsSectionProps = {
   projects?: Project[];
@@ -25,17 +33,20 @@ export function ProjectsSection({ projects, style }: ProjectsSectionProps) {
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 gap-6">
-          {projects.map((project, index) => (
+          {projects.map((project, index) => {
+            const imageSrc = getImageSrc((project as any).cloudinaryId, project.imageId);
+
+            return (
             <div
               key={project.id || index}
               className="group relative border border-border/50 rounded-lg overflow-hidden hover:border-primary/50 transition-all duration-300 bg-muted/30"
             >
               <div className="grid grid-cols-1 md:grid-cols-3 gap-0">
                 {/* Project Image */}
-                {project.imageId && (
+                {imageSrc && (
                   <div className="relative h-48 md:h-auto md:col-span-1 bg-muted overflow-hidden">
                     <Image
-                      src={`/api/images/${project.imageId}`}
+                      src={imageSrc}
                       alt={project.title}
                       fill
                       sizes="(max-width: 768px) 100vw, 33vw"
@@ -45,7 +56,7 @@ export function ProjectsSection({ projects, style }: ProjectsSectionProps) {
                 )}
 
                 {/* Project Content */}
-                <div className={cn("p-6", project.imageId ? "md:col-span-2" : "md:col-span-3")}>
+                <div className={cn("p-6", imageSrc ? "md:col-span-2" : "md:col-span-3")}>
                   <div className="flex items-start justify-between gap-4 mb-3">
                     <div className="flex-1">
                       <h3 className="text-xl font-bold font-headline group-hover:text-primary transition-colors">
@@ -123,7 +134,7 @@ export function ProjectsSection({ projects, style }: ProjectsSectionProps) {
                 </div>
               </div>
             </div>
-          ))}
+          )})}
         </div>
       </CardContent>
     </Card>

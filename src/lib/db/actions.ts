@@ -565,6 +565,16 @@ export async function getCreatorBySlug(lang: Language, slug: string) {
   })
   if (!creator) return null;
 
+  // Get cloudinaryId from files table if imageId exists
+  let cloudinaryId: string | null = null
+  if (creator.imageId) {
+    const file = await db.query.files.findFirst({
+      where: eq(schema.files.id, creator.imageId),
+      columns: { cloudinaryId: true }
+    })
+    cloudinaryId = file?.cloudinaryId || null
+  }
+
   // Fetch projects
   const projects = await db.select().from(schema.creatorProjects)
     .where(eq(schema.creatorProjects.creatorId, creator.id))
@@ -577,6 +587,7 @@ export async function getCreatorBySlug(lang: Language, slug: string) {
 
   return {
     ...creator,
+    cloudinaryId,
     projects: projects.filter(p => p.isVisible !== false),
     experience: experience.filter(e => e.isVisible !== false),
   };
@@ -716,7 +727,20 @@ export async function getDevNoteBySlug(slug: string, lang?: Language): Promise<D
         where: whereClause,
     });
     if (!notes || notes.length === 0) return null;
-    return notes.map(note => ({ ...note, date: new Date(note.date) }));
+
+    // Get cloudinaryIds for all notes with images
+    const notesWithCloudinary = await Promise.all(
+      notes.map(async (note) => {
+        if (!note.imageId) return { ...note, date: new Date(note.date), cloudinaryId: null }
+        const file = await db.query.files.findFirst({
+          where: eq(schema.files.id, note.imageId),
+          columns: { cloudinaryId: true }
+        })
+        return { ...note, date: new Date(note.date), cloudinaryId: file?.cloudinaryId || null }
+      })
+    )
+
+    return notesWithCloudinary;
 }
 
 export async function createDevNote(note: Omit<DevNote, 'id'>, actor: string) {
@@ -819,6 +843,49 @@ export async function deleteDevNote(id: number, actor: string, deleteAllTranslat
         });
         throw err;
     }
+}
+
+// Increment view count for a dev note
+export async function incrementDevNoteViewCount(slug: string, lang: Language): Promise<number> {
+  try {
+    const result = await db
+      .update(schema.devNotes)
+      .set({
+        viewCount: sql`COALESCE(${schema.devNotes.viewCount}, 0) + 1`
+      })
+      .where(and(eq(schema.devNotes.slug, slug), eq(schema.devNotes.lang, lang)))
+      .returning({ viewCount: schema.devNotes.viewCount });
+
+    return result[0]?.viewCount ?? 0;
+  } catch (err) {
+    console.error('Failed to increment view count:', err);
+    return 0;
+  }
+}
+
+// Get all posts in a series
+export async function getSeriesPosts(seriesName: string, lang: Language): Promise<{ slug: string; title: string; order: number }[]> {
+  if (!seriesName) return [];
+
+  const posts = await db.query.devNotes.findMany({
+    where: and(
+      eq(schema.devNotes.series, seriesName),
+      eq(schema.devNotes.lang, lang),
+      eq(schema.devNotes.isVisible, true)
+    ),
+    columns: {
+      slug: true,
+      title: true,
+      seriesOrder: true,
+    },
+    orderBy: (t) => t.seriesOrder,
+  });
+
+  return posts.map(p => ({
+    slug: p.slug,
+    title: p.title,
+    order: p.seriesOrder ?? 0,
+  }));
 }
 
 

@@ -7,8 +7,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Globe, Menu } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { Language } from '@/components/AppWrapper';
-import { Sheet, SheetContent, SheetTrigger } from './ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from './ui/sheet';
 import { useState } from 'react';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 
 const LanguageFlag = ({ lang }: { lang: Language }) => {
   const flags: Record<string, string> = {
@@ -78,7 +79,10 @@ export default function Header() {
                 <span className="sr-only">Open menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-[300px]">
+            <SheetContent side="left" className="w-[300px]" aria-describedby={undefined}>
+                <VisuallyHidden>
+                  <SheetTitle>Navigation Menu</SheetTitle>
+                </VisuallyHidden>
                 <nav className="flex flex-col gap-6 text-lg font-medium mt-12">
                    <NavLink href="/#product" onClick={() => setIsMobileMenuOpen(false)}>{translations.nav.product}</NavLink>
                    <NavLink href="/#advantages" onClick={() => setIsMobileMenuOpen(false)}>{translations.nav.advantages}</NavLink>
