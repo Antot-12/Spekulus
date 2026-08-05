@@ -659,6 +659,7 @@ export default function CreatorsAdminPage() {
                     'personal',
                     'gallery'
                   ]}
+                  initialHidden={creator.hiddenSections || []}
                   onUpdate={() => {}}
                 />
 

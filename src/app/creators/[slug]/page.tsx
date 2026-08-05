@@ -539,7 +539,9 @@ export default function CreatorDetailPage() {
               'music',
               'personal',
               'gallery'
-            ]).map((sectionKey, index) => {
+            ])
+              .filter((sectionKey) => !(creator.hiddenSections || []).includes(sectionKey))
+              .map((sectionKey, index) => {
               const delay = `${(index + 4) * 100}ms`;
 
               switch (sectionKey) {

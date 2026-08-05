@@ -273,7 +273,8 @@ export const creators = pgTable(
       'music',
       'personal',
       'gallery'
-    ]).notNull()
+    ]).notNull(),
+    hiddenSections: jsonb('hidden_sections').$type<string[]>().default([]).notNull()
   },
   t => ({ slugLangUnique: unique().on(t.slug, t.lang) })
 )

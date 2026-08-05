@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { GripVertical, LayoutList } from 'lucide-react';
 import {
@@ -26,7 +27,8 @@ import { CSS } from '@dnd-kit/utilities';
 type SectionsOrderManagerProps = {
   creatorId: number;
   initialOrder: string[];
-  onUpdate: (order: string[]) => void;
+  initialHidden: string[];
+  onUpdate: (order: string[], hidden: string[]) => void;
 };
 
 const SECTION_LABELS: Record<string, string> = {
@@ -43,7 +45,15 @@ const SECTION_LABELS: Record<string, string> = {
   gallery: '📸 Gallery',
 };
 
-function SortableSectionItem({ section }: { section: string }) {
+function SortableSectionItem({
+  section,
+  isHidden,
+  onToggle
+}: {
+  section: string;
+  isHidden: boolean;
+  onToggle: (section: string) => void;
+}) {
   const {
     attributes,
     listeners,
@@ -63,18 +73,28 @@ function SortableSectionItem({ section }: { section: string }) {
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-3 border rounded-lg p-3 bg-muted/30 hover:bg-muted/50 transition-colors"
+      className={`flex items-center gap-3 border rounded-lg p-3 transition-colors ${
+        isHidden ? 'bg-muted/10 opacity-60' : 'bg-muted/30 hover:bg-muted/50'
+      }`}
     >
       <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing">
         <GripVertical className="w-5 h-5 text-muted-foreground" />
       </div>
-      <span className="text-sm font-medium">{SECTION_LABELS[section] || section}</span>
+      <span className={`text-sm font-medium flex-1 ${isHidden ? 'line-through text-muted-foreground' : ''}`}>
+        {SECTION_LABELS[section] || section}
+      </span>
+      <Switch
+        checked={!isHidden}
+        onCheckedChange={() => onToggle(section)}
+        aria-label={`Toggle ${SECTION_LABELS[section] || section}`}
+      />
     </div>
   );
 }
 
-export function SectionsOrderManager({ creatorId, initialOrder, onUpdate }: SectionsOrderManagerProps) {
+export function SectionsOrderManager({ creatorId, initialOrder, initialHidden, onUpdate }: SectionsOrderManagerProps) {
   const [sections, setSections] = useState<string[]>(initialOrder);
+  const [hiddenSections, setHiddenSections] = useState<string[]>(initialHidden);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
@@ -85,6 +105,30 @@ export function SectionsOrderManager({ creatorId, initialOrder, onUpdate }: Sect
     })
   );
 
+  const saveChanges = async (newOrder: string[], newHidden: string[]) => {
+    setIsSaving(true);
+    try {
+      const response = await fetch('/api/creators', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: creatorId,
+          sectionsOrder: newOrder,
+          hiddenSections: newHidden,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to update');
+
+      toast({ title: 'Sections updated' });
+      onUpdate(newOrder, newHidden);
+    } catch (error) {
+      toast({ title: 'Failed to update sections', variant: 'destructive' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
 
@@ -94,30 +138,17 @@ export function SectionsOrderManager({ creatorId, initialOrder, onUpdate }: Sect
 
       const newSections = arrayMove(sections, oldIndex, newIndex);
       setSections(newSections);
-
-      // Auto-save
-      setIsSaving(true);
-      try {
-        const response = await fetch('/api/creators', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            id: creatorId,
-            sectionsOrder: newSections,
-          }),
-        });
-
-        if (!response.ok) throw new Error('Failed to update');
-
-        toast({ title: 'Section order updated' });
-        onUpdate(newSections);
-      } catch (error) {
-        toast({ title: 'Failed to update order', variant: 'destructive' });
-        setSections(sections); // Revert on error
-      } finally {
-        setIsSaving(false);
-      }
+      await saveChanges(newSections, hiddenSections);
     }
+  };
+
+  const handleToggle = async (section: string) => {
+    const newHidden = hiddenSections.includes(section)
+      ? hiddenSections.filter((s) => s !== section)
+      : [...hiddenSections, section];
+
+    setHiddenSections(newHidden);
+    await saveChanges(sections, newHidden);
   };
 
   const handleReset = async () => {
@@ -134,29 +165,12 @@ export function SectionsOrderManager({ creatorId, initialOrder, onUpdate }: Sect
       'personal',
       'gallery',
     ];
+    const defaultHidden: string[] = [];
 
     setSections(defaultOrder);
-    setIsSaving(true);
-
-    try {
-      const response = await fetch('/api/creators', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: creatorId,
-          sectionsOrder: defaultOrder,
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to reset');
-
-      toast({ title: 'Reset to default order' });
-      onUpdate(defaultOrder);
-    } catch (error) {
-      toast({ title: 'Failed to reset order', variant: 'destructive' });
-    } finally {
-      setIsSaving(false);
-    }
+    setHiddenSections(defaultHidden);
+    await saveChanges(defaultOrder, defaultHidden);
+    toast({ title: 'Reset to default' });
   };
 
   return (
@@ -172,7 +186,7 @@ export function SectionsOrderManager({ creatorId, initialOrder, onUpdate }: Sect
       </CardHeader>
       <CardContent>
         <p className="text-sm text-muted-foreground mb-4">
-          Drag and drop to reorder how sections appear on the profile page.
+          Drag and drop to reorder. Toggle switch to show/hide sections.
         </p>
         <DndContext
           sensors={sensors}
@@ -185,7 +199,12 @@ export function SectionsOrderManager({ creatorId, initialOrder, onUpdate }: Sect
           >
             <div className="space-y-2">
               {sections.map((section) => (
-                <SortableSectionItem key={section} section={section} />
+                <SortableSectionItem
+                  key={section}
+                  section={section}
+                  isHidden={hiddenSections.includes(section)}
+                  onToggle={handleToggle}
+                />
               ))}
             </div>
           </SortableContext>

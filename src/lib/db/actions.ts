@@ -1305,17 +1305,70 @@ export async function deleteFile(id: number, actor: string) {
 }
 
 
+import { v2 as cloudinary } from 'cloudinary';
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
 export async function uploadFile(fileBuffer: Buffer, filename: string, mimeType: string, actor: string) {
   try {
+    // First insert into database to get the ID
     const [row] = await db
       .insert(schema.files)
       .values({ data: fileBuffer, filename, mimeType })
       .returning({ id: schema.files.id, filename: schema.files.filename, mimeType: schema.files.mimeType })
-    
+
+    // Upload to Cloudinary if it's an image
+    let cloudinaryId: string | null = null;
+    let cloudinaryUrl: string | null = null;
+
+    if (mimeType.startsWith('image/')) {
+      try {
+        // Determine folder based on a simple heuristic (can be improved)
+        const folder = 'spekulus/uploads';
+        const publicId = `${folder}/file_${row.id}`;
+
+        // Upload to Cloudinary
+        const result = await new Promise<any>((resolve, reject) => {
+          const uploadStream = cloudinary.uploader.upload_stream(
+            {
+              public_id: publicId,
+              resource_type: 'image',
+              overwrite: true,
+            },
+            (error, result) => {
+              if (error) reject(error);
+              else resolve(result);
+            }
+          );
+          uploadStream.end(fileBuffer);
+        });
+
+        cloudinaryId = result.public_id;
+        cloudinaryUrl = result.secure_url;
+
+        // Update the database record with Cloudinary info
+        await db
+          .update(schema.files)
+          .set({ cloudinaryId, cloudinaryUrl })
+          .where(eq(schema.files.id, row.id));
+
+      } catch (cloudinaryError) {
+        console.error('Cloudinary upload failed, image will be served from database:', cloudinaryError);
+        // Don't fail the whole upload if Cloudinary fails - image will still work via API route
+      }
+    }
+
     // Log the action without the binary data
     const logPayload = {
         ...row,
         size: fileBuffer.length,
+        cloudinaryId,
+        cloudinaryUrl,
     };
 
     await logAction({
@@ -1326,8 +1379,8 @@ export async function uploadFile(fileBuffer: Buffer, filename: string, mimeType:
       after: logPayload,
       status: 'SUCCESS'
     });
-    
-    return row
+
+    return { ...row, cloudinaryId, cloudinaryUrl }
   } catch(err: any) {
     await logAction({
       actor,

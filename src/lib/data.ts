@@ -150,6 +150,7 @@ export type Creator = {
   featuredProject?: FeaturedProject;
   featuredProjectImageId?: number | null;
   sectionsOrder?: string[];
+  hiddenSections?: string[];
   isVisible?: boolean;
 };
 
